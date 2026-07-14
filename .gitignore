@@ -1,0 +1,23 @@
+# CodeIgniter 4 standard gitignore
+.env
+/vendor/
+/writable/
+/public/reset_pass.php
+
+# Developer temporary files
+check_*.php
+test_*.php
+fix_*.php
+*output*.txt
+read_db_units.php
+
+# IDEs and OS files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+.DS_Store

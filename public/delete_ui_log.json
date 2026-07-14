@@ -1,0 +1,60 @@
+{
+    "id_transaksi": "15",
+    "waktu_delete": "2026-07-12 18:50:05",
+    "batch_sebelum": [
+        {
+            "id": "23",
+            "id_barang_masuk": "15",
+            "id_barang": "2",
+            "nomor_batch": "BT-20260709-0001",
+            "nama_barang": "Beras Premium",
+            "kategori": "Bahan Pokok",
+            "tanggal_masuk": "2026-07-09",
+            "tanggal_kedaluwarsa": "2026-07-22",
+            "jumlah_awal": "10",
+            "stok_saat_ini": "10",
+            "jumlah_ctn": null,
+            "satuan": "Karung",
+            "berat_per_satuan": "20.00",
+            "satuan_berat": "Kg",
+            "status": "Aktif",
+            "created_at": "2026-07-09 04:02:44",
+            "updated_at": "2026-07-12 18:49:35"
+        },
+        {
+            "id": "24",
+            "id_barang_masuk": "15",
+            "id_barang": "3",
+            "nomor_batch": "BT-20260709-0002",
+            "nama_barang": "Kecap",
+            "kategori": "Bumbu",
+            "tanggal_masuk": "2026-07-09",
+            "tanggal_kedaluwarsa": "2026-08-04",
+            "jumlah_awal": "100",
+            "stok_saat_ini": "100",
+            "jumlah_ctn": "20",
+            "satuan": "Pcs",
+            "berat_per_satuan": "50.00",
+            "satuan_berat": "Gram",
+            "status": "Aktif",
+            "created_at": "2026-07-09 04:02:44",
+            "updated_at": "2026-07-12 18:49:31"
+        }
+    ],
+    "barang_masuk_sebelum": {
+        "id": "15",
+        "nomor_transaksi": "DM-20260709-0001",
+        "id_donatur": "1",
+        "id_user": "1",
+        "tanggal_masuk": "2026-07-09",
+        "eta": "2026-07-09",
+        "keterangan": "",
+        "created_at": "2026-07-09 04:02:44",
+        "updated_at": "2026-07-09 04:02:44"
+    },
+    "affected_batch": 2,
+    "affected_bm": 1,
+    "trans_status": true,
+    "batch_sesudah": [],
+    "monitoring_sesudah": []
+}
