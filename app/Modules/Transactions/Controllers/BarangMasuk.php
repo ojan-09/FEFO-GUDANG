@@ -396,7 +396,10 @@ class BarangMasuk extends BaseController
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Tanggal Kedaluwarsa harus lebih besar dari Tanggal Masuk."]);
             }
 
+            $idBatch = trim($item['id'] ?? '');
+
             $cleanItems[] = [
+                'id'                  => $idBatch === '' ? null : (int) $idBatch,
                 'nama_barang'         => $namaBarang,
                 'kategori'            => $kategori,
                 'jumlah_ctn'          => $jumlahCtn === '' ? null : (int) $jumlahCtn,
@@ -420,17 +423,34 @@ class BarangMasuk extends BaseController
 
         $barangModel = new BarangModel();
 
-        // Hapus batch lama
-        $this->batchModel->where('id_barang_masuk', $id)->delete();
+        // 1. Load existing batches for this transaction
+        $existingBatches = $this->batchModel->where('id_barang_masuk', $id)->findAll();
+        $existingBatchMap = [];
+        foreach ($existingBatches as $eb) {
+            $existingBatchMap[$eb['id']] = $eb;
+        }
 
-        // 1. Bulk Load Kategori
+        // 2. Identify deleted batches (present in DB, but not in submitted form)
+        $submittedIds = array_filter(array_column($cleanItems, 'id'));
+        $deletedBatchIds = array_diff(array_keys($existingBatchMap), $submittedIds);
+
+        foreach ($deletedBatchIds as $dbId) {
+            $eb = $existingBatchMap[$dbId];
+            if ($eb['stok_saat_ini'] < $eb['jumlah_awal']) {
+                $db->transRollback();
+                return redirect()->back()->withInput()->with('errors', ['items' => "Barang '{$eb['nama_barang']}' tidak dapat dihapus karena stoknya sudah digunakan pada proses Penyaluran."]);
+            }
+            $this->batchModel->delete($dbId);
+        }
+
+        // 3. Bulk Load Kategori
         $kategoriList = $this->kategoriModel->findAll();
         $kategoriMap = [];
         foreach ($kategoriList as $k) {
             $kategoriMap[$k['nama_kategori']] = $k['id'];
         }
 
-        // 2. Bulk Load existing Barang
+        // 4. Bulk Load existing Barang
         $namaBarangUnik = array_unique(array_column($cleanItems, 'nama_barang'));
         $namaBarangUnikLower = array_map('strtolower', $namaBarangUnik);
         
@@ -440,17 +460,15 @@ class BarangMasuk extends BaseController
             $barangMap[strtolower($b['nama_barang'])] = $b['id'];
         }
 
-        // 3. Prepare Batch Number Generator in-memory
+        // 5. Prepare Batch Number Generator in-memory
         $today = date('Ymd');
         $prefix = "BT-{$today}-";
         $lastBatch = $this->batchModel->like('nomor_batch', $prefix, 'after')->orderBy('id', 'DESC')->first();
         $lastNumber = $lastBatch ? (int) substr($lastBatch['nomor_batch'], -4) : 0;
 
-        // 4. Prepare Master Barang Number Generator in-memory
+        // 6. Prepare Master Barang Number Generator in-memory
         $lastBarang = $barangModel->orderBy('id', 'DESC')->first();
         $lastBrgNumber = ($lastBarang && preg_match('/BRG-(\d+)/', $lastBarang['kode_barang'], $matches)) ? (int) $matches[1] : 0;
-
-        $batchInsertData = [];
 
         foreach ($cleanItems as $item) {
             $namaBarangKey = strtolower($item['nama_barang']);
@@ -478,29 +496,76 @@ class BarangMasuk extends BaseController
                 $barangMap[$namaBarangKey] = $idBarang; // Cache it
             }
 
-            $lastNumber++;
-            $nomorBatch = $prefix . str_pad($lastNumber, 4, '0', STR_PAD_LEFT);
+            if (!empty($item['id']) && isset($existingBatchMap[$item['id']])) {
+                // UPDATE EXISTING BATCH
+                $eb = $existingBatchMap[$item['id']];
 
-            $batchInsertData[] = [
-                'id_barang_masuk'     => $id,
-                'id_barang'           => $idBarang,
-                'nomor_batch'         => $nomorBatch,
-                'nama_barang'         => $item['nama_barang'],
-                'kategori'            => $item['kategori'],
-                'tanggal_masuk'       => $tanggalMasuk,
-                'tanggal_kedaluwarsa' => $item['tanggal_kedaluwarsa'],
-                'jumlah_awal'         => $item['jumlah'],
-                'stok_saat_ini'       => $item['jumlah'],
-                'jumlah_ctn'          => $item['jumlah_ctn'],
-                'satuan'              => $item['satuan'],
-                'berat_per_satuan'    => $item['berat_per_satuan'],
-                'satuan_berat'        => $item['satuan_berat'],
-                'status'              => 'Aktif',
-            ];
-        }
+                // If the item itself changed (different id_barang)
+                if ((int)$eb['id_barang'] !== (int)$idBarang) {
+                    if ($eb['stok_saat_ini'] < $eb['jumlah_awal']) {
+                        $db->transRollback();
+                        return redirect()->back()->withInput()->with('errors', ['items' => "Barang '{$eb['nama_barang']}' tidak dapat diganti ke barang lain karena sebagian stoknya sudah digunakan."]);
+                    }
 
-        if (!empty($batchInsertData)) {
-            $this->batchModel->insertBatch($batchInsertData);
+                    // Reset stock to the new quantity for the new item type
+                    $this->batchModel->update($eb['id'], [
+                        'id_barang'           => $idBarang,
+                        'nama_barang'         => $item['nama_barang'],
+                        'kategori'            => $item['kategori'],
+                        'tanggal_masuk'       => $tanggalMasuk,
+                        'tanggal_kedaluwarsa' => $item['tanggal_kedaluwarsa'],
+                        'jumlah_awal'         => $item['jumlah'],
+                        'stok_saat_ini'       => $item['jumlah'],
+                        'jumlah_ctn'          => $item['jumlah_ctn'],
+                        'satuan'              => $item['satuan'],
+                        'berat_per_satuan'    => $item['berat_per_satuan'],
+                        'satuan_berat'        => $item['satuan_berat'],
+                    ]);
+                } else {
+                    // Item is the same, adjust qty based on delta
+                    $delta = $item['jumlah'] - $eb['jumlah_awal'];
+                    $stokBaru = $eb['stok_saat_ini'] + $delta;
+
+                    if ($stokBaru < 0) {
+                        $db->transRollback();
+                        return redirect()->back()->withInput()->with('errors', ['items' => "Jumlah barang '{$item['nama_barang']}' tidak dapat dikurangi menjadi {$item['jumlah']} karena sisa stok gudang tinggal {$eb['stok_saat_ini']}."]);
+                    }
+
+                    $this->batchModel->update($eb['id'], [
+                        'nama_barang'         => $item['nama_barang'],
+                        'kategori'            => $item['kategori'],
+                        'tanggal_masuk'       => $tanggalMasuk,
+                        'tanggal_kedaluwarsa' => $item['tanggal_kedaluwarsa'],
+                        'jumlah_awal'         => $item['jumlah'],
+                        'stok_saat_ini'       => $stokBaru,
+                        'jumlah_ctn'          => $item['jumlah_ctn'],
+                        'satuan'              => $item['satuan'],
+                        'berat_per_satuan'    => $item['berat_per_satuan'],
+                        'satuan_berat'        => $item['satuan_berat'],
+                    ]);
+                }
+            } else {
+                // INSERT NEW BATCH (Added during edit)
+                $lastNumber++;
+                $nomorBatch = $prefix . str_pad($lastNumber, 4, '0', STR_PAD_LEFT);
+
+                $this->batchModel->insert([
+                    'id_barang_masuk'     => $id,
+                    'id_barang'           => $idBarang,
+                    'nomor_batch'         => $nomorBatch,
+                    'nama_barang'         => $item['nama_barang'],
+                    'kategori'            => $item['kategori'],
+                    'tanggal_masuk'       => $tanggalMasuk,
+                    'tanggal_kedaluwarsa' => $item['tanggal_kedaluwarsa'],
+                    'jumlah_awal'         => $item['jumlah'],
+                    'stok_saat_ini'       => $item['jumlah'],
+                    'jumlah_ctn'          => $item['jumlah_ctn'],
+                    'satuan'              => $item['satuan'],
+                    'berat_per_satuan'    => $item['berat_per_satuan'],
+                    'satuan_berat'        => $item['satuan_berat'],
+                    'status'              => 'Aktif',
+                ]);
+            }
         }
 
         $db->transComplete();

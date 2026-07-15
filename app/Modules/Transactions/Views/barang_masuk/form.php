@@ -10,8 +10,10 @@
         $oldItems = [];
         foreach ($batches as $b) {
             $oldItems[] = [
+                'id' => $b['id'],
                 'nama_barang' => $b['nama_barang'],
                 'kategori' => $b['kategori'],
+                'jumlah_ctn' => $b['jumlah_ctn'],
                 'jumlah' => $b['jumlah_awal'],
                 'satuan' => $b['satuan'],
                 'berat_per_satuan' => $b['berat_per_satuan'],
@@ -114,7 +116,7 @@
     </div>
 <?php endif; ?>
 
-<form action="<?= site_url('transaksi/barang-masuk/store') ?>" method="POST" id="formDonasiMasuk" novalidate>
+<form action="<?= $actionUrl ?>" method="POST" id="formDonasiMasuk" novalidate>
     <?= csrf_field() ?>
 
     <div class="panel-card mb-3 p-3">
@@ -255,7 +257,10 @@
         const placeholder = namaBarangPlaceholders[(rowCount - 1) % namaBarangPlaceholders.length];
         const row = `
             <tr id="row-${rowCount}">
-                <td class="text-center row-number text-secondary fw-semibold">${rowCount}</td>
+                <td class="text-center row-number text-secondary fw-semibold">
+                    ${rowCount}
+                    <input type="hidden" name="items[${rowCount}][id]" value="${escapeHtml(item.id)}">
+                </td>
                 <td><input type="text" class="form-control input-nama-barang" name="items[${rowCount}][nama_barang]" maxlength="150" placeholder="Contoh: ${escapeHtml(placeholder)}" value="${escapeHtml(item.nama_barang)}" required style="height: 38px;"></td>
                 <td>
                     <select class="form-select" name="items[${rowCount}][kategori]" required style="height: 38px;">
