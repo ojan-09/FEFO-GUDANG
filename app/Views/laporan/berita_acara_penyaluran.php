@@ -186,9 +186,8 @@
 
     <?php
         // Hitung total berat dalam array details
-        $totalBeratKg = 0;
         $totalBeratGram = 0;
-        $totalDus = 0;
+        $totalCtn = 0;
         foreach ($details as $d) {
             // Konversi ke gram jika belum
             $beratItem = (float)$d['berat_per_satuan'];
@@ -197,8 +196,9 @@
                 $beratItem *= 1000;
             }
             $totalBeratGram += ($beratItem * $d['jumlah_keluar']);
-            $totalDus += $d['jumlah_keluar'];
+            $totalCtn += (int)($d['jumlah_ctn'] ?? 0);
         }
+        $totalBeratKg = $totalBeratGram / 1000;
     ?>
 
     <!-- Tabel Jumlah keseluruhan donasi -->
@@ -209,7 +209,7 @@
                 <tr>
                     <th>No</th>
                     <th>Tanggal Penerimaan</th>
-                    <th>Jumlah Dus</th>
+                    <th>Total CTN</th>
                     <th>Total Berat</th>
                 </tr>
             </thead>
@@ -217,7 +217,7 @@
                 <tr>
                     <td>1</td>
                     <td><?= date('d/m/Y', strtotime($barangKeluar['tanggal_keluar'])) ?></td>
-                    <td><?= $totalDus ?></td>
+                    <td><?= $totalCtn ?></td>
                     <td><?= format_berat($totalBeratKg, 'Kg') ?></td>
                 </tr>
             </tbody>
@@ -231,32 +231,40 @@
             <tr>
                 <th>No</th>
                 <th>Nama Produk</th>
-                <th>Jumlah Dus</th>
-                <th>Total Keseluruhan</th>
+                <th>Jumlah</th>
+                <th>Satuan</th>
+                <th>CTN</th>
+                <th>Total Berat</th>
                 <th>Kondisi<br>Donasi</th>
             </tr>
         </thead>
         <tbody>
             <?php $no = 1; foreach ($details as $d) : ?>
                 <?php
+                    // Convert berat_per_satuan to Kg for subtotal
                     $beratS = (float)$d['berat_per_satuan'];
                     $satuanB = strtolower($d['satuan_berat']);
-                    if ($satuanB === 'kg' || $satuanB === 'kilogram') {
-                        $beratS *= 1000;
+                    if ($satuanB === 'gram') {
+                        $beratSKg = $beratS / 1000;
+                    } else {
+                        $beratSKg = $beratS;
                     }
-                    $subTotal = $beratS * $d['jumlah_keluar'];
+                    $subTotalKg = $beratSKg * $d['jumlah_keluar'];
                 ?>
                 <tr>
                     <td><?= $no++ ?></td>
                     <td style="text-align: left;"><?= esc($d['nama_barang']) ?></td>
                     <td><?= esc($d['jumlah_keluar']) ?></td>
-                    <td><?= format_berat($subTotal, $d['satuan_berat']) ?></td>
+                    <td><?= esc($d['satuan']) ?></td>
+                    <td><?= !empty($d['jumlah_ctn']) ? esc($d['jumlah_ctn']) : '-' ?></td>
+                    <td><?= format_berat($subTotalKg, 'Kg') ?></td>
                     <td>Baik</td>
                 </tr>
             <?php endforeach; ?>
             <tr>
                 <td colspan="2" style="text-align: center; font-weight: bold;">Total</td>
-                <td style="font-weight: bold;"><?= $totalDus ?></td>
+                <td colspan="2" style="text-align: center; font-weight: bold;">-</td>
+                <td style="font-weight: bold;"><?= $totalCtn ?></td>
                 <td style="font-weight: bold;"><?= format_berat($totalBeratKg, 'Kg') ?></td>
                 <td></td>
             </tr>
