@@ -677,7 +677,7 @@ class BarangMasuk extends BaseController
         $monitoringData = $db->query($compiledQuery)->getResultArray();
         $logData['monitoring_sesudah'] = $monitoringData;
 
-        file_put_contents(FCPATH . 'delete_ui_log.json', json_encode($logData, JSON_PRETTY_PRINT));
+        file_put_contents(WRITEPATH . 'logs/delete_ui_log.json', json_encode($logData, JSON_PRETTY_PRINT));
         // --- END LOGGING ---
 
         if ($db->transStatus() !== false) {
