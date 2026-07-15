@@ -158,7 +158,12 @@
                     <?php $no = 1; foreach ($laporan as $item) : ?>
                         <?php 
                             $beratPerSatuan = (float) $item['berat_per_satuan'];
-                            $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+                            $satuanB = strtolower($item['satuan_berat']);
+                            if ($satuanB === 'gram') {
+                                $totalKg = ($item['jumlah'] * $beratPerSatuan) / 1000;
+                            } else {
+                                $totalKg = $item['jumlah'] * $beratPerSatuan;
+                            }
                         ?>
                         <tr>
                             <td class="text-center"><?= $no++ ?></td>
@@ -172,10 +177,10 @@
                             <td class="text-center text-nowrap fw-bold"><?= number_format($item['jumlah'], 0, ',', '.') ?></td>
                             <td class="text-center text-nowrap"><?= esc($item['satuan']) ?></td>
                             <td class="text-end text-nowrap">
-                                <?= $beratPerSatuan > 0 ? $beratPerSatuan : '-' ?>
+                                <?= $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-' ?>
                             </td>
                             <td class="text-end text-nowrap fw-medium">
-                                <?= $totalBeratRow > 0 ? format_berat($totalBeratRow, $item['satuan_berat']) : '-' ?>
+                                <?= $totalKg > 0 ? format_berat($totalKg, 'Kg') : '-' ?>
                             </td>
                             <td class="text-nowrap text-muted"><small><?= esc($item['keterangan'] ?? '-') ?></small></td>
                             <td class="text-nowrap"><?= esc($item['petugas'] ?? '-') ?></td>
@@ -196,7 +201,7 @@
     </div>
     <div class="col-md-4">
         <div class="panel-card text-center py-3">
-            <h6 class="text-muted mb-1">Total Barang</h6>
+            <h6 class="text-muted mb-1">Total Barang Disalurkan</h6>
             <h3 class="mb-0 text-success"><?= number_format($summary['total_barang'], 0, ',', '.') ?></h3>
         </div>
     </div>

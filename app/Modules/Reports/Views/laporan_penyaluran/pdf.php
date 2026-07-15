@@ -124,8 +124,8 @@
                 <th width="14%">Nama Barang</th>
                 <th width="7%">Jumlah</th>
                 <th width="7%">Satuan</th>
-                <th width="7%">Berat</th>
-                <th width="7%">Total Berat</th>
+                <th width="10%">Berat / Satuan</th>
+                <th width="10%">Total Berat</th>
                 <th width="10%">Petugas</th>
             </tr>
         </thead>
@@ -139,7 +139,12 @@
                 <?php $no = 1; foreach ($laporan as $item): ?>
                     <?php 
                         $beratPerSatuan = (float) $item['berat_per_satuan'];
-                        $totalKg = ($item['jumlah'] * $beratPerSatuan) / 1000;
+                        $satuanB = strtolower($item['satuan_berat']);
+                        if ($satuanB === 'gram') {
+                            $totalKg = ($item['jumlah'] * $beratPerSatuan) / 1000;
+                        } else {
+                            $totalKg = $item['jumlah'] * $beratPerSatuan;
+                        }
                     ?>
                     <tr>
                         <td class="text-center"><?= $no++ ?></td>
@@ -150,8 +155,8 @@
                         <td><?= esc($item['nama_barang']) ?></td>
                         <td class="text-center"><?= number_format($item['jumlah'], 0, ',', '.') ?></td>
                         <td class="text-center"><?= esc($item['satuan']) ?></td>
-                        <td class="text-right"><?= $beratPerSatuan > 0 ? number_format($beratPerSatuan, 2, ',', '.') : '-' ?></td>
-                        <td class="text-right"><?= $totalKg > 0 ? number_format($totalKg, 2, ',', '.') : '-' ?></td>
+                        <td class="text-right"><?= $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-' ?></td>
+                        <td class="text-right"><?= $totalKg > 0 ? format_berat($totalKg, 'Kg') : '-' ?></td>
                         <td class="text-center"><?= esc($item['petugas'] ?? '-') ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -165,7 +170,7 @@
             <td width="80%">: <?= number_format($summary['total_penyaluran'], 0, ',', '.') ?></td>
         </tr>
         <tr>
-            <td class="font-bold">Total Barang</td>
+            <td class="font-bold">Total Barang Disalurkan</td>
             <td>: <?= number_format($summary['total_barang'], 0, ',', '.') ?></td>
         </tr>
         <tr>
