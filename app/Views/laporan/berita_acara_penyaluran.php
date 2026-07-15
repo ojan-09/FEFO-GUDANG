@@ -136,11 +136,18 @@
     <!-- Logo / Kop Surat -->
     <?php
         $logoPath = FCPATH . 'assets/img/logo_foi.png';
-        $logoData = base64_encode(file_get_contents($logoPath));
-        $logoSrc = 'data:image/png;base64,' . $logoData;
+        $logoSrc = '';
+        if (file_exists($logoPath) && is_readable($logoPath)) {
+            $logoData = base64_encode(file_get_contents($logoPath));
+            $logoSrc = 'data:image/png;base64,' . $logoData;
+        }
     ?>
     <div class="header">
-        <img src="<?= $logoSrc ?>" alt="FOI Logo">
+        <?php if (!empty($logoSrc)): ?>
+            <img src="<?= $logoSrc ?>" alt="FOI Logo">
+        <?php else: ?>
+            <div style="font-weight: bold; font-size: 16pt; letter-spacing: 1px; color: #333; margin-bottom: 5px;">FOOD CYCLE INDONESIA</div>
+        <?php endif; ?>
         <h1 style="margin-top: 10px;">BERITA ACARA SERAH TERIMA DONASI</h1>
     </div>
 
