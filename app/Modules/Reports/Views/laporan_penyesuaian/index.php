@@ -96,7 +96,7 @@
                         <small class="text-muted">Exp: <?= $row['tanggal_kedaluwarsa'] ? date('d/m/y', strtotime($row['tanggal_kedaluwarsa'])) : '-' ?></small>
                     </td>
                     <td class="text-end fw-bold <?= $colorClass ?>">
-                        <?= $sign ?><?= format_jumlah($row['jumlah'], $row['bisa_dipecah'] ?? 0) ?> <small class="text-muted fw-normal"><?= esc($row['satuan']) ?></small>
+                        <?= $sign ?><?= (isset($row['bisa_dipecah']) && $row['bisa_dipecah'] == 1) ? $row['jumlah'] : number_format($row['jumlah'], 0, ',', '.') ?> <small class="text-muted fw-normal"><?= esc($row['satuan']) ?></small>
                     </td>
                     <td>
                         <div style="max-width: 200px; font-size: 11.5px;" class="text-truncate" title="<?= esc($row['ket_umum'] . ' - ' . $row['keterangan']) ?>">
