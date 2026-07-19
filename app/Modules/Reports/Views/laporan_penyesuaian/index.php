@@ -21,6 +21,26 @@
 .badge-jenis.positif { background: #dcfce7; color: #16a34a; }
 .badge-jenis.negatif { background: #fef08a; color: #a16207; }
 .badge-jenis.opname { background: #dbeafe; color: #2563eb; }
+
+/* ── PAGINATION ── */
+.dataTables_wrapper .dataTables_paginate { margin-top: 10px; }
+.dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0 !important; border: none !important; background: transparent !important; margin: 0 1px !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button .page-link { height: 32px !important; min-width: 32px; padding: 0 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; font-size: 12.5px; font-weight: 500; color: #334155 !important; background: #fff !important; transition: all .15s; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.current .page-link, .dataTables_wrapper .dataTables_paginate .paginate_button.active .page-link { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link { background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link { opacity: .45; cursor: default; }
+.dataTables_wrapper .dataTables_info { font-size: 12px; color: #64748b; padding-top: 8px; }
+.dataTables_wrapper .row:last-child { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+
+/* ── RESPONSIVE MOBILE ── */
+@media (max-width: 768px) {
+    .rpt-page { padding: 4px; }
+    .rpt-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .rpt-filter form .col-md-6 { flex-direction: column; width: 100%; margin-top: 12px; }
+    .rpt-filter form .btn { width: 100%; justify-content: center; }
+    .dataTables_wrapper .row:last-child { flex-direction: column; gap: 10px; }
+    .dataTables_wrapper .dataTables_paginate { margin-top: 0; align-self: center; }
+}
 </style>
 
 <div class="rpt-page">
@@ -58,9 +78,10 @@
 
     <!-- Tabel Data -->
     <div class="rpt-card">
-        <table class="table rpt-table w-100" id="tableLaporan">
-            <thead>
-                <tr>
+        <div class="table-responsive">
+            <table class="table rpt-table w-100" id="tableLaporan">
+                <thead>
+                    <tr>
                     <th class="text-center" width="50">No</th>
                     <th>Tanggal</th>
                     <th>No. Transaksi</th>
@@ -106,8 +127,9 @@
                     </td>
                 </tr>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
