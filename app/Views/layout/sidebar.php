@@ -592,7 +592,7 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
 @media (max-width: 768px) {
     .sb-bottombar { display: flex; }
 
-    body,
+    body, 
     body.sb-collapsed { margin-left: 0 !important; padding-bottom: 60px; }
     html.sb-pre-collapsed body { margin-left: 0 !important; }
 
@@ -601,9 +601,12 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
         transform: translateX(-100%);
         transition: transform 220ms cubic-bezier(.4,0,.2,1) !important;
         will-change: transform;
-        overflow-x: hidden;
+        overflow-y: auto;
+        overflow-x: hidden; /* ← ganti dari visible ke hidden */
         box-shadow: none;
-    }
+        z-index: 1060; /* ← tambah ini, harus lebih tinggi dari overlay (1049) */
+    
+}
     .sidebar.mobile-open {
         transform: translateX(0);
         box-shadow: 4px 0 24px rgba(0,0,0,.4);
@@ -629,6 +632,19 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
     /* Link item tap highlight */
     .sidebar .sb-link { -webkit-tap-highlight-color: transparent; }
     .sidebar .sb-link:active { background: rgba(255,255,255,.14); transform: none; }
+}
+
+    body.sb-drawer-open {
+    position: fixed;
+    width: 100%;
+    overflow: hidden;
+}
+/* Modal di atas sidebar */
+.modal-backdrop { 
+    z-index: 1070 !important; 
+}
+.modal          { 
+    z-index: 1075 !important; 
 }
 </style>
 
@@ -670,15 +686,22 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
     }
 
     /* ── Mobile drawer open / close ─────────────────────── */
+    var scrollY = 0;
+
     function openMobile() {
+        scrollY = window.scrollY;
+        document.body.style.top = '-' + scrollY + 'px';
+        document.body.classList.add('sb-drawer-open');
         sidebar.classList.add('mobile-open');
         overlay.style.display = 'block';
-        document.body.style.overflow = 'hidden';
     }
+
     function closeMobile() {
         sidebar.classList.remove('mobile-open');
         overlay.style.display = 'none';
-        document.body.style.overflow = '';
+        document.body.classList.remove('sb-drawer-open');
+        document.body.style.top = '';
+        window.scrollTo(0, scrollY);
     }
 
     if (mobileBtn) {

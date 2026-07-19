@@ -29,69 +29,20 @@
 
         .app-shell {
             min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 280px;
-            background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-            color: #fff;
-            padding: 24px 18px;
-            position: sticky;
-            top: 0;
-            max-height: 100vh;
-            overflow-y: auto;
-            overscroll-behavior: contain;
-        }
-
-        .brand {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
+            flex-direction: column;
         }
 
-        .brand-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, var(--primary), #38bdf8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 8px 20px rgba(37, 99, 235, .25);
-        }
-
-        .sidebar-section {
-            margin-top: 18px;
-        }
-
-        .sidebar-section-title {
-            font-size: .74rem;
-            letter-spacing: .15em;
-            text-transform: uppercase;
-            color: #94a3b8;
-            margin-bottom: 8px;
-            padding: 0 10px;
-        }
-
-        .nav-link {
-            color: #dbeafe;
-            border-radius: 12px;
-            padding: 10px 12px;
-            margin-bottom: 4px;
-            transition: .2s ease;
-        }
-
-        .nav-link:hover,
-        .nav-link.active {
-            background: rgba(255, 255, 255, .12);
-            color: #fff;
+        @media (min-width: 992px) {
+            .app-shell {
+                flex-direction: row;
+            }
         }
 
         .main-panel {
             flex: 1;
             padding: 24px;
+            min-width: 0;
             /* Page transition */
             opacity: 1;
             transform: translateY(0);
@@ -224,14 +175,6 @@
             background: var(--primary);
         }
 
-        @media (max-width: 991px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-            }
-        }
-
         /* Global fix for DataTables Bootstrap 5 pagination */
         .dataTables_wrapper .dataTables_paginate .paginate_button {
             padding: 0 !important;
@@ -256,12 +199,25 @@
             color: inherit !important;
             border-color: transparent !important;
         }
+
+        /* Modal fix — pastikan backdrop dan modal tidak ter-clip */
+        .modal-backdrop {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 1070 !important;
+        }
+        .modal {
+            z-index: 1075 !important;
+        }
     </style>
     <?= $this->renderSection('styles') ?>
 </head>
 
 <body>
-    <div class="app-shell d-flex flex-column flex-lg-row">
+    <div class="app-shell">
         <?= $this->include('layout/sidebar') ?>
 
         <main class="main-panel">
@@ -366,6 +322,17 @@
     </script>
 
     <?= $this->renderSection('scripts') ?>
+
+    <!-- Modal teleport: pindahkan semua modal ke <body> langsung -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.modal').forEach(function (modal) {
+                if (modal.parentElement !== document.body) {
+                    document.body.appendChild(modal);
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

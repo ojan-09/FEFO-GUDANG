@@ -112,8 +112,9 @@
         height: 42px; width: 260px; border-radius: 10px;
         border: 1px solid var(--wh-border); font-size: 0.85rem;
         padding: 0 12px 0 34px; color: var(--wh-text);
+        transition: border-color 150ms ease, box-shadow 150ms ease;
     }
-    .wh-dt-search input:focus { outline: none; border-color: var(--wh-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+    .wh-dt-search input:focus { outline: none; border-color: var(--wh-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 
     /* Table */
     #dataTable { border-collapse: separate; border-spacing: 0; width: 100%; }
@@ -156,12 +157,12 @@
 
     /* Rename button */
     .wh-rename-btn {
-        height: 38px; padding: 0 14px; border-radius: 10px;
+        height: 36px; padding: 0 14px; border-radius: 10px;
         background: var(--wh-primary-soft); color: var(--wh-primary);
         border: none; font-size: 0.8rem; font-weight: 600;
         display: inline-flex; align-items: center; gap: 6px;
         transition: background 120ms ease, transform 120ms ease; cursor: pointer;
-        min-width: 44px; min-height: 44px;
+        min-width: 44px; min-height: 36px;
     }
     .wh-rename-btn:hover  { background: #DBEAFE; }
     .wh-rename-btn:active { transform: scale(0.98); }
@@ -191,65 +192,114 @@
     }
 
     /* ---------- Modal ---------- */
-    .modal-content  { border-radius: 18px; border: 1px solid var(--wh-border); }
-    .modal-header   { border-bottom: 1px solid var(--wh-separator); padding: 20px 24px; }
-    .modal-footer   { border-top: 1px solid var(--wh-separator); padding: 16px 24px; }
-    .modal-title    { font-size: 1rem; font-weight: 700; color: var(--wh-text); }
-    .modal-body     { padding: 20px 24px; }
-    .modal-body .form-label  { font-size: 0.78rem; font-weight: 600; color: var(--wh-text); margin-bottom: 6px; }
+    .modal-content {
+        border-radius: 18px; border: 1px solid var(--wh-border);
+        box-shadow: 0 20px 60px rgba(15,23,42,.12);
+    }
+    .modal-header {
+        border-bottom: 1px solid var(--wh-separator);
+        padding: 18px 24px; align-items: center;
+    }
+    .modal-header .btn-close {
+        width: 32px; height: 32px; background-color: var(--wh-bg);
+        border-radius: 8px; opacity: 1; padding: 0; background-size: 12px;
+        transition: background 150ms ease;
+    }
+    .modal-header .btn-close:hover { background-color: #FEE2E2; }
+    .modal-title {
+        font-size: 1rem; font-weight: 700; color: var(--wh-text);
+        display: flex; align-items: center; gap: 8px;
+    }
+    .modal-body { padding: 24px; }
+    .modal-body .form-label {
+        font-size: 0.78rem; font-weight: 600; color: var(--wh-text); margin-bottom: 6px;
+    }
     .modal-body .form-control,
     .modal-body .form-select {
         border-radius: 10px; border: 1px solid var(--wh-border); font-size: 0.85rem;
-        padding: 0.5rem 0.75rem;
+        padding: 0.6rem 0.85rem;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
     }
     .modal-body .form-control { height: 44px; }
+    .modal-body .form-select  { height: 44px; }
     .modal-body .form-control:focus,
     .modal-body .form-select:focus {
-        border-color: var(--wh-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+        border-color: var(--wh-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    .modal-footer {
+        border-top: 1px solid var(--wh-separator);
+        padding: 16px 24px; gap: 8px;
     }
     .modal-footer .btn-secondary {
-        background: var(--wh-dark-soft); border: 1px solid var(--wh-border);
-        color: var(--wh-text); border-radius: 10px; font-size: 0.85rem; font-weight: 600;
-        height: 42px; padding: 0 18px;
+        background: var(--wh-bg); border: 1px solid var(--wh-border);
+        color: var(--wh-text-soft); border-radius: 10px; font-size: 0.83rem; font-weight: 600;
+        height: 40px; padding: 0 18px; transition: background 150ms ease, color 150ms ease;
     }
+    .modal-footer .btn-secondary:hover { background: var(--wh-dark-soft); color: var(--wh-text); }
     .modal-footer .btn-primary {
         background: var(--wh-primary); border-color: var(--wh-primary);
-        border-radius: 10px; font-size: 0.85rem; font-weight: 600; height: 42px; padding: 0 18px;
+        border-radius: 10px; font-size: 0.83rem; font-weight: 600; height: 40px; padding: 0 18px;
     }
     .modal-footer .btn-warning {
         background: var(--wh-warning); border-color: var(--wh-warning); color: #fff;
-        border-radius: 10px; font-size: 0.85rem; font-weight: 600; height: 42px; padding: 0 18px;
+        border-radius: 10px; font-size: 0.83rem; font-weight: 600; height: 40px; padding: 0 18px;
     }
 
-    /* Merge info banner */
+    /* ---------- Merge info banner ---------- */
     .wh-merge-info {
-        background: var(--wh-warning-soft); border: 1px solid #FDE68A;
-        border-radius: 12px; padding: 12px 16px; font-size: 0.83rem; color: #B45309;
-        display: flex; gap: 10px; align-items: flex-start; margin-bottom: 16px;
+        background: #FFFBEB; border: 1px solid #FDE68A;
+        border-radius: 12px; padding: 14px 16px; font-size: 0.82rem; color: #92400E;
+        display: flex; gap: 10px; align-items: flex-start; margin-bottom: 20px;
+        line-height: 1.55;
     }
-    .wh-merge-info i { margin-top: 2px; flex-shrink: 0; }
+    .wh-merge-info i { margin-top: 2px; flex-shrink: 0; font-size: 0.9rem; }
 
-    /* Merge source list */
-    .wh-source-list {
-        max-height: 250px; overflow-y: auto; border: 1px solid var(--wh-border);
-        border-radius: 12px; padding: 12px;
-    }
-    .wh-source-list .form-check { padding: 6px 8px; border-radius: 8px; transition: background 120ms ease; }
-    .wh-source-list .form-check:hover { background: var(--wh-bg); }
-    .wh-source-list .form-check-label { font-size: 0.83rem; color: var(--wh-text); cursor: pointer; }
-    .wh-source-list .form-check-label span { color: var(--wh-text-soft); }
-
-    /* Merge divider label */
+    /* ---------- Section label ---------- */
     .wh-section-label {
-        font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
-        letter-spacing: 0.06em; color: var(--wh-text-soft); margin-bottom: 8px;
+        font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.08em; color: var(--wh-text-soft); margin-bottom: 8px;
     }
 
+    /* ---------- Source list ---------- */
+    .wh-source-list {
+        max-height: 220px; overflow-y: auto; border: 1px solid var(--wh-border);
+        border-radius: 12px; padding: 4px 8px;
+        scrollbar-width: thin; scrollbar-color: var(--wh-border) transparent;
+    }
+    .wh-source-list::-webkit-scrollbar { width: 4px; }
+    .wh-source-list::-webkit-scrollbar-track { background: transparent; }
+    .wh-source-list::-webkit-scrollbar-thumb { background: var(--wh-border); border-radius: 10px; }
+    .wh-source-list .form-check {
+        padding: 10px 10px 10px 36px; border-radius: 8px;
+        transition: background 120ms ease; margin: 0; cursor: pointer;
+        border-bottom: 1px solid var(--wh-separator);
+    }
+    .wh-source-list .form-check:last-child { border-bottom: none; }
+    .wh-source-list .form-check:hover { background: var(--wh-primary-soft); }
+    .wh-source-list .form-check-input {
+        width: 16px; height: 16px; margin-top: 0; cursor: pointer;
+        border: 1.5px solid #CBD5E1; border-radius: 4px;
+    }
+    .wh-source-list .form-check-input:checked {
+        background-color: var(--wh-primary); border-color: var(--wh-primary);
+    }
+    .wh-source-list .form-check-label {
+        font-size: 0.83rem; color: var(--wh-text); cursor: pointer;
+        display: flex; align-items: center; gap: 6px; font-weight: 500;
+    }
+    .wh-source-list .form-check-label span {
+        color: var(--wh-text-soft); font-weight: 400; font-size: 0.78rem;
+    }
+
+    /* ---------- Responsive ---------- */
     @media (max-width: 768px) {
         .wh-header { flex-direction: column; align-items: flex-start; }
         .wh-action-bar { flex-direction: column; align-items: flex-start; }
         .wh-dt-toolbar { flex-direction: column; align-items: flex-start; }
         .wh-dt-search input { width: 100%; }
+        .modal-body { padding: 16px; }
+        .modal-header { padding: 14px 16px; }
+        .modal-footer { padding: 12px 16px; }
     }
 </style>
 
