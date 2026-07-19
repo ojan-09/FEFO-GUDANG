@@ -92,6 +92,16 @@
         .main-panel {
             flex: 1;
             padding: 24px;
+            /* Page transition */
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity .25s ease, transform .25s ease;
+        }
+
+        .main-panel.page-enter,
+        .main-panel.page-leave {
+            opacity: 0;
+            transform: translateY(6px);
         }
 
         .topbar {
@@ -221,7 +231,7 @@
                 position: relative;
             }
         }
-    $css
+
         /* Global fix for DataTables Bootstrap 5 pagination */
         .dataTables_wrapper .dataTables_paginate .paginate_button {
             padding: 0 !important;
@@ -252,7 +262,6 @@
 
 <body>
     <div class="app-shell d-flex flex-column flex-lg-row">
-        <!-- Memanggil layout sidebar -->
         <?= $this->include('layout/sidebar') ?>
 
         <main class="main-panel">
@@ -260,8 +269,8 @@
             <div class="d-flex justify-content-end align-items-center mb-4 pb-2 border-bottom">
                 <div class="dropdown">
                     <button class="btn btn-light dropdown-toggle bg-white shadow-sm border" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fa-solid fa-user-circle me-2 text-primary"></i> 
-                        <span class="fw-bold"><?= esc(user()->username) ?></span> 
+                        <i class="fa-solid fa-user-circle me-2 text-primary"></i>
+                        <span class="fw-bold"><?= esc(user()->username) ?></span>
                         <small class="text-muted ms-1">(<?= esc(get_user_role()) ?>)</small>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
@@ -273,7 +282,6 @@
             </div>
             <?php endif; ?>
 
-            <!-- Disinilah tempat konten setiap halaman akan dimasukkan -->
             <?= $this->renderSection('content') ?>
         </main>
     </div>
@@ -285,26 +293,20 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
-            // Remove native confirm and convert to SweetAlert
             $('a[onclick^="return confirm"], button[onclick^="return confirm"]').each(function() {
                 var onclickStr = $(this).attr('onclick');
                 var confirmText = onclickStr.match(/confirm\(['"]([^'"]+)['"]\)/)[1];
-                
-                // Remove the native onclick so it doesn't fire
                 $(this).removeAttr('onclick');
-                // Store the text in a data attribute
                 $(this).attr('data-confirm-text', confirmText);
-                // Add a class for our listener
                 $(this).addClass('btn-delete-swal');
             });
 
-            // Global interceptor for SweetAlert buttons
             $(document).on('click', '.btn-delete-swal', function(e) {
                 e.preventDefault();
                 var $btn = $(this);
                 var link = $btn.attr('href');
                 var confirmText = $btn.attr('data-confirm-text');
-                
+
                 Swal.fire({
                     title: 'Konfirmasi',
                     text: confirmText,
@@ -330,6 +332,39 @@
             });
         });
     </script>
+
+    <script>
+        (function () {
+            const main = document.querySelector('main.main-panel');
+            if (!main) return;
+
+            // Enter animation on load
+            main.classList.add('page-enter');
+            requestAnimationFrame(() => requestAnimationFrame(() =>
+                main.classList.remove('page-enter')
+            ));
+
+            // Leave animation on navigation
+            document.addEventListener('click', function (e) {
+                const a = e.target.closest('a[href]');
+                if (!a) return;
+
+                const href = a.href;
+                if (!href
+                    || a.target === '_blank'
+                    || href.includes('#')
+                    || href.startsWith('javascript')
+                    || a.hasAttribute('data-bs-toggle')
+                    || a.classList.contains('btn-delete-swal')
+                ) return;
+
+                e.preventDefault();
+                main.classList.add('page-leave');
+                setTimeout(() => { window.location.href = href; }, 220);
+            });
+        })();
+    </script>
+
     <?= $this->renderSection('scripts') ?>
 </body>
 
