@@ -25,9 +25,9 @@ class FEFO
      * Hitung total stok aktif suatu barang dari seluruh batch.
      *
      * @param int $idBarang
-     * @return int Total stok tersedia
+     * @return float Total stok tersedia
      */
-    public function getStokBarang(int $idBarang): int
+    public function getStokBarang(int $idBarang): float
     {
         $result = $this->batchModel
             ->selectSum('stok_saat_ini')
@@ -35,17 +35,17 @@ class FEFO
             ->where('status', 'Aktif')
             ->first();
 
-        return (int) ($result['stok_saat_ini'] ?? 0);
+        return (float) ($result['stok_saat_ini'] ?? 0);
     }
 
     /**
      * Cek apakah stok aktif mencukupi untuk jumlah yang diminta.
      *
      * @param int $idBarang
-     * @param int $jumlah
+     * @param float $jumlah
      * @return bool
      */
-    public function cekKetersediaan(int $idBarang, int $jumlah): bool
+    public function cekKetersediaan(int $idBarang, float $jumlah): bool
     {
         return $this->getStokBarang($idBarang) >= $jumlah;
     }
@@ -71,7 +71,7 @@ class FEFO
 
         $stokMap = [];
         foreach ($results as $row) {
-            $stokMap[$row['id_barang']] = (int)$row['total_stok'];
+            $stokMap[$row['id_barang']] = (float)$row['total_stok'];
         }
 
         $kurang = [];
@@ -99,7 +99,7 @@ class FEFO
         $kebutuhan = [];
         foreach ($items as $item) {
             $idBrg = (int) $item['id_barang'];
-            $kebutuhan[$idBrg] = ($kebutuhan[$idBrg] ?? 0) + (int) $item['jumlah_keluar'];
+            $kebutuhan[$idBrg] = ($kebutuhan[$idBrg] ?? 0) + (float) $item['jumlah_keluar'];
         }
 
         // Validasi massal
@@ -181,10 +181,10 @@ class FEFO
      *
      * @param int $idBarangKeluar
      * @param int $idBarang
-     * @param int $jumlahKeluar
+     * @param float $jumlahKeluar
      * @return bool True jika berhasil, false jika stok tidak cukup
      */
-    public function prosesBarangKeluar(int $idBarangKeluar, int $idBarang, int $jumlahKeluar): bool
+    public function prosesBarangKeluar(int $idBarangKeluar, int $idBarang, float $jumlahKeluar): bool
     {
         // Validasi ketersediaan stok
         if (!$this->cekKetersediaan($idBarang, $jumlahKeluar)) {

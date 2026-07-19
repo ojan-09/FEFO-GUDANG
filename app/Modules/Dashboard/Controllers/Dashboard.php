@@ -43,19 +43,22 @@ class Dashboard extends BaseController
             
         // Total Berat Gudang & Total Unit Barang
         $stokAktif = $db->table('batch')
-            ->select('stok_saat_ini, berat_per_satuan, satuan_berat')
+            ->select('stok_saat_ini, berat_per_satuan, satuan_berat, bisa_dipecah')
             ->where('stok_saat_ini >', 0)
             ->get()->getResultArray();
             
         $totalBeratGudang = 0;
-        $totalUnitBarang = 0;
         foreach ($stokAktif as $s) {
-            $totalUnitBarang += $s['stok_saat_ini'];
-            $berat = $s['stok_saat_ini'] * $s['berat_per_satuan'];
-            if (strtolower($s['satuan_berat']) === 'gram') {
-                $berat = $berat / 1000;
+            if ((int)$s['bisa_dipecah'] === 1) {
+                // Untuk barang repackable, stok_saat_ini sudah tersimpan dalam unit dasar Kg (setelah normalisasi dari Gram)
+                $totalBeratGudang += (float)$s['stok_saat_ini'];
+            } else {
+                $berat = $s['stok_saat_ini'] * $s['berat_per_satuan'];
+                if (strtolower($s['satuan_berat']) === 'gram') {
+                    $berat = $berat / 1000;
+                }
+                $totalBeratGudang += $berat;
             }
-            $totalBeratGudang += $berat;
         }
         
         // Total Donatur & Wilayah
@@ -103,7 +106,7 @@ class Dashboard extends BaseController
         
         // Top 5 Barang dengan Stok Terbanyak (dikonsolidasi berdasarkan ID Barang)
         $rawTopBarang = $db->table('batch')
-            ->select('barang.id, barang.nama_barang, batch.satuan, batch.stok_saat_ini, batch.berat_per_satuan, batch.satuan_berat')
+            ->select('barang.id, barang.nama_barang, batch.satuan, batch.stok_saat_ini, batch.berat_per_satuan, batch.satuan_berat, batch.bisa_dipecah')
             ->join('barang', 'barang.id = batch.id_barang')
             ->where('batch.stok_saat_ini >', 0)
             ->get()->getResultArray();
@@ -111,13 +114,18 @@ class Dashboard extends BaseController
         $barangConsolidated = [];
         foreach ($rawTopBarang as $b) {
             $id = $b['id'];
-            $stok = (int)$b['stok_saat_ini'];
+            $stok = (float)$b['stok_saat_ini'];
             $beratPerSatuan = (float)$b['berat_per_satuan'];
             $satuanBerat = strtolower($b['satuan_berat']);
+            $bisaDipecah = (int)$b['bisa_dipecah'];
 
-            $beratKg = $stok * $beratPerSatuan;
-            if ($satuanBerat === 'gram') {
-                $beratKg = $beratKg / 1000;
+            if ($bisaDipecah === 1) {
+                $beratKg = $stok; // Stok sudah dalam Kg
+            } else {
+                $beratKg = $stok * $beratPerSatuan;
+                if ($satuanBerat === 'gram') {
+                    $beratKg = $beratKg / 1000;
+                }
             }
 
             if (isset($barangConsolidated[$id])) {
@@ -126,7 +134,7 @@ class Dashboard extends BaseController
             } else {
                 $barangConsolidated[$id] = [
                     'nama_barang' => $b['nama_barang'],
-                    'satuan'      => $b['satuan'],
+                    'satuan'      => $bisaDipecah === 1 ? 'Kg' : $b['satuan'],
                     'total_stok'  => $stok,
                     'total_berat' => $beratKg
                 ];
@@ -143,7 +151,7 @@ class Dashboard extends BaseController
         
         // Stok Kategori (Konversi ke Total Kg)
         $rawKategoriStok = $db->table('batch')
-            ->select('kategori.nama_kategori as label, batch.stok_saat_ini, batch.berat_per_satuan, batch.satuan_berat')
+            ->select('kategori.nama_kategori as label, batch.stok_saat_ini, batch.berat_per_satuan, batch.satuan_berat, batch.bisa_dipecah')
             ->join('barang', 'barang.id = batch.id_barang')
             ->join('kategori', 'kategori.id = barang.id_kategori')
             ->where('batch.stok_saat_ini >', 0)
@@ -152,13 +160,18 @@ class Dashboard extends BaseController
         $kategoriBerat = [];
         foreach ($rawKategoriStok as $row) {
             $label = $row['label'];
-            $stok = (int)$row['stok_saat_ini'];
+            $stok = (float)$row['stok_saat_ini'];
             $beratPerSatuan = (float)$row['berat_per_satuan'];
             $satuanBerat = strtolower($row['satuan_berat']);
+            $bisaDipecah = (int)$row['bisa_dipecah'];
 
-            $beratKg = $stok * $beratPerSatuan;
-            if ($satuanBerat === 'gram') {
-                $beratKg = $beratKg / 1000;
+            if ($bisaDipecah === 1) {
+                $beratKg = $stok; // Stok sudah dalam Kg
+            } else {
+                $beratKg = $stok * $beratPerSatuan;
+                if ($satuanBerat === 'gram') {
+                    $beratKg = $beratKg / 1000;
+                }
             }
 
             if (!isset($kategoriBerat[$label])) {

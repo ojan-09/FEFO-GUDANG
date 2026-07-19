@@ -2,199 +2,494 @@
 
 <?= $this->section('content') ?>
 
+<?php
+    helper('format');
+    $totalBatchAktif = count($stokGudang);
+?>
+
 <style>
-    /* --- compact sizing pass for this page (sizes only, no colors changed) --- */
-    .topbar {
-        padding: 12px 18px;
-    }
-    .topbar .page-title {
-        font-size: 1.15rem;
-    }
-    .topbar .subtle {
-        font-size: 0.8rem;
+    :root {
+        --wh-bg: #F8FAFC;
+        --wh-card: #FFFFFF;
+        --wh-border: #E5E7EB;
+        --wh-primary: #2563EB;
+        --wh-primary-soft: #EFF6FF;
+        --wh-success: #22C55E;
+        --wh-success-soft: #ECFDF3;
+        --wh-warning: #F59E0B;
+        --wh-warning-soft: #FFFBEB;
+        --wh-danger: #EF4444;
+        --wh-danger-soft: #FEF2F2;
+        --wh-dark-soft: #F3F4F6;
+        --wh-dark: #374151;
+        --wh-text: #111827;
+        --wh-text-soft: #6B7280;
     }
 
-    .panel-card {
-        padding: 14px 16px;
+    .wh-page {
+        margin: -24px;
+        padding: 20px 24px 40px 24px;
+        font-size: 13px;
+        overflow-x: hidden;
     }
 
-    /* filter form */
-    .panel-card form .form-label {
-        font-size: 0.78rem;
-        margin-bottom: 0.25rem;
+    /* ---------- Header ---------- */
+    .wh-header {
+        background: var(--wh-card);
+        border: 1px solid var(--wh-border);
+        border-radius: 14px;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 10px;
     }
-    .panel-card form .form-control,
-    .panel-card form .form-select {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.65rem;
-        height: 36px;
+    .wh-header h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--wh-text);
+        margin: 0 0 2px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
-    .panel-card form .btn {
+    .wh-header h1 i { color: var(--wh-primary); }
+    .wh-header p {
+        margin: 0;
         font-size: 0.82rem;
-        padding: 0.4rem 0.9rem;
-        height: 36px;
+        color: var(--wh-text-soft);
+    }
+    .wh-header .wh-updated {
+        text-align: right;
+    }
+    .wh-header .wh-updated .lbl {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--wh-text-soft);
+        font-weight: 700;
+    }
+    .wh-header .wh-updated .val {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--wh-text);
+        line-height: 1.4;
     }
 
-    /* table */
-    #tabelStokGudang thead th {
-        font-size: 0.72rem;
-        padding: 0.55rem 0.6rem;
+    /* ---------- Filter Panel ---------- */
+    .wh-filter-card {
+        background: var(--wh-card);
+        border: 1px solid var(--wh-border);
+        border-radius: 14px;
+        padding: 16px 20px;
+        margin-bottom: 10px;
     }
-    #tabelStokGudang tbody td {
-        font-size: 0.8rem;
-        padding: 0.45rem 0.6rem;
-        vertical-align: middle;
+    .wh-filter-card .form-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--wh-text);
+        margin-bottom: 5px;
     }
-    #tabelStokGudang .badge {
-        font-size: 0.68rem;
-        padding: 0.32em 0.6em;
-        font-weight: 500;
+    .wh-filter-card .form-control,
+    .wh-filter-card .form-select {
+        height: 38px;
+        border-radius: 8px;
+        border: 1px solid var(--wh-border);
+        font-size: 0.82rem;
+        padding: 0 0.7rem;
     }
-    #tabelStokGudang .btn-sm {
-        width: 28px;
-        height: 28px;
-        padding: 0;
+    .wh-filter-card .form-control:focus,
+    .wh-filter-card .form-select:focus {
+        border-color: var(--wh-primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .wh-btn-primary {
+        background: var(--wh-primary);
+        border: 1px solid var(--wh-primary);
+        color: #fff;
+        height: 38px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0 18px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.72rem;
+        gap: 6px;
+        transition: background 120ms ease;
+        white-space: nowrap;
+    }
+    .wh-btn-primary:hover { background: #1D4ED8; color: #fff; }
+    .wh-btn-outline {
+        background: #fff;
+        border: 1px solid var(--wh-border);
+        color: var(--wh-text);
+        height: 38px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background 120ms ease;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+    .wh-btn-outline:hover { background: var(--wh-dark-soft); color: var(--wh-text); }
+
+    /* ---------- Table Card ---------- */
+    .wh-table-card {
+        background: var(--wh-card);
+        border: 1px solid var(--wh-border);
+        border-radius: 14px;
+        padding: 14px 16px;
+        overflow: hidden;
     }
 
+    /* DataTables controls */
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter,
     .dataTables_wrapper .dataTables_info,
     .dataTables_wrapper .dataTables_paginate {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
+        color: var(--wh-text-soft);
+    }
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        color: var(--wh-text);
     }
     .dataTables_wrapper .dataTables_filter input {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.82rem;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid var(--wh-border);
+        padding: 0 8px;
+        font-size: 0.8rem;
+        outline: none;
+    }
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--wh-primary);
+        box-shadow: 0 0 0 2px rgba(37,99,235,.1);
     }
     .dataTables_wrapper .dataTables_length select {
-        font-size: 0.82rem;
-        padding: 0.25rem 1.75rem 0.25rem 0.5rem;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid var(--wh-border);
+        font-size: 0.8rem;
+        padding: 0 24px 0 8px;
+        appearance: auto;
+        outline: none;
+    }
+    .dataTables_wrapper .dataTables_info {
+        padding-top: 10px;
+        font-size: 0.78rem;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        padding-top: 6px;
     }
     .dataTables_wrapper .dataTables_paginate .paginate_button {
-        padding: 0.3rem 0.65rem;
+        height: 32px;
+        min-width: 32px;
+        border-radius: 8px !important;
+        padding: 0 10px !important;
+        font-size: 0.78rem !important;
+        border: 1px solid var(--wh-border) !important;
+        background: #fff !important;
+        color: var(--wh-text) !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 2px;
+        box-sizing: border-box;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: var(--wh-primary) !important;
+        border-color: var(--wh-primary) !important;
+        color: #fff !important;
+        font-weight: 600;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
+        background: var(--wh-dark-soft) !important;
+        color: var(--wh-text) !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+        opacity: .4;
+        cursor: not-allowed;
+    }
+
+    /* ---------- Table ---------- */
+    #tabelStokGudang {
+        width: 100% !important;
+        border-collapse: collapse;
         font-size: 0.8rem;
+    }
+    #tabelStokGudang thead th {
+        background: #f8fafc;
+        color: var(--wh-text-soft);
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 10px 12px;
+        border-top: 1px solid var(--wh-border);
+        border-bottom: 2px solid var(--wh-border);
+        border-left: none;
+        border-right: none;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    #tabelStokGudang tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 100ms;
+    }
+    #tabelStokGudang tbody tr:hover { background: #f8fafc; }
+    #tabelStokGudang tbody td {
+        padding: 10px 12px;
+        vertical-align: middle;
+        color: var(--wh-text);
+        border: none;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    /* ---------- Status badges ---------- */
+    .wh-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 999px;
+        padding: 4px 10px 4px 8px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .wh-badge i { font-size: 0.6rem; }
+    .wh-badge.aman    { background: var(--wh-success-soft); color: #15803D; }
+    .wh-badge.hampir  { background: var(--wh-warning-soft); color: #B45309; }
+    .wh-badge.expired { background: var(--wh-danger-soft);    color: var(--wh-danger); }
+    .wh-badge.default { background: var(--wh-dark-soft);    color: var(--wh-text-soft); }
+
+    /* ---------- Expired indicator ---------- */
+    .wh-expired-ok   { color: var(--wh-text); font-weight: 500; }
+    .wh-expired-soon { color: #B45309; font-weight: 600; }
+    .wh-expired-over { color: var(--wh-danger); font-weight: 700; }
+    .wh-expired-date { display: block; font-size: 0.68rem; color: var(--wh-text-soft); margin-top: 1px; }
+
+    /* ---------- Stock ---------- */
+    .wh-stock-wrap { min-width: 110px; }
+    .wh-stock-value { font-weight: 700; font-size: 0.8rem; color: var(--wh-text); }
+    .wh-progress {
+        width: 100%;
+        height: 5px;
+        border-radius: 999px;
+        background: var(--wh-dark-soft);
+        overflow: hidden;
+        margin-top: 4px;
+    }
+    .wh-progress > span { display: block; height: 100%; border-radius: 999px; }
+    .wh-progress.green > span { background: var(--wh-success); }
+    .wh-progress.amber > span { background: var(--wh-warning); }
+    .wh-progress.red   > span { background: var(--wh-danger); }
+
+    /* ---------- Action button ---------- */
+    .wh-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--wh-border);
+        background: #fff;
+        color: var(--wh-text-soft);
+        font-size: 0.75rem;
+        transition: background 120ms ease, color 120ms ease;
+        text-decoration: none;
+    }
+    .wh-action-btn:hover {
+        background: var(--wh-dark-soft);
+        color: var(--wh-primary);
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 768px) {
+        .wh-page { padding: 12px; }
+        .wh-header { padding: 14px 16px; }
+        .wh-header h1 { font-size: 1rem; }
+        .wh-header .wh-updated { text-align: left; }
     }
 </style>
 
-<!-- Topbar -->
-<div class="topbar d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title"><i class="fa-solid fa-warehouse me-2"></i><?= esc($title) ?></h1>
-        <span class="subtle">Pantau kondisi agregat stok barang dan kadaluwarsa secara terpusat</span>
-    </div>
-</div>
+<div class="wh-page">
 
-<!-- Filter Box -->
-<div class="panel-card mb-4" style="background-color: #f8f9fa;">
-    <form action="" method="GET" class="row align-items-end g-3">
-        <div class="col-md-3">
-            <label for="filterSearch" class="form-label fw-bold">Nama Barang</label>
-            <input type="text" id="filterSearch" name="search" class="form-control" placeholder="Cari barang..." value="<?= esc($filters['search']) ?>">
+    <!-- Header -->
+    <div class="wh-header">
+        <div>
+            <h1><i class="fa-solid fa-box"></i><?= esc($title) ?></h1>
+            <p><?= isset($subtitle) ? esc($subtitle) : 'Monitoring seluruh persediaan barang yang tersedia di gudang.' ?></p>
         </div>
-        <div class="col-md-3">
-            <label for="filterDonatur" class="form-label fw-bold">Donatur / Asal Barang</label>
-            <input type="text" id="filterDonatur" name="donatur" class="form-control" placeholder="Cari donatur..." value="<?= esc($filters['donatur']) ?>">
+        <div class="wh-updated">
+            <div class="lbl">Update Terakhir</div>
+            <div class="val"><?= date('d F Y') ?><br><?= date('H:i') ?> WIB</div>
         </div>
-        <div class="col-md-2">
-            <label for="filterKategori" class="form-label fw-bold">Kategori</label>
-            <select id="filterKategori" name="kategori" class="form-select">
-                <option value="">-- Semua --</option>
-                <?php foreach($kategori as $k): ?>
-                    <option value="<?= esc($k['nama_kategori']) ?>" <?= ($filters['kategori'] == $k['nama_kategori']) ? 'selected' : '' ?>><?= esc($k['nama_kategori']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label for="filterStatus" class="form-label fw-bold">Status</label>
-            <select id="filterStatus" name="status" class="form-select">
-                <option value="">-- Semua --</option>
-                <option value="Aman" <?= ($filters['status'] == 'Aman') ? 'selected' : '' ?>>Aman</option>
-                <option value="Hampir Expired" <?= ($filters['status'] == 'Hampir Expired') ? 'selected' : '' ?>>Hampir Expired</option>
-                <option value="Expired" <?= ($filters['status'] == 'Expired') ? 'selected' : '' ?>>Expired</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100 mb-1"><i class="fa-solid fa-filter me-1"></i> Filter</button>
-            <?php if(!empty($filters['kategori']) || !empty($filters['status']) || !empty($filters['search']) || !empty($filters['donatur'])): ?>
-                <a href="<?= site_url('transaksi/stok-gudang') ?>" class="btn btn-outline-secondary w-100">Reset</a>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="wh-filter-card">
+        <form action="" method="GET" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label for="filterSearch" class="form-label">Nama Barang</label>
+                <input type="text" id="filterSearch" name="search" class="form-control" placeholder="Cari barang..." value="<?= esc($filters['search']) ?>">
+            </div>
+            <div class="col-md-3">
+                <label for="filterDonatur" class="form-label">Donatur / Asal Barang</label>
+                <input type="text" id="filterDonatur" name="donatur" class="form-control" placeholder="Cari donatur..." value="<?= esc($filters['donatur']) ?>">
+            </div>
+            <div class="col-md-2">
+                <label for="filterKategori" class="form-label">Kategori</label>
+                <select id="filterKategori" name="kategori" class="form-select">
+                    <option value="">-- Semua --</option>
+                    <?php foreach ($kategori as $k): ?>
+                        <option value="<?= esc($k['nama_kategori']) ?>" <?= ($filters['kategori'] == $k['nama_kategori']) ? 'selected' : '' ?>><?= esc($k['nama_kategori']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filterStatus" class="form-label">Status</label>
+                <select id="filterStatus" name="status" class="form-select">
+                    <option value="">-- Semua --</option>
+                    <option value="Aman"          <?= ($filters['status'] == 'Aman')           ? 'selected' : '' ?>>Aman</option>
+                    <option value="Hampir Expired" <?= ($filters['status'] == 'Hampir Expired') ? 'selected' : '' ?>>Hampir Expired</option>
+                    <option value="Expired"        <?= ($filters['status'] == 'Expired')        ? 'selected' : '' ?>>Expired</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="wh-btn-primary flex-fill"><i class="fa-solid fa-filter"></i> Terapkan</button>
+                    <?php if (!empty($filters['kategori']) || !empty($filters['status']) || !empty($filters['search']) || !empty($filters['donatur'])): ?>
+                        <a href="<?= site_url('transaksi/stok-gudang') ?>" class="wh-btn-outline">Reset</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Card -->
+    <div class="wh-table-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tabelStokGudang">
+                <thead>
+                    <tr>
+                        <th width="30" class="text-center">No</th>
+                        <th class="text-center">Status</th>
+                        <th style="min-width:140px;">Donatur / Asal Barang</th>
+                        <th>Kategori</th>
+                        <th class="text-center">Kedaluwarsa</th>
+                        <th style="min-width:140px;">Nama Barang</th>
+                        <th class="text-center">Kemasan</th>
+                        <th class="text-end">Berat / Kemasan</th>
+                        <th class="text-center">Kemasan Awal</th>
+                        <th style="min-width:120px;">Stok &amp; Berat</th>
+                        <th>Catatan</th>
+                        <th class="text-center" width="50">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $no = 1; foreach ($stokGudang as $stok) : ?>
+                        <?php
+                            $bisaDipecah    = (int) $stok['bisa_dipecah'];
+                            $beratPerSatuan = (float) $stok['berat_per_satuan'];
+
+                            if ($bisaDipecah === 1) {
+                                $totalBerat  = (float) $stok['stok_saat_ini'];
+                                $kemasanAwal = !empty($stok['jumlah_ctn']) ? number_format($stok['jumlah_ctn'], 0, ',', '.') : '-';
+                                $stokSaatIni = number_format($stok['stok_saat_ini'], 2, ',', '.');
+                                $satuanStok  = 'Kg';
+                            } else {
+                                $beratKg = $stok['stok_saat_ini'] * $beratPerSatuan;
+                                if (strtolower($stok['satuan_berat']) === 'gram') $beratKg /= 1000;
+                                $totalBerat  = $beratKg;
+                                $kemasanAwal = !empty($stok['jumlah_ctn']) ? number_format($stok['jumlah_ctn'], 0, ',', '.') : '-';
+                                $stokSaatIni = number_format($stok['stok_saat_ini'], 0, ',', '.');
+                                $satuanStok  = esc($stok['satuan']);
+                            }
+
+                            $pctStok  = null;
+                            $pctClass = 'green';
+                            if (!empty($stok['jumlah_ctn']) && $beratPerSatuan > 0) {
+                                $beratAwalKg = $stok['jumlah_ctn'] * $beratPerSatuan;
+                                if (strtolower($stok['satuan_berat']) === 'gram') $beratAwalKg /= 1000;
+                                if ($beratAwalKg > 0) {
+                                    $pctStok = max(0, min(100, ($totalBerat / $beratAwalKg) * 100));
+                                    if ($pctStok < 30) $pctClass = 'red';
+                                    elseif ($pctStok < 70) $pctClass = 'amber';
+                                }
+                            }
+
+                            $expiredHtml = '-';
+                            if ($stok['tanggal_kedaluwarsa']) {
+                                $tglFormatted = date('d M Y', strtotime($stok['tanggal_kedaluwarsa']));
+                                $diffDays     = floor((strtotime($stok['tanggal_kedaluwarsa']) - strtotime(date('Y-m-d'))) / 86400);
+                                if ($diffDays < 0)      $expiredHtml = '<span class="wh-expired-over">Expired</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
+                                elseif ($diffDays === 0) $expiredHtml = '<span class="wh-expired-soon">Hari Ini</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
+                                elseif ($diffDays === 1) $expiredHtml = '<span class="wh-expired-soon">Besok</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
+                                elseif ($diffDays <= 7)  $expiredHtml = '<span class="wh-expired-soon">' . $diffDays . ' Hari Lagi</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
+                                else                     $expiredHtml = '<span class="wh-expired-ok">' . $tglFormatted . '</span>';
+                            }
+
+                            $badgeClass = 'default'; $badgeIcon = 'fa-circle';
+                            if ($stok['status'] == 'Aman')           { $badgeClass = 'aman';   $badgeIcon = 'fa-circle-check'; }
+                            elseif ($stok['status'] == 'Hampir Expired') { $badgeClass = 'hampir'; $badgeIcon = 'fa-triangle-exclamation'; }
+                            elseif ($stok['status'] == 'Expired')    { $badgeClass = 'expired'; $badgeIcon = 'fa-ban'; }
+                        ?>
+                        <tr>
+                            <td class="text-center text-secondary"><?= $no++ ?></td>
+                            <td class="text-center">
+                                <span class="wh-badge <?= $badgeClass ?>"><i class="fa-solid <?= $badgeIcon ?>"></i><?= esc($stok['status']) ?></span>
+                            </td>
+                            <td><?= esc($stok['donatur'] ?? '-') ?></td>
+                            <td><?= esc($stok['kategori']) ?></td>
+                            <td class="text-center"><?= $expiredHtml ?></td>
+                            <td><strong><?= esc($stok['nama_barang']) ?></strong></td>
+                            <td class="text-center"><?= esc($stok['satuan']) ?></td>
+                            <td class="text-end"><?= $beratPerSatuan > 0 ? number_format($beratPerSatuan, 2, ',', '.') . ' ' . esc($stok['satuan_berat']) : '-' ?></td>
+                            <td class="text-center"><?= $kemasanAwal ?></td>
+                            <td>
+                                <div class="wh-stock-wrap">
+                                    <div class="wh-stock-value"><?= $stokSaatIni ?> <?= $satuanStok ?></div>
+                                    <div style="font-size:0.7rem;color:var(--wh-text-soft);"><?= $totalBerat > 0 ? format_berat($totalBerat, 'Kg') : '-' ?></div>
+                                    <?php if ($pctStok !== null): ?>
+                                        <div class="wh-progress <?= $pctClass ?>"><span style="width:<?= round($pctStok) ?>%;"></span></div>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <td class="text-muted"><small><?= esc($stok['catatan'] ?? '-') ?></small></td>
+                            <td class="text-center">
+                                <a href="<?= site_url('transaksi/stok-gudang/detail/' . $stok['id_barang']) ?>" class="wh-action-btn" title="Detail">
+                                    <i class="fa-solid fa-list"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <?php if (empty($stokGudang)): ?>
+                <div style="text-align:center;padding:60px 20px;">
+                    <i class="fa-solid fa-box-open" style="font-size:2.5rem;color:var(--wh-border);"></i>
+                    <p style="margin-top:14px;color:var(--wh-text);font-weight:600;">Belum ada stok tersedia.</p>
+                    <p style="color:var(--wh-text-soft);font-size:0.82rem;">Tambahkan barang untuk mulai mengelola inventaris gudang.</p>
+                </div>
             <?php endif; ?>
         </div>
-    </form>
-</div>
-
-<!-- Table -->
-<div class="panel-card">
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover table-striped table-sm align-middle mb-0" id="tabelStokGudang" style="font-size: 10.5pt;">
-            <thead class="table-light">
-                <tr>
-                    <th width="30" class="text-center">No</th>
-                    <th class="text-center text-nowrap">Status</th>
-                    <th class="text-nowrap" style="min-width: 150px;">Donatur / Asal Barang</th>
-                    <th class="text-nowrap">Kategori</th>
-                    <th class="text-center text-nowrap">Tanggal Kedaluwarsa</th>
-                    <th class="text-nowrap" style="min-width: 150px;">Nama Barang</th>
-                    <th class="text-center text-nowrap">Jumlah Stok</th>
-                    <th class="text-center text-nowrap">Satuan</th>
-                    <th class="text-end text-nowrap">Berat per Satuan</th>
-                    <th class="text-end text-nowrap">Total Berat</th>
-                    <th class="text-center text-nowrap">Jumlah CTN</th>
-                    <th class="text-nowrap" style="min-width: 150px;">Catatan</th>
-                    <th class="text-center text-nowrap" width="50">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php helper('format'); ?>
-                <?php $no = 1; foreach ($stokGudang as $stok) : ?>
-                    <?php 
-                        $beratPerSatuan = (float) $stok['berat_per_satuan'];
-                        $totalBerat = $stok['stok_saat_ini'] * $beratPerSatuan;
-                    ?>
-                    <tr>
-                        <td class="text-center"><?= $no++ ?></td>
-                        <td class="text-center text-nowrap">
-                            <?php 
-                                $badgeClass = 'bg-secondary';
-                                if ($stok['status'] == 'Aman') $badgeClass = 'bg-success';
-                                elseif ($stok['status'] == 'Hampir Expired') $badgeClass = 'bg-warning text-dark';
-                                elseif ($stok['status'] == 'Expired') $badgeClass = 'bg-danger';
-                            ?>
-                            <span class="badge <?= $badgeClass ?> px-2 py-1"><?= esc($stok['status']) ?></span>
-                        </td>
-                        <td class="text-nowrap"><?= esc($stok['donatur'] ?? '-') ?></td>
-                        <td class="text-nowrap"><?= esc($stok['kategori']) ?></td>
-                        <td class="text-center text-nowrap fw-medium">
-                            <?php if ($stok['tanggal_kedaluwarsa']): ?>
-                                <?= date('d/m/Y', strtotime($stok['tanggal_kedaluwarsa'])) ?>
-                            <?php else: ?>
-                                -
-                            <?php endif; ?>
-                        </td>
-                        <td class="text-nowrap"><?= esc($stok['nama_barang']) ?></td>
-                        <td class="text-center text-nowrap fw-bold"><?= number_format($stok['stok_saat_ini'], 0, ',', '.') ?></td>
-                        <td class="text-center text-nowrap"><?= esc($stok['satuan']) ?></td>
-                        <td class="text-end text-nowrap">
-                            <?= $beratPerSatuan > 0 ? $beratPerSatuan . ' ' . esc($stok['satuan_berat']) : '-' ?>
-                        </td>
-                        <td class="text-end text-nowrap fw-medium">
-                            <?= $totalBerat > 0 ? (floor($totalBerat) == $totalBerat ? number_format($totalBerat, 0, ',', '.') : number_format($totalBerat, 2, ',', '.')) . ' ' . esc($stok['satuan_berat']) : '-' ?>
-                        </td>
-                        <td class="text-center text-nowrap"><?= !empty($stok['jumlah_ctn']) ? $stok['jumlah_ctn'] : '-' ?></td>
-                        <td class="text-nowrap text-muted"><small><?= esc($stok['catatan'] ?? '-') ?></small></td>
-                        <td class="text-center">
-                            <a href="<?= site_url('transaksi/stok-gudang/detail/' . $stok['id_barang']) ?>" class="btn btn-sm btn-outline-primary" title="Detail">
-                                <i class="fa-solid fa-list"></i>
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
     </div>
+
 </div>
 
 <?= $this->endSection() ?>
@@ -202,16 +497,11 @@
 <?= $this->section('scripts') ?>
 <script>
     $(document).ready(function() {
-        // Karena data disorting dari backend, kita nonaktifkan initial sort di DataTables
-        // agar tidak membatalkan urutan tanggal_kedaluwarsa ASC dari controller.
         $('#tabelStokGudang').DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
-            },
-            "order": [], // Biarkan sorting default dari DOM (backend)
-            "columnDefs": [
-                { "orderable": false, "targets": [12] } // Disable sorting on Action column (index 12)
-            ]
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+            order: [],
+            columnDefs: [{ orderable: false, targets: [11] }],
+            dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
         });
     });
 </script>

@@ -34,6 +34,7 @@
                     <th>Satuan</th>
                     <th>Berat/Satuan</th>
                     <th>Min. Stok</th>
+                    <th>Bisa Dipecah</th>
                     <th width="140" class="text-center">Aksi</th>
                 </tr>
             </thead>
@@ -47,6 +48,13 @@
                             <td><?= esc($b['satuan']) ?></td>
                             <td><?= esc($b['berat_per_satuan']) ?> <?= esc($b['satuan_berat']) ?></td>
                             <td><?= esc($b['minimum_stok']) ?></td>
+                            <td>
+                                <?php if ($b['bisa_dipecah'] == 1) : ?>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">Repack</span>
+                                <?php else : ?>
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2">Utuh</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-center">
                                 <a href="<?= site_url('masterdata/barang/edit/' . $b['id']) ?>" class="btn btn-sm btn-outline-primary rounded-pill me-1" title="Edit">
                                     <i class="fa-solid fa-pen-to-square"></i>

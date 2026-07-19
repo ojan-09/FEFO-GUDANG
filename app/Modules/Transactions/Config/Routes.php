@@ -13,6 +13,14 @@ $routes->group('transaksi', ['namespace' => 'App\Modules\Transactions\Controller
     $routes->post('barang-masuk/update/(:num)', 'BarangMasuk::update/$1');
     $routes->get('barang-masuk/delete/(:num)', 'BarangMasuk::delete/$1');
 
+    // === Penyesuaian Stok ===
+    $routes->get('penyesuaian', 'PenyesuaianStok::index');
+    $routes->get('penyesuaian/create', 'PenyesuaianStok::create');
+    $routes->post('penyesuaian/store', 'PenyesuaianStok::store');
+    $routes->get('penyesuaian/detail/(:num)', 'PenyesuaianStok::detail/$1');
+    $routes->get('penyesuaian/delete/(:num)', 'PenyesuaianStok::delete/$1');
+    $routes->get('penyesuaian/getBatches/(:num)', 'PenyesuaianStok::getBatches/$1');
+
     // === Barang Keluar ===
     $routes->get('barang-keluar', 'BarangKeluar::index');
     $routes->get('barang-keluar/create', 'BarangKeluar::create');

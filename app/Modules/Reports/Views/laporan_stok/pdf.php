@@ -74,8 +74,17 @@
                 <?php foreach ($laporan as $stok): ?>
                     <?php
                         $beratPerSatuan  = (float) $stok['berat_per_satuan'];
-                        $totalBeratRow  = $stok['stok_saat_ini'] * $beratPerSatuan;
-                        $totalKg    = $totalBeratRow / 1000;
+                        $bisaDipecah    = (int) ($stok['bisa_dipecah'] ?? 0);
+                        $beratPerSatuan = (float) $stok['berat_per_satuan'];
+                        if ($bisaDipecah === 1) {
+                            $totalBeratRow = (float) $stok['stok_saat_ini'];
+                            if (strtolower($stok['satuan_berat']) === 'gram') {
+                                $totalBeratRow *= 1000;
+                            }
+                        } else {
+                            $totalBeratRow  = $stok['stok_saat_ini'] * $beratPerSatuan;
+                        }
+                        $totalKg    = (strtolower($stok['satuan_berat']) === 'gram') ? $totalBeratRow / 1000 : $totalBeratRow;
                         $totalStok += $stok['stok_saat_ini'];
                         $totalBeratSeluruh += $totalKg;
 

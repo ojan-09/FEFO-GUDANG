@@ -28,6 +28,7 @@ class LaporanDonasi extends BaseController
             COALESCE(batch.satuan, barang.satuan) as satuan,
             COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
             COALESCE(batch.satuan_berat, barang.satuan_berat) as satuan_berat,
+            barang.bisa_dipecah,
             barang_masuk.nomor_transaksi,
             barang_masuk.tanggal_masuk,
             barang_masuk.keterangan,
@@ -67,7 +68,10 @@ class LaporanDonasi extends BaseController
             $builder->like('donatur.nama_donatur', $donaturFilter);
         }
         if (!empty($searchFilter)) {
-            $builder->like('barang.nama_barang', $searchFilter);
+            $builder->groupStart()
+                ->like('batch.nama_barang', $searchFilter)
+                ->orLike('barang.nama_barang', $searchFilter)
+                ->groupEnd();
         }
         if (!empty($kategoriFilter)) {
             $builder->where('batch.kategori', $kategoriFilter);
@@ -92,9 +96,14 @@ class LaporanDonasi extends BaseController
                 $totalTransaksi++;
             }
             $totalBarang += $row['jumlah'];
+            $bisaDipecah = (int) ($row['bisa_dipecah'] ?? 0);
             $beratPerSatuan = (float) $row['berat_per_satuan'];
-            $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
-            $weightInKg = (strtolower($row['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+            if ($bisaDipecah === 1) {
+                $weightInKg = (float) $row['jumlah'];
+            } else {
+                $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
+                $weightInKg = (strtolower($row['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+            }
             $totalBerat += $weightInKg;
         }
 
@@ -246,8 +255,16 @@ class LaporanDonasi extends BaseController
         $no = 1;
         
         foreach ($laporan as $item) {
+            $bisaDipecah = (int) ($item['bisa_dipecah'] ?? 0);
             $beratPerSatuan = (float) $item['berat_per_satuan'];
-            $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+            if ($bisaDipecah === 1) {
+                $totalBeratRow = (float) $item['jumlah'];
+                if (strtolower($item['satuan_berat']) === 'gram') {
+                    $totalBeratRow *= 1000;
+                }
+            } else {
+                $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+            }
 
             $sheet->setCellValue('A' . $row, $no++);
             $sheet->setCellValue('B' . $row, date('d-M-Y', strtotime($item['tanggal_masuk'])));

@@ -222,6 +222,30 @@
             }
         }
     $css
+        /* Global fix for DataTables Bootstrap 5 pagination */
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 0 !important;
+            border: none !important;
+            background: transparent !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button .page-link {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none !important;
+            background: transparent !important;
+            color: inherit !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border-radius: inherit !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+            background: transparent !important;
+            color: inherit !important;
+            border-color: transparent !important;
+        }
     </style>
     <?= $this->renderSection('styles') ?>
 </head>
@@ -262,7 +286,7 @@
     <script>
         $(document).ready(function() {
             // Remove native confirm and convert to SweetAlert
-            $('a[onclick^="return confirm"]').each(function() {
+            $('a[onclick^="return confirm"], button[onclick^="return confirm"]').each(function() {
                 var onclickStr = $(this).attr('onclick');
                 var confirmText = onclickStr.match(/confirm\(['"]([^'"]+)['"]\)/)[1];
                 
@@ -277,8 +301,9 @@
             // Global interceptor for SweetAlert buttons
             $(document).on('click', '.btn-delete-swal', function(e) {
                 e.preventDefault();
-                var link = $(this).attr('href');
-                var confirmText = $(this).attr('data-confirm-text');
+                var $btn = $(this);
+                var link = $btn.attr('href');
+                var confirmText = $btn.attr('data-confirm-text');
                 
                 Swal.fire({
                     title: 'Konfirmasi',
@@ -295,7 +320,11 @@
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = link;
+                        if ($btn.is('button') && $btn.closest('form').length > 0) {
+                            $btn.closest('form').submit();
+                        } else if (link) {
+                            window.location.href = link;
+                        }
                     }
                 });
             });
@@ -305,6 +334,3 @@
 </body>
 
 </html>
-
-
-

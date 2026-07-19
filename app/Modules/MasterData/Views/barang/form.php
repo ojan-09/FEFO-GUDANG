@@ -135,6 +135,27 @@
                     <?php endif; ?>
                     <div class="form-text">Bilangan bulat non-negatif. Sistem menandai barang jika stok di bawah angka ini.</div>
                 </div>
+
+                <!-- Bisa Dipecah (Repack) -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Bisa Dipecah (Repack) <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="bisa_dipecah" id="bisa_dipecah_ya" value="1" 
+                                <?= old('bisa_dipecah', $isEdit ? $barang['bisa_dipecah'] : '') == '1' ? 'checked' : '' ?> required>
+                            <label class="form-check-label" for="bisa_dipecah_ya">Ya (Repack ke Kg)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="bisa_dipecah" id="bisa_dipecah_tidak" value="0" 
+                                <?= old('bisa_dipecah', $isEdit ? $barang['bisa_dipecah'] : '0') == '0' ? 'checked' : '' ?> required>
+                            <label class="form-check-label" for="bisa_dipecah_tidak">Tidak (Kemasan Utuh)</label>
+                        </div>
+                    </div>
+                    <?php if (isset($errors['bisa_dipecah'])) : ?>
+                        <div class="text-danger small mt-1"><?= esc($errors['bisa_dipecah']) ?></div>
+                    <?php endif; ?>
+                    <div class="form-text">Menentukan apakah barang ini dapat disalurkan dalam berat desimal (Kg) atau wajib utuh per kemasan.</div>
+                </div>
             </div>
         </div>
 
@@ -169,6 +190,8 @@
         const inputBerat = document.getElementById("berat_per_satuan");
         const selectSatuanBerat = document.getElementById("satuan_berat");
         const previewText = document.getElementById("previewSatuan");
+        const radioBisaDipecahYa = document.getElementById("bisa_dipecah_ya");
+        const radioBisaDipecahTidak = document.getElementById("bisa_dipecah_tidak");
 
         // Function to update preview
         function updatePreview() {
@@ -178,13 +201,30 @@
             previewText.textContent = `1 ${satuan} = ${berat} ${satuanBerat}`;
         }
 
-        // Event listeners for preview
-        selectSatuan.addEventListener("change", updatePreview);
+        // Function to handle Repack (Bisa Dipecah) limitation
+        function syncRepack() {
+            const isKarung = selectSatuan.value === 'Karung';
+            radioBisaDipecahYa.disabled = !isKarung;
+            
+            if (!isKarung) {
+                radioBisaDipecahTidak.checked = true;
+                radioBisaDipecahYa.closest('.form-check').title = 'Repack hanya berlaku untuk kemasan Karung';
+            } else {
+                radioBisaDipecahYa.closest('.form-check').title = '';
+            }
+        }
+
+        // Event listeners for preview and logic
+        selectSatuan.addEventListener("change", () => {
+            updatePreview();
+            syncRepack();
+        });
         inputBerat.addEventListener("input", updatePreview);
         selectSatuanBerat.addEventListener("change", updatePreview);
 
-        // Initial preview run
+        // Initial run
         updatePreview();
+        syncRepack();
 
         // Focus first invalid element automatically for better UX
         const firstInvalid = document.querySelector(".is-invalid");

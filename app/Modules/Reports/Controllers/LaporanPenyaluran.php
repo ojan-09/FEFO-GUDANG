@@ -30,6 +30,7 @@ class LaporanPenyaluran extends BaseController
             COALESCE(batch.satuan, barang.satuan) as satuan,
             COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
             COALESCE(batch.satuan_berat, barang.satuan_berat) as satuan_berat,
+            batch.bisa_dipecah,
             users.username as petugas
         ');
         $builder->join('barang_keluar', 'barang_keluar.id = detail_barang_keluar.id_barang_keluar');
@@ -62,7 +63,10 @@ class LaporanPenyaluran extends BaseController
             $builder->like('barang_keluar.tujuan_penyaluran', $programFilter);
         }
         if (!empty($searchFilter)) {
-            $builder->like('barang.nama_barang', $searchFilter);
+            $builder->groupStart()
+                ->like('batch.nama_barang', $searchFilter)
+                ->orLike('barang.nama_barang', $searchFilter)
+                ->groupEnd();
         }
 
         $builder->orderBy('barang_keluar.tanggal_keluar', 'DESC');
@@ -71,7 +75,8 @@ class LaporanPenyaluran extends BaseController
 
         // Calculate Totals
         $totalPenyaluran = 0;
-        $totalBarang = 0;
+        $totalBarangUtuhPerSatuan = []; // ['Pcs' => 120, 'Dus' => 30, 'Botol' => 50, ...]
+        $totalBarangRepack = 0;
         $totalBerat = 0;
         $transaksiUnik = [];
 
@@ -80,18 +85,29 @@ class LaporanPenyaluran extends BaseController
                 $transaksiUnik[] = $row['nomor_transaksi'];
                 $totalPenyaluran++;
             }
-            $totalBarang += $row['jumlah'];
-            $beratPerSatuan = (float) $row['berat_per_satuan'];
-            $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
-            $weightInKg = (strtolower($row['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
-            $totalBerat += $weightInKg;
+            
+            $bisaDipecah = (int)($row['bisa_dipecah'] ?? 0);
+            if ($bisaDipecah === 1) {
+                $totalBarangRepack += (float)$row['jumlah'];
+                $totalBeratRow = (float)$row['jumlah'];
+            } else {
+                $satuan = $row['satuan'] ?: 'Pcs';
+                $totalBarangUtuhPerSatuan[$satuan] = ($totalBarangUtuhPerSatuan[$satuan] ?? 0) + (float)$row['jumlah'];
+                $beratPerSatuan = (float)$row['berat_per_satuan'];
+                $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
+                if (strtolower($row['satuan_berat']) === 'gram') {
+                    $totalBeratRow = $totalBeratRow / 1000;
+                }
+            }
+            $totalBerat += $totalBeratRow;
         }
 
         return [
             'data' => $data,
             'summary' => [
                 'total_penyaluran' => $totalPenyaluran,
-                'total_barang' => $totalBarang,
+                'total_barang_utuh_per_satuan' => $totalBarangUtuhPerSatuan,
+                'total_barang_repack' => $totalBarangRepack,
                 'total_berat' => $totalBerat
             ],
             'filters' => [
@@ -213,8 +229,20 @@ class LaporanPenyaluran extends BaseController
         $no = 1;
         
         foreach ($laporan as $item) {
+            $bisaDipecah = (int)($item['bisa_dipecah'] ?? 0);
             $beratPerSatuan = (float) $item['berat_per_satuan'];
-            $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+            if ($bisaDipecah === 1) {
+                $totalKg = (float)$item['jumlah'];
+                $satuanStok = 'Kg';
+                $jumlahStok = $item['jumlah'];
+            } else {
+                $totalKg = $item['jumlah'] * $beratPerSatuan;
+                if (strtolower($item['satuan_berat']) === 'gram') {
+                    $totalKg = $totalKg / 1000;
+                }
+                $satuanStok = $item['satuan'];
+                $jumlahStok = $item['jumlah'];
+            }
 
             $sheet->setCellValue('A' . $row, $no++);
             $sheet->setCellValue('B' . $row, date('d-M-Y', strtotime($item['tanggal_keluar'])));
@@ -222,11 +250,15 @@ class LaporanPenyaluran extends BaseController
             $sheet->setCellValue('D' . $row, $item['nama_wilayah'] ?? '-');
             $sheet->setCellValue('E' . $row, $item['program'] ?? '-');
             $sheet->setCellValue('F' . $row, $item['nama_barang']);
-            $sheet->setCellValue('G' . $row, $item['jumlah']);
-            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
-            $sheet->setCellValue('H' . $row, $item['satuan']);
+            $sheet->setCellValue('G' . $row, $jumlahStok);
+            if ($bisaDipecah === 1) {
+                $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            } else {
+                $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            }
+            $sheet->setCellValue('H' . $row, $satuanStok);
             $sheet->setCellValue('I' . $row, $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-');
-            $sheet->setCellValue('J' . $row, $totalBeratRow > 0 ? format_berat($totalBeratRow, $item['satuan_berat']) : '-');
+            $sheet->setCellValue('J' . $row, $totalKg > 0 ? format_berat($totalKg, 'Kg') : '-');
             $sheet->setCellValue('K' . $row, $item['keterangan'] ?? '-');
             $sheet->setCellValue('L' . $row, $item['petugas'] ?? '-');
 
@@ -260,14 +292,21 @@ class LaporanPenyaluran extends BaseController
         $row++;
         
         $sheet->setCellValue("B{$row}", "Total Barang");
-        $sheet->setCellValue("C{$row}", $summary['total_barang']);
+        $parts = [];
+        foreach ($summary['total_barang_utuh_per_satuan'] as $satuan => $jml) {
+            $parts[] = number_format($jml, 0, ',', '.') . ' ' . $satuan;
+        }
+        if ($summary['total_barang_repack'] > 0) {
+            $parts[] = number_format($summary['total_barang_repack'], 2, ',', '.') . ' Kg';
+        }
+        $totalBarangText = !empty($parts) ? implode(' & ', $parts) : '0';
+        $sheet->setCellValue("C{$row}", $totalBarangText);
         $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
         $row++;
         
         $sheet->setCellValue("B{$row}", "Total Berat");
         $sheet->setCellValue("C{$row}", format_berat($summary['total_berat'], 'Kg'));
         $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
-        $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
 
         $writer = new Xlsx($spreadsheet);
         $filename = 'Laporan_Penyaluran_Barang_' . date('Ymd_His') . '.xlsx';

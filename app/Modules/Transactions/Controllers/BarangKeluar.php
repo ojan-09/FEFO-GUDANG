@@ -56,7 +56,6 @@ class BarangKeluar extends BaseController
             }
         }
 
-        // Hitung jumlah item per transaksi
         foreach ($barangKeluar as &$bk) {
             $bk['jumlah_item'] = $detailStats[$bk['id']] ?? 0;
         }
@@ -73,17 +72,59 @@ class BarangKeluar extends BaseController
      */
     public function create()
     {
-        // Ambil daftar barang yang benar-benar memiliki stok di gudang (Batch)
         $db = \Config\Database::connect();
-        $builder = $db->table('batch');
-        $builder->select('barang.id, COALESCE(MAX(batch.nama_barang), barang.nama_barang) as nama_barang, COALESCE(MAX(batch.satuan), barang.satuan) as satuan, COALESCE(MAX(batch.berat_per_satuan), barang.berat_per_satuan) as berat_per_satuan, COALESCE(MAX(batch.satuan_berat), barang.satuan_berat) as satuan_berat, SUM(batch.stok_saat_ini) as stok_tersedia');
-        $builder->join('barang', 'barang.id = batch.id_barang');
-        $builder->where('batch.stok_saat_ini >', 0);
-        $builder->where('batch.status', 'Aktif');
-        $builder->where('batch.tanggal_kedaluwarsa >=', date('Y-m-d'));
-        $builder->groupBy('barang.id');
-        $builder->orderBy('barang.nama_barang', 'ASC');
-        $semuaBarang = $builder->get()->getResultArray();
+        $today = date('Y-m-d');
+        
+        $sql = "
+            SELECT 
+                barang.id,
+                CASE WHEN fefo_batch.bisa_dipecah = 1 
+                    THEN 'Karung' 
+                    ELSE barang.satuan 
+                END as satuan_kemasan,
+                fefo_batch.bisa_dipecah,
+                fefo_batch.tanggal_kedaluwarsa,
+                COALESCE(fefo_batch.nama_barang, barang.nama_barang) as nama_barang,
+                CASE WHEN fefo_batch.bisa_dipecah = 1 
+                    THEN barang.satuan 
+                    ELSE COALESCE(fefo_batch.satuan, barang.satuan) 
+                END as satuan,
+                COALESCE(fefo_batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
+                COALESCE(fefo_batch.satuan_berat, barang.satuan_berat) as satuan_berat,
+                stock_summary.stok_tersedia
+            FROM barang
+            JOIN (
+                SELECT b1.*
+                FROM batch b1
+                JOIN (
+                    SELECT id_barang, MIN(tanggal_kedaluwarsa) as min_exp
+                    FROM batch
+                    WHERE stok_saat_ini > 0
+                      AND status = 'Aktif'
+                      AND tanggal_kedaluwarsa >= ?
+                    GROUP BY id_barang
+                ) b2 ON b1.id_barang = b2.id_barang AND b1.tanggal_kedaluwarsa = b2.min_exp
+                WHERE b1.id = (
+                    SELECT MIN(id) 
+                    FROM batch 
+                    WHERE id_barang = b1.id_barang 
+                      AND tanggal_kedaluwarsa = b1.tanggal_kedaluwarsa 
+                      AND stok_saat_ini > 0 
+                      AND status = 'Aktif'
+                )
+            ) fefo_batch ON fefo_batch.id_barang = barang.id
+            JOIN (
+                SELECT id_barang, SUM(stok_saat_ini) as stok_tersedia
+                FROM batch
+                WHERE stok_saat_ini > 0
+                  AND status = 'Aktif'
+                  AND tanggal_kedaluwarsa >= ?
+                GROUP BY id_barang
+            ) stock_summary ON stock_summary.id_barang = barang.id
+            ORDER BY barang.nama_barang ASC
+        ";
+        
+        $semuaBarang = $db->query($sql, [$today, $today])->getResultArray();
 
         $data = [
             'title'           => 'Tambah Barang Keluar',
@@ -114,48 +155,51 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['items' => 'Minimal harus ada 1 barang.']);
         }
 
-        // ============================================
-        // VALIDASI 0: Cegah Duplikasi Barang
-        // ============================================
         $itemIds = array_column($items, 'id_barang');
         if (count($itemIds) !== count(array_unique($itemIds))) {
             return redirect()->back()->withInput()->with('errors', ['items' => 'Barang yang sama tidak boleh dipilih lebih dari satu kali dalam satu transaksi.']);
         }
 
-        // ============================================
-        // VALIDASI 1: Validasi setiap item satu per satu
-        // ============================================
+        $barangList = $this->barangModel->whereIn('id', $itemIds)->findAll();
+        $barangBisaDipecahMap = [];
+        foreach ($barangList as $b) {
+            $barangBisaDipecahMap[$b['id']] = (int)$b['bisa_dipecah'];
+        }
+
         foreach ($items as $key => $item) {
             if (empty($item['id_barang']) || !is_numeric($item['id_barang'])) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Barang wajib dipilih."]);
             }
-            if (empty($item['jumlah_keluar']) || (int)$item['jumlah_keluar'] <= 0) {
+            if (empty($item['jumlah_keluar']) || (float)$item['jumlah_keluar'] <= 0) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Jumlah keluar harus lebih besar dari 0."]);
+            }
+
+            $idBrg = $item['id_barang'];
+            $bisaDipecah = $barangBisaDipecahMap[$idBrg] ?? 0;
+            $qty = (float)$item['jumlah_keluar'];
+
+            if ($bisaDipecah === 0 && floor($qty) != $qty) {
+                return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Jumlah keluar untuk barang utuh tidak boleh desimal."]);
             }
         }
 
-        // ============================================
-        // VALIDASI 2: Pencegahan barang ganda
-        // Konsolidasi jumlah barang yang sama
-        // ============================================
         $consolidated = [];
         foreach ($items as $item) {
             $idBrg = $item['id_barang'];
             if (isset($consolidated[$idBrg])) {
-                $consolidated[$idBrg]['jumlah_keluar'] += (int)$item['jumlah_keluar'];
+                $consolidated[$idBrg]['jumlah_keluar'] += (float)$item['jumlah_keluar'];
             } else {
                 $consolidated[$idBrg] = [
                     'id_barang'     => $item['id_barang'],
-                    'jumlah_keluar' => (int)$item['jumlah_keluar'],
+                    'jumlah_keluar' => (float)$item['jumlah_keluar'],
                 ];
             }
         }
         $items = array_values($consolidated);
 
-        // Validasi stok setelah konsolidasi (Backend validation)
         $kebutuhan = [];
         foreach ($items as $item) {
-            $kebutuhan[$item['id_barang']] = (int) $item['jumlah_keluar'];
+            $kebutuhan[$item['id_barang']] = (float) $item['jumlah_keluar'];
         }
 
         $kurangStok = $this->fefo->cekKetersediaanBulk($kebutuhan);
@@ -173,7 +217,6 @@ class BarangKeluar extends BaseController
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // 1. Simpan Header Barang Keluar
         $nomorTransaksi = $this->generateNomorTransaksi();
 
         $this->barangKeluarModel->insert([
@@ -187,7 +230,6 @@ class BarangKeluar extends BaseController
 
         $idBarangKeluar = $this->barangKeluarModel->getInsertID();
 
-        // 2. Jalankan Library FEFO (Bulk mode)
         $hasilFEFO = $this->fefo->prosesBarangKeluarBulk($idBarangKeluar, $items);
         if ($hasilFEFO === false) {
             $db->transRollback();
@@ -219,21 +261,61 @@ class BarangKeluar extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
         }
 
-        // Ambil daftar barang yang benar-benar memiliki stok di gudang (Batch)
         $db = \Config\Database::connect();
-        $builder = $db->table('batch');
-        $builder->select('barang.id, COALESCE(MAX(batch.nama_barang), barang.nama_barang) as nama_barang, COALESCE(MAX(batch.satuan), barang.satuan) as satuan, COALESCE(MAX(batch.berat_per_satuan), barang.berat_per_satuan) as berat_per_satuan, COALESCE(MAX(batch.satuan_berat), barang.satuan_berat) as satuan_berat, SUM(batch.stok_saat_ini) as stok_tersedia');
-        $builder->join('barang', 'barang.id = batch.id_barang');
-        $builder->where('batch.stok_saat_ini >', 0);
-        $builder->where('batch.status', 'Aktif');
-        $builder->where('batch.tanggal_kedaluwarsa >=', date('Y-m-d'));
-        $builder->groupBy('barang.id');
-        $builder->orderBy('barang.nama_barang', 'ASC');
-        $semuaBarang = $builder->get()->getResultArray();
+        $today = date('Y-m-d');
+        
+        $sql = "
+            SELECT 
+                barang.id,
+                CASE WHEN fefo_batch.bisa_dipecah = 1 
+                    THEN 'Karung' 
+                    ELSE barang.satuan 
+                END as satuan_kemasan,
+                fefo_batch.bisa_dipecah,
+                fefo_batch.tanggal_kedaluwarsa,
+                COALESCE(fefo_batch.nama_barang, barang.nama_barang) as nama_barang,
+                CASE WHEN fefo_batch.bisa_dipecah = 1 
+                    THEN barang.satuan 
+                    ELSE COALESCE(fefo_batch.satuan, barang.satuan) 
+                END as satuan,
+                COALESCE(fefo_batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
+                COALESCE(fefo_batch.satuan_berat, barang.satuan_berat) as satuan_berat,
+                stock_summary.stok_tersedia
+            FROM barang
+            JOIN (
+                SELECT b1.*
+                FROM batch b1
+                JOIN (
+                    SELECT id_barang, MIN(tanggal_kedaluwarsa) as min_exp
+                    FROM batch
+                    WHERE (stok_saat_ini > 0 OR id IN (SELECT id_batch FROM detail_barang_keluar WHERE id_barang_keluar = ?))
+                      AND status = 'Aktif'
+                      AND tanggal_kedaluwarsa >= ?
+                    GROUP BY id_barang
+                ) b2 ON b1.id_barang = b2.id_barang AND b1.tanggal_kedaluwarsa = b2.min_exp
+                WHERE b1.id = (
+                    SELECT MIN(id) 
+                    FROM batch 
+                    WHERE id_barang = b1.id_barang 
+                      AND tanggal_kedaluwarsa = b1.tanggal_kedaluwarsa 
+                      AND (stok_saat_ini > 0 OR id IN (SELECT id_batch FROM detail_barang_keluar WHERE id_barang_keluar = ?))
+                      AND status = 'Aktif'
+                )
+            ) fefo_batch ON fefo_batch.id_barang = barang.id
+            JOIN (
+                SELECT id_barang, SUM(stok_saat_ini) as stok_tersedia
+                FROM batch
+                WHERE (stok_saat_ini > 0 OR id IN (SELECT id_batch FROM detail_barang_keluar WHERE id_barang_keluar = ?))
+                  AND status = 'Aktif'
+                  AND tanggal_kedaluwarsa >= ?
+                GROUP BY id_barang
+            ) stock_summary ON stock_summary.id_barang = barang.id
+            ORDER BY barang.nama_barang ASC
+        ";
+        
+        $semuaBarang = $db->query($sql, [$id, $today, $id, $id, $today])->getResultArray();
 
-        // Ambil items lama
         $details = $this->detailModel->where('id_barang_keluar', $id)->findAll();
-        // Konsolidasi items lama untuk form edit (karena 1 barang bisa jadi >1 detail jika dipotong FEFO ke multi batch)
         $consolidatedDetails = [];
         $addedStok = [];
 
@@ -245,12 +327,13 @@ class BarangKeluar extends BaseController
                     $consolidatedDetails[$idBrg]['jumlah_keluar'] += $d['jumlah_keluar'];
                 } else {
                     $consolidatedDetails[$idBrg] = [
-                        'id_barang' => $idBrg,
+                        'id_barang'     => $idBrg,
                         'jumlah_keluar' => $d['jumlah_keluar'],
-                        'satuan' => $batchInfo['satuan'] ?: 'Pcs',
+                        'satuan'        => $batchInfo['satuan'] ?: 'Pcs',
                         'berat_per_satuan' => $batchInfo['berat_per_satuan'],
-                        'satuan_berat' => $batchInfo['satuan_berat'],
-                        'nama_barang' => $batchInfo['nama_barang']
+                        'satuan_berat'  => $batchInfo['satuan_berat'],
+                        'nama_barang'   => $batchInfo['nama_barang'],
+                        'bisa_dipecah'  => (int)($batchInfo['bisa_dipecah'] ?? 0),
                     ];
                 }
                 
@@ -261,7 +344,6 @@ class BarangKeluar extends BaseController
             }
         }
 
-        // Kembalikan stok sementara ke $semuaBarang agar field form menampilkan stok asli saat transaksi
         $existingBarangIds = [];
         foreach ($semuaBarang as &$b) {
             $existingBarangIds[] = $b['id'];
@@ -270,16 +352,19 @@ class BarangKeluar extends BaseController
             }
         }
 
-        // Jika ada barang yang stok_saat_ini-nya 0 (sehingga tidak masuk di query $semuaBarang), tambahkan secara manual
         foreach ($consolidatedDetails as $idBrg => $det) {
             if (!in_array($idBrg, $existingBarangIds)) {
+                $brgInfo = $this->barangModel->find($idBrg);
+                $bisaDipecah = $brgInfo ? (int)$brgInfo['bisa_dipecah'] : 0;
                 $semuaBarang[] = [
-                    'id' => $idBrg,
-                    'nama_barang' => $det['nama_barang'],
-                    'satuan' => $det['satuan'],
-                    'berat_per_satuan' => $det['berat_per_satuan'],
-                    'satuan_berat' => $det['satuan_berat'],
-                    'stok_tersedia' => $addedStok[$idBrg]
+                    'id'                  => $idBrg,
+                    'bisa_dipecah'        => $bisaDipecah,
+                    'tanggal_kedaluwarsa' => date('Y-m-d'),
+                    'nama_barang'         => $det['nama_barang'],
+                    'satuan'              => $det['satuan'],
+                    'berat_per_satuan'    => $det['berat_per_satuan'],
+                    'satuan_berat'        => $det['satuan_berat'],
+                    'stok_tersedia'       => $addedStok[$idBrg],
                 ];
             }
         }
@@ -320,20 +405,31 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['items' => 'Minimal harus ada 1 barang.']);
         }
 
-        // ============================================
-        // VALIDASI 0: Cegah Duplikasi Barang
-        // ============================================
         $itemIds = array_column($items, 'id_barang');
         if (count($itemIds) !== count(array_unique($itemIds))) {
             return redirect()->back()->withInput()->with('errors', ['items' => 'Barang yang sama tidak boleh dipilih lebih dari satu kali dalam satu transaksi.']);
+        }
+
+        $barangList = $this->barangModel->whereIn('id', $itemIds)->findAll();
+        $barangBisaDipecahMap = [];
+        foreach ($barangList as $b) {
+            $barangBisaDipecahMap[$b['id']] = (int)$b['bisa_dipecah'];
         }
 
         foreach ($items as $key => $item) {
             if (empty($item['id_barang']) || !is_numeric($item['id_barang'])) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Barang wajib dipilih."]);
             }
-            if (empty($item['jumlah_keluar']) || (int)$item['jumlah_keluar'] <= 0) {
+            if (empty($item['jumlah_keluar']) || (float)$item['jumlah_keluar'] <= 0) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Jumlah keluar harus lebih besar dari 0."]);
+            }
+
+            $idBrg = $item['id_barang'];
+            $bisaDipecah = $barangBisaDipecahMap[$idBrg] ?? 0;
+            $qty = (float)$item['jumlah_keluar'];
+
+            if ($bisaDipecah === 0 && floor($qty) != $qty) {
+                return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Jumlah keluar untuk barang utuh tidak boleh desimal."]);
             }
         }
 
@@ -341,11 +437,11 @@ class BarangKeluar extends BaseController
         foreach ($items as $item) {
             $idBrg = $item['id_barang'];
             if (isset($consolidated[$idBrg])) {
-                $consolidated[$idBrg]['jumlah_keluar'] += (int)$item['jumlah_keluar'];
+                $consolidated[$idBrg]['jumlah_keluar'] += (float)$item['jumlah_keluar'];
             } else {
                 $consolidated[$idBrg] = [
                     'id_barang'     => $item['id_barang'],
-                    'jumlah_keluar' => (int)$item['jumlah_keluar'],
+                    'jumlah_keluar' => (float)$item['jumlah_keluar'],
                 ];
             }
         }
@@ -354,13 +450,11 @@ class BarangKeluar extends BaseController
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // 1. Rollback seluruh histori FEFO untuk transaksi ini
         $this->fefo->rollbackBarangKeluar($id);
 
-        // 2. Validasi ulang ketersediaan stok setelah rollback
         $kebutuhan = [];
         foreach ($items as $item) {
-            $kebutuhan[$item['id_barang']] = (int) $item['jumlah_keluar'];
+            $kebutuhan[$item['id_barang']] = (float) $item['jumlah_keluar'];
         }
 
         $kurangStok = $this->fefo->cekKetersediaanBulk($kebutuhan);
@@ -376,7 +470,6 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['stok' => implode('<br>', $errorMsgs)]);
         }
 
-        // 3. Simpan Header
         $this->barangKeluarModel->update($id, [
             'id_wilayah'        => $this->request->getPost('id_wilayah'),
             'tanggal_keluar'    => $this->request->getPost('tanggal_keluar'),
@@ -384,7 +477,6 @@ class BarangKeluar extends BaseController
             'keterangan'        => $this->request->getPost('keterangan'),
         ]);
 
-        // 4. Jalankan ulang Library FEFO (Bulk mode)
         $hasilFEFO = $this->fefo->prosesBarangKeluarBulk($id, $items);
         if ($hasilFEFO === false) {
             $db->transRollback();
@@ -406,8 +498,6 @@ class BarangKeluar extends BaseController
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi Barang Keluar berhasil diperbarui. Stok batch telah dihitung ulang menggunakan metode FEFO.');
     }
 
-
-
     /**
      * Detail transaksi + batch yang dipotong
      */
@@ -423,9 +513,11 @@ class BarangKeluar extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
         }
 
-        // Ambil detail batch yang dipotong
+        // FIX: tambahkan batch.bisa_dipecah agar view bisa membedakan
+        // barang repack (jumlah sudah dalam Kg, jangan dikalikan lagi)
+        // vs barang utuh (perlu dikalikan berat_per_satuan untuk dapat berat total).
         $details = $this->detailModel
-            ->select('detail_barang_keluar.*, batch.nomor_batch, batch.tanggal_kedaluwarsa, batch.jumlah_awal, batch.stok_saat_ini, COALESCE(barang.nama_barang, batch.nama_barang) as nama_barang, batch.satuan, batch.berat_per_satuan, batch.satuan_berat')
+            ->select('detail_barang_keluar.*, batch.nomor_batch, batch.tanggal_kedaluwarsa, batch.jumlah_awal, batch.stok_saat_ini, COALESCE(barang.nama_barang, batch.nama_barang) as nama_barang, batch.satuan, batch.berat_per_satuan, batch.satuan_berat, batch.bisa_dipecah')
             ->join('batch', 'batch.id = detail_barang_keluar.id_batch')
             ->join('barang', 'barang.id = batch.id_barang', 'left')
             ->where('detail_barang_keluar.id_barang_keluar', $id)
@@ -456,10 +548,7 @@ class BarangKeluar extends BaseController
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // Rollback penuh (kembalikan stok & hapus histori detail) menggunakan FEFO
         $this->fefo->rollbackBarangKeluar($id);
-
-        // Hapus header
         $this->barangKeluarModel->delete($id);
 
         $db->transComplete();
@@ -521,9 +610,10 @@ class BarangKeluar extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
         }
 
-        // Ambil detail batch yang dipotong
+        // FIX: sama seperti detail(), tambahkan batch.bisa_dipecah
+        // agar template PDF Berita Acara juga bisa hitung berat dengan benar.
         $details = $this->detailModel
-            ->select('detail_barang_keluar.*, batch.nomor_batch, batch.tanggal_kedaluwarsa, batch.jumlah_awal, batch.stok_saat_ini, COALESCE(barang.nama_barang, batch.nama_barang) as nama_barang, batch.satuan, batch.berat_per_satuan, batch.satuan_berat')
+            ->select('detail_barang_keluar.*, batch.nomor_batch, batch.tanggal_kedaluwarsa, batch.jumlah_awal, batch.stok_saat_ini, COALESCE(barang.nama_barang, batch.nama_barang) as nama_barang, batch.satuan, batch.berat_per_satuan, batch.satuan_berat, batch.bisa_dipecah')
             ->join('batch', 'batch.id = detail_barang_keluar.id_batch')
             ->join('barang', 'barang.id = batch.id_barang', 'left')
             ->where('detail_barang_keluar.id_barang_keluar', $id)
@@ -535,7 +625,6 @@ class BarangKeluar extends BaseController
             'details'      => $details,
         ];
 
-        // Load DOMPDF
         $dompdf = new \Dompdf\Dompdf();
         $options = $dompdf->getOptions();
         $options->set('isRemoteEnabled', true);
@@ -549,13 +638,7 @@ class BarangKeluar extends BaseController
         $dompdf->render();
 
         $filename = 'BAST_Donasi_' . $barangKeluar['nomor_transaksi'] . '.pdf';
-        
-        // Output PDF to browser instead of auto download (Attachment => 0)
         $dompdf->stream($filename, ['Attachment' => 0]);
         exit;
     }
 }
-
-
-
-

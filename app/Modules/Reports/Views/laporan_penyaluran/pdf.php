@@ -138,12 +138,19 @@
             <?php else: ?>
                 <?php $no = 1; foreach ($laporan as $item): ?>
                     <?php 
+                        $bisaDipecah = (int)($item['bisa_dipecah'] ?? 0);
                         $beratPerSatuan = (float) $item['berat_per_satuan'];
-                        $satuanB = strtolower($item['satuan_berat']);
-                        if ($satuanB === 'gram') {
-                            $totalKg = ($item['jumlah'] * $beratPerSatuan) / 1000;
+                        if ($bisaDipecah === 1) {
+                            $totalKg = (float)$item['jumlah'];
+                            $satuanStok = 'Kg';
+                            $jumlahStok = number_format($item['jumlah'], 2, ',', '.');
                         } else {
                             $totalKg = $item['jumlah'] * $beratPerSatuan;
+                            if (strtolower($item['satuan_berat']) === 'gram') {
+                                $totalKg = $totalKg / 1000;
+                            }
+                            $satuanStok = esc($item['satuan']);
+                            $jumlahStok = number_format($item['jumlah'], 0, ',', '.');
                         }
                     ?>
                     <tr>
@@ -153,8 +160,8 @@
                         <td><?= esc($item['nama_wilayah'] ?? '-') ?></td>
                         <td><?= esc($item['program'] ?? '-') ?></td>
                         <td><?= esc($item['nama_barang']) ?></td>
-                        <td class="text-center"><?= number_format($item['jumlah'], 0, ',', '.') ?></td>
-                        <td class="text-center"><?= esc($item['satuan']) ?></td>
+                        <td class="text-center"><?= $jumlahStok ?></td>
+                        <td class="text-center"><?= $satuanStok ?></td>
                         <td class="text-right"><?= $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-' ?></td>
                         <td class="text-right"><?= $totalKg > 0 ? format_berat($totalKg, 'Kg') : '-' ?></td>
                         <td class="text-center"><?= esc($item['petugas'] ?? '-') ?></td>
@@ -166,12 +173,23 @@
 
     <table class="info-table" style="margin-top: 20px;">
         <tr>
-            <td width="20%" class="font-bold">Total Penyaluran</td>
-            <td width="80%">: <?= number_format($summary['total_penyaluran'], 0, ',', '.') ?></td>
+            <td width="25%" class="font-bold">Total Penyaluran</td>
+            <td width="75%">: <?= number_format($summary['total_penyaluran'], 0, ',', '.') ?></td>
         </tr>
         <tr>
             <td class="font-bold">Total Barang Disalurkan</td>
-            <td>: <?= number_format($summary['total_barang'], 0, ',', '.') ?></td>
+            <td>: 
+                <?php
+                $parts = [];
+                foreach ($summary['total_barang_utuh_per_satuan'] as $satuan => $jml) {
+                    $parts[] = number_format($jml, 0, ',', '.') . ' ' . esc($satuan);
+                }
+                if ($summary['total_barang_repack'] > 0) {
+                    $parts[] = number_format($summary['total_barang_repack'], 2, ',', '.') . ' Kg';
+                }
+                echo !empty($parts) ? implode(' & ', $parts) : '0';
+                ?>
+            </td>
         </tr>
         <tr>
             <td class="font-bold">Total Berat</td>

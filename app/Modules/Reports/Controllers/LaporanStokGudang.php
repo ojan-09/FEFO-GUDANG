@@ -29,6 +29,7 @@ class LaporanStokGudang extends BaseController
             COALESCE(batch.satuan, barang.satuan) as satuan,
             COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
             COALESCE(batch.satuan_berat, barang.satuan_berat) as satuan_berat,
+            barang.bisa_dipecah,
             donatur.nama_donatur as donatur
         ');
         $builder->join('barang', 'barang.id = batch.id_barang');
@@ -45,7 +46,10 @@ class LaporanStokGudang extends BaseController
         $endDateFilter = $this->request->getGet('end_date');
         
         if (!empty($searchFilter)) {
-            $builder->like('barang.nama_barang', $searchFilter);
+            $builder->groupStart()
+                ->like('batch.nama_barang', $searchFilter)
+                ->orLike('barang.nama_barang', $searchFilter)
+                ->groupEnd();
         }
         if (!empty($donaturFilter)) {
             $builder->like('donatur.nama_donatur', $donaturFilter);
@@ -69,7 +73,7 @@ class LaporanStokGudang extends BaseController
         
         foreach ($stokGudang as &$stok) {
             $status = 'Aman';
-            $stokTotal = (int) $stok['stok_saat_ini'];
+            $stokTotal = (float) $stok['stok_saat_ini'];
             
             if ($stokTotal > 0) {
                 $expiredDate = new \DateTime($stok['tanggal_kedaluwarsa']);
@@ -91,9 +95,16 @@ class LaporanStokGudang extends BaseController
             
             $filteredData[] = $stok;
             
+            $bisaDipecah = (int) $stok['bisa_dipecah'];
             $beratPerSatuan = (float) $stok['berat_per_satuan'];
-            $totalBeratRow = $stok['stok_saat_ini'] * $beratPerSatuan;
-            $weightInKg = (strtolower($stok['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+            
+            if ($bisaDipecah === 1) {
+                // For repackable items, stok_saat_ini is already in Kg
+                $weightInKg = (float) $stok['stok_saat_ini'];
+            } else {
+                $totalBeratRow = $stok['stok_saat_ini'] * $beratPerSatuan;
+                $weightInKg = (strtolower($stok['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+            }
             $totalBerat += $weightInKg;
         }
 
@@ -209,8 +220,16 @@ class LaporanStokGudang extends BaseController
         $no = 1;
         
         foreach ($stokGudang as $item) {
+            $bisaDipecah = (int) $item['bisa_dipecah'];
             $beratPerSatuan = (float) $item['berat_per_satuan'];
-            $totalBeratRow = $item['stok_saat_ini'] * $beratPerSatuan;
+            if ($bisaDipecah === 1) {
+                $totalBeratRow = (float) $item['stok_saat_ini'];
+                if (strtolower($item['satuan_berat']) === 'gram') {
+                    $totalBeratRow *= 1000; // convert Kg back to gram if format_berat expects base units?
+                }
+            } else {
+                $totalBeratRow = $item['stok_saat_ini'] * $beratPerSatuan;
+            }
 
             $sheet->setCellValue('A' . $row, $no++);
             

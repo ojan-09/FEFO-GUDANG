@@ -1,5 +1,5 @@
 <script>
-    // Terapkan status collapsed SEBELUM sidebar dirender agar tidak ada flash ukuran
+    /* ── Flash prevention: terapkan state collapsed SEBELUM render ── */
     (function () {
         if (window.innerWidth > 768 && localStorage.getItem('wms-sidebar-collapsed') === 'true') {
             document.documentElement.classList.add('sb-pre-collapsed');
@@ -8,374 +8,562 @@
 </script>
 
 <aside class="sidebar" id="sidebar">
-    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Ciutkan sidebar">
-        <i class="fa-solid fa-angles-left"></i>
+
+    <!-- Toggle desktop: berada di dalam sidebar, z-index lebih tinggi -->
+    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle sidebar">
+        <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
     </button>
 
-    <div class="brand">
-        <div class="brand-icon" style="background: transparent;">
-            <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo FOI" style="max-width: 100%; height: auto; object-fit: contain;">
-        </div>
-        <div class="brand-text">
-            <h5 class="mb-0">FEFO Gudang</h5>
-            <small class="text-white-50">Foodbank Of Indonesia</small>
+    <div class="sb-logo">
+        <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo FOI">
+        <div class="sb-logo-text">
+            <span class="sb-logo-title">Foodbank of Indonesia</span>
+            <span class="sb-logo-sub">Warehouse Management</span>
         </div>
     </div>
 
-    <div class="sidebar-section">
-        <div class="sidebar-section-title">Utama</div>
-        <a href="<?= site_url('/') ?>" data-title="Dashboard" title="Dashboard" class="nav-link <?= (url_is('/') || url_is('dashboard*')) ? 'active' : '' ?>"><i class="fa-solid fa-gauge-high"></i> <span class="nav-label">Dashboard</span></a>
-    </div>
+    <nav class="sb-nav">
 
-    <?php if (in_groups('Administrator')): ?>
-    <div class="sidebar-section">
-        <div class="sidebar-section-title">Master Data</div>
-        <a href="<?= site_url('masterdata/donatur') ?>" data-title="Donatur" title="Donatur" class="nav-link <?= url_is('masterdata/donatur*') ? 'active' : '' ?>"><i class="fa-solid fa-people-group"></i> <span class="nav-label">Donatur</span></a>
-        <a href="<?= site_url('masterdata/kategori') ?>" data-title="Kategori" title="Kategori" class="nav-link <?= url_is('masterdata/kategori*') ? 'active' : '' ?>"><i class="fa-solid fa-tags"></i> <span class="nav-label">Kategori</span></a>
-        <a href="<?= site_url('masterdata/wilayah') ?>" data-title="Wilayah" title="Wilayah" class="nav-link <?= url_is('masterdata/wilayah*') ? 'active' : '' ?>"><i class="fa-solid fa-map-location-dot"></i> <span class="nav-label">Wilayah</span></a>
-    </div>
-    <?php endif; ?>
+        <div class="sb-group">
+            <a href="<?= site_url('/') ?>"
+               class="sb-link <?= (url_is('/') || url_is('dashboard*')) ? 'active' : '' ?>"
+               data-tooltip="Dashboard">
+                <span class="sb-icon"><i data-lucide="layout-dashboard"></i></span>
+                <span class="sb-label">Dashboard</span>
+            </a>
+        </div>
 
-    <?php if (in_groups(['Administrator', 'Petugas Gudang'])): ?>
-    <div class="sidebar-section">
-        <div class="sidebar-section-title">Transaksi</div>
-        <a href="<?= site_url('transaksi/barang-masuk') ?>" data-title="Donasi Masuk" title="Donasi Masuk" class="nav-link <?= url_is('transaksi/barang-masuk*') ? 'active' : '' ?>"><i class="fa-solid fa-hand-holding-heart"></i> <span class="nav-label">Donasi Masuk</span></a>
-        <a href="<?= site_url('transaksi/barang-keluar') ?>" data-title="Penyaluran Barang" title="Penyaluran Barang" class="nav-link <?= url_is('transaksi/barang-keluar*') ? 'active' : '' ?>"><i class="fa-solid fa-arrow-up"></i> <span class="nav-label">Penyaluran Barang</span></a>
-    </div>
-    <?php endif; ?>
+        <?php if (in_groups('Administrator')): ?>
+        <div class="sb-group sb-divider">
+            <a href="<?= site_url('masterdata/donatur') ?>"
+               class="sb-link <?= url_is('masterdata/donatur*') ? 'active' : '' ?>"
+               data-tooltip="Donatur">
+                <span class="sb-icon"><i data-lucide="users"></i></span>
+                <span class="sb-label">Donatur</span>
+            </a>
+            <a href="<?= site_url('masterdata/kategori') ?>"
+               class="sb-link <?= url_is('masterdata/kategori*') ? 'active' : '' ?>"
+               data-tooltip="Kategori">
+                <span class="sb-icon"><i data-lucide="tag"></i></span>
+                <span class="sb-label">Kategori</span>
+            </a>
+            <a href="<?= site_url('masterdata/wilayah') ?>"
+               class="sb-link <?= url_is('masterdata/wilayah*') ? 'active' : '' ?>"
+               data-tooltip="Wilayah">
+                <span class="sb-icon"><i data-lucide="map-pin"></i></span>
+                <span class="sb-label">Wilayah</span>
+            </a>
+        </div>
+        <?php endif; ?>
 
-    <div class="sidebar-section">
-        <div class="sidebar-section-title">Gudang</div>
-        <a href="<?= site_url('transaksi/stok-gudang') ?>" data-title="Stok Gudang" title="Stok Gudang" class="nav-link <?= url_is('transaksi/stok-gudang*') ? 'active' : '' ?>"><i class="fa-solid fa-warehouse"></i> <span class="nav-label">Stok Gudang</span></a>
-    </div>
+        <?php if (in_groups(['Administrator', 'Petugas Gudang'])): ?>
+        <div class="sb-group sb-divider">
+            <a href="<?= site_url('transaksi/barang-masuk') ?>"
+               class="sb-link <?= url_is('transaksi/barang-masuk*') ? 'active' : '' ?>"
+               data-tooltip="Donasi Masuk">
+                <span class="sb-icon"><i data-lucide="arrow-down-to-line"></i></span>
+                <span class="sb-label">Donasi Masuk</span>
+            </a>
+            <a href="<?= site_url('transaksi/barang-keluar') ?>"
+               class="sb-link <?= url_is('transaksi/barang-keluar*') ? 'active' : '' ?>"
+               data-tooltip="Penyaluran Barang">
+                <span class="sb-icon"><i data-lucide="arrow-up-from-line"></i></span>
+                <span class="sb-label">Penyaluran Barang</span>
+            <a href="<?= site_url('transaksi/penyesuaian') ?>"
+               class="sb-link <?= url_is('transaksi/penyesuaian*') ? 'active' : '' ?>"
+               data-tooltip="Penyesuaian Stok">
+                <span class="sb-icon"><i data-lucide="scale"></i></span>
+                <span class="sb-label">Penyesuaian Stok</span>
+            </a>
+        </div>
+        <?php endif; ?>
 
-    <div class="sidebar-section">
-        <div class="sidebar-section-title">Laporan</div>
-        <a href="<?= site_url('laporan/donasi') ?>" data-title="Laporan Donasi" title="Laporan Donasi" class="nav-link <?= url_is('laporan/donasi*') ? 'active' : '' ?>"><i class="fa-solid fa-file-import"></i> <span class="nav-label">Laporan Donasi Masuk</span></a>
-        <a href="<?= site_url('laporan/penyaluran') ?>" data-title="Laporan Penyaluran" title="Laporan Penyaluran" class="nav-link <?= url_is('laporan/penyaluran*') ? 'active' : '' ?>"><i class="fa-solid fa-file-export"></i> <span class="nav-label">Laporan Penyaluran Barang</span></a>
-        <a href="<?= site_url('laporan/stok') ?>" data-title="Laporan Stok Gudang" title="Laporan Stok Gudang" class="nav-link <?= url_is('laporan/stok*') ? 'active' : '' ?>"><i class="fa-solid fa-file-lines"></i> <span class="nav-label">Laporan Stok Gudang</span></a>
-        <a href="<?= site_url('laporan/expired') ?>" data-title="Laporan Barang Expired" title="Laporan Barang Expired" class="nav-link <?= url_is('laporan/expired*') ? 'active' : '' ?>"><i class="fa-solid fa-file-circle-exclamation"></i> <span class="nav-label">Laporan Barang Expired</span></a>
-    </div>
+        <div class="sb-group sb-divider">
+            <a href="<?= site_url('transaksi/stok-gudang') ?>"
+               class="sb-link <?= url_is('transaksi/stok-gudang*') ? 'active' : '' ?>"
+               data-tooltip="Stok Gudang">
+                <span class="sb-icon"><i data-lucide="warehouse"></i></span>
+                <span class="sb-label">Stok Gudang</span>
+            </a>
+        </div>
 
-    <?php if (in_groups('Administrator')): ?>
-    <div class="sidebar-section">
-        <div class="sidebar-section-title">Pengaturan</div>
-        <a href="<?= site_url('masterdata/maintenance-barang') ?>" data-title="Maintenance Master" title="Maintenance Master" class="nav-link <?= url_is('masterdata/maintenance-barang*') ? 'active' : '' ?>"><i class="fa-solid fa-broom"></i> <span class="nav-label">Maintenance Master</span></a>
-        <a href="<?= site_url('manajemen-user') ?>" data-title="Manajemen User" title="Manajemen User" class="nav-link <?= url_is('manajemen-user*') ? 'active' : '' ?>"><i class="fa-solid fa-user"></i> <span class="nav-label">Manajemen User</span></a>
-        <a href="<?= site_url('log-aktivitas') ?>" data-title="Log Aktivitas" title="Log Aktivitas" class="nav-link <?= url_is('log-aktivitas*') ? 'active' : '' ?>"><i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-label">Log Aktivitas</span></a>
-    </div>
-    <?php endif; ?>
+        <div class="sb-group sb-divider">
+            <a href="<?= site_url('laporan/donasi') ?>"
+               class="sb-link <?= url_is('laporan/donasi*') ? 'active' : '' ?>"
+               data-tooltip="Laporan Donasi Masuk">
+                <span class="sb-icon"><i data-lucide="file-down"></i></span>
+                <span class="sb-label">Laporan Donasi Masuk</span>
+            </a>
+            <a href="<?= site_url('laporan/penyaluran') ?>"
+               class="sb-link <?= url_is('laporan/penyaluran*') ? 'active' : '' ?>"
+               data-tooltip="Laporan Penyaluran">
+                <span class="sb-icon"><i data-lucide="file-up"></i></span>
+                <span class="sb-label">Laporan Penyaluran</span>
+            </a>
+            <a href="<?= site_url('laporan/stok') ?>"
+               class="sb-link <?= url_is('laporan/stok*') ? 'active' : '' ?>"
+               data-tooltip="Laporan Stok Gudang">
+                <span class="sb-icon"><i data-lucide="file-bar-chart-2"></i></span>
+                <span class="sb-label">Laporan Stok Gudang</span>
+            </a>
+            <a href="<?= site_url('laporan/expired') ?>"
+               class="sb-link <?= url_is('laporan/expired*') ? 'active' : '' ?>"
+               data-tooltip="Laporan Barang Expired">
+                <span class="sb-icon"><i data-lucide="file-warning"></i></span>
+                <span class="sb-label">Laporan Expired</span>
+            </a>
+            <a href="<?= site_url('laporan/penyesuaian') ?>"
+               class="sb-link <?= url_is('laporan/penyesuaian*') ? 'active' : '' ?>"
+               data-tooltip="Laporan Penyesuaian">
+                <span class="sb-icon"><i data-lucide="scale"></i></span>
+                <span class="sb-label">Laporan Penyesuaian</span>
+            </a>
+        </div>
+
+        <?php if (in_groups('Administrator')): ?>
+        <div class="sb-group sb-divider">
+            <a href="<?= site_url('masterdata/maintenance-barang') ?>"
+               class="sb-link <?= url_is('masterdata/maintenance-barang*') ? 'active' : '' ?>"
+               data-tooltip="Maintenance Master">
+                <span class="sb-icon"><i data-lucide="wrench"></i></span>
+                <span class="sb-label">Maintenance Master</span>
+            </a>
+            <a href="<?= site_url('manajemen-user') ?>"
+               class="sb-link <?= url_is('manajemen-user*') ? 'active' : '' ?>"
+               data-tooltip="Manajemen User">
+                <span class="sb-icon"><i data-lucide="user-cog"></i></span>
+                <span class="sb-label">Manajemen User</span>
+            </a>
+            <a href="<?= site_url('log-aktivitas') ?>"
+               class="sb-link <?= url_is('log-aktivitas*') ? 'active' : '' ?>"
+               data-tooltip="Log Aktivitas">
+                <span class="sb-icon"><i data-lucide="history"></i></span>
+                <span class="sb-label">Log Aktivitas</span>
+            </a>
+        </div>
+        <?php endif; ?>
+
+    </nav>
+
 </aside>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Buka menu">
-    <i class="fa-solid fa-bars"></i>
+<button class="sb-mobile-btn" id="mobileMenuBtn" type="button" aria-label="Buka menu">
+    <i data-lucide="menu"></i>
 </button>
 
 <style>
-    :root {
-        --sb-w-expanded: 250px;
-        --sb-w-collapsed: 64px;
+/* ─── Variables ─────────────────────────────────────────── */
+:root {
+    --sb-w-expanded:  220px;
+    --sb-w-collapsed:  62px;
 
-        --fs-brand-title: 0.95rem;
-        --fs-brand-sub: 0.72rem;
-        --fs-section-title: 0.7rem;
-        --fs-nav: 0.85rem;
-        --fs-icon: 0.85rem;
-        --fs-tooltip: 0.75rem;
+    --sb-bg:               #0F172A;
+    --sb-border:           rgba(255,255,255,.05);
+    --sb-icon-color:       rgba(255,255,255,.72);
+    --sb-icon-active:      #FFFFFF;
+    --sb-hover-bg:         rgba(255,255,255,.07);
+    --sb-active-bg:        rgba(255,255,255,.11);
+    --sb-active-bar:       rgba(255,255,255,.9);
+    --sb-divider:          rgba(255,255,255,.07);
+    --sb-label-color:      rgba(255,255,255,.82);
+    --sb-tooltip-bg:       #1E293B;
+    --sb-tooltip-text:     rgba(255,255,255,.92);
+    --sb-section-color:    rgba(148,163,184,.55);
+}
 
-        /* --- warna, disamakan dengan screenshot --- */
-        --sb-bg: #0d1420;
-        --sb-active-bg: #232f42;
-        --sb-hover-bg: rgba(255,255,255,0.05);
-        --sb-border: rgba(255,255,255,0.06);
-        --sb-text: rgba(255,255,255,0.9);
-        --sb-text-muted: rgba(255,255,255,0.85);
-        --sb-section-title: rgba(148,163,184,0.65);
-        --sb-icon: #ffffff;
-    }
+/* ─── Flash prevention ──────────────────────────────────── */
+html.sb-pre-collapsed body            { margin-left: var(--sb-w-collapsed) !important; }
+html.sb-pre-collapsed .sidebar        { width: var(--sb-w-collapsed); transition: none !important; }
+html.sb-pre-collapsed .sidebar .sb-label,
+html.sb-pre-collapsed .sidebar .sb-section-title { opacity: 0; width: 0; overflow: hidden; }
+html.sb-pre-collapsed .sidebar .sb-link  { justify-content: center; }
 
-    /* --- shape + warna --- */
+/* ─── Body offset ───────────────────────────────────────── */
+body {
+    margin-left: var(--sb-w-expanded);
+    transition: margin-left 200ms ease;
+}
+body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
+
+/* ─── Sidebar shell ─────────────────────────────────────── */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sb-w-expanded);
+    height: 100vh;
+    background: var(--sb-bg);
+    border-right: 1px solid var(--sb-border);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 8px 12px;
+    z-index: 1000;
+    overflow-y: auto;
+    overflow-x: visible;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,.12) transparent;
+    transition: width 200ms ease;
+    will-change: width;
+    box-sizing: border-box;
+}
+.sidebar::-webkit-scrollbar       { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.13); border-radius: 10px; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.28); }
+
+/* ─── Collapsed state ───────────────────────────────────── */
+.sidebar.collapsed {
+    width: var(--sb-w-collapsed);
+}
+.sidebar.collapsed .sb-label,
+.sidebar.collapsed .sb-section-title {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+    overflow: hidden;
+    white-space: nowrap;
+}
+sidebar.collapsed .sb-link {
+    justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+    width: 44px;
+    height: 44px;
+    margin: 0 auto;
+    border-radius: 8px;
+}
+
+.sidebar.collapsed .sb-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.sidebar.collapsed .sb-icon svg {
+    width: 20px;
+    height: 20px;
+}
+.sidebar.collapsed .sb-logo {
+    justify-content: center;
+}
+.sidebar.collapsed .sidebar-toggle #toggleIcon {
+    transform: rotate(180deg);
+}
+
+/* ─── Toggle button (desktop) ──────────────────────────── */
+.sidebar-toggle {
+    position: absolute;
+    top: 18px;
+    right: -12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.15);
+    background: #1E293B;
+    color: rgba(255,255,255,.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1100;
+    transition: background 150ms ease;
+    flex-shrink: 0;
+    padding: 0;
+    outline: none;
+}
+.sidebar-toggle:hover { background: #2D3F55; color: #fff; }
+.sidebar-toggle:focus-visible { outline: 2px solid rgba(255,255,255,.5); outline-offset: 2px; }
+.sidebar-toggle #toggleIcon {
+    transition: transform 200ms ease;
+    display: block;
+    pointer-events: none;
+}
+
+/* ─── Logo ──────────────────────────────────────────────── */
+.sb-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 4px 18px;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: padding 200ms ease;
+}
+.sb-logo img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: block;
+}
+
+.sb-logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: hidden;
+    transition: opacity 150ms ease, width 150ms ease;
+}
+.sb-logo-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+.sb-logo-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: rgba(255,255,255,.5);
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+/* Sembunyikan teks saat collapsed */
+.sidebar.collapsed .sb-logo-text {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+}
+/* ─── Nav wrapper ───────────────────────────────────────── */
+.sb-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* ─── Group ─────────────────────────────────────────────── */
+.sb-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.sb-group.sb-divider {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--sb-divider);
+}
+
+/* ─── Nav link ──────────────────────────────────────────── */
+.sb-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 8px;
+    height: 44px;
+    border-radius: 8px;
+    color: var(--sb-label-color);
+    text-decoration: none;
+    transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.sb-link:hover {
+    background: var(--sb-hover-bg);
+    color: #fff;
+    transform: translateX(2px);
+}
+.sb-link:focus-visible {
+    outline: 2px solid rgba(255,255,255,.45);
+    outline-offset: 2px;
+}
+.sb-link.active {
+    background: var(--sb-active-bg);
+    color: var(--sb-icon-active);
+}
+
+/* Active bar kiri */
+.sb-link.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 18px;
+    border-radius: 0 3px 3px 0;
+    background: var(--sb-active-bar);
+}
+
+/* ─── Icon ──────────────────────────────────────────────── */
+.sb-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--sb-icon-color);
+}
+.sb-link.active .sb-icon { color: var(--sb-icon-active); }
+.sb-link:hover .sb-icon  { color: #fff; }
+.sb-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.75;
+}
+
+/* ─── Label ─────────────────────────────────────────────── */
+.sb-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: inherit;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: opacity 150ms ease, width 150ms ease;
+}
+
+/* ─── Tooltip (hanya saat collapsed) ───────────────────── */
+.sidebar.collapsed .sb-link[data-tooltip] {
+    overflow: visible;
+}
+.sidebar.collapsed .sb-link[data-tooltip]:hover::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(var(--sb-w-collapsed) - 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--sb-tooltip-bg);
+    color: var(--sb-tooltip-text);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 5px 11px;
+    border-radius: 7px;
+    white-space: nowrap;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,.4);
+    border: 1px solid rgba(255,255,255,.08);
+}
+.sidebar.collapsed .sb-link.active[data-tooltip]:hover::before {
+    content: attr(data-tooltip);
+    background: var(--sb-tooltip-bg);
+    width: auto;
+    height: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 7px;
+}
+
+/* ─── Mobile toggle button ──────────────────────────────── */
+.sb-mobile-btn {
+    display: none;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 1200;
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: var(--sb-bg);
+    color: rgba(255,255,255,.85);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+}
+.sb-mobile-btn svg { width: 18px; height: 18px; pointer-events: none; }
+
+/* ─── Overlay ───────────────────────────────────────────── */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1049;
+}
+
+/* ─── Mobile ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .sb-mobile-btn { display: flex; }
+
+    body,
+    body.sb-collapsed { margin-left: 0 !important; }
+    html.sb-pre-collapsed body { margin-left: 0 !important; }
+
     .sidebar {
-        width: var(--sb-w-expanded);
-        transition: width 0.22s ease;
+        width: var(--sb-w-expanded) !important;
+        transform: translateX(-100%);
+        transition: transform 180ms ease !important;
+        will-change: transform;
         overflow-x: hidden;
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        overflow-y: auto;
-        z-index: 1000;
-        padding: 0.6rem 0.6rem 1rem;
-        font-family: 'Inter', sans-serif;
-        scrollbar-width: thin;
-        background: var(--sb-bg);
-        color: var(--sb-text);
-        border-right: 1px solid var(--sb-border);
     }
-    .sidebar::-webkit-scrollbar { width: 5px; }
-    .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+    .sidebar.mobile-open { transform: translateX(0); }
+    .sidebar.mobile-open ~ .sidebar-overlay { display: block; }
 
-    body {
-        margin-left: var(--sb-w-expanded);
-        transition: margin-left 0.22s ease;
-    }
-    body:has(.sidebar.collapsed) {
-        margin-left: var(--sb-w-collapsed);
-    }
-    /* Terapkan lebar collapsed SEBELUM JS jalan, berdasarkan class di <html> */
-    html.sb-pre-collapsed body {
-        margin-left: var(--sb-w-collapsed);
-    }
-    html.sb-pre-collapsed .sidebar {
-        width: var(--sb-w-collapsed);
-        transition: none; /* hindari animasi saat load pertama */
-    }
-    html.sb-pre-collapsed .sidebar .nav-label,
-    html.sb-pre-collapsed .sidebar .brand-text,
-    html.sb-pre-collapsed .sidebar .sidebar-section-title {
-        opacity: 0;
-        position: absolute;
-        pointer-events: none;
-    }
-    html.sb-pre-collapsed .sidebar .nav-link { justify-content: center; padding: 0.55rem; }
-    html.sb-pre-collapsed .sidebar .brand { justify-content: center; padding-bottom: 0.7rem; }
+    .sidebar-toggle { display: none; }
 
-    .main-content {
-        transition: margin-left 0.22s ease;
+    .sidebar .sb-label {
+        opacity: 1 !important;
+        width: auto !important;
+        pointer-events: auto !important;
     }
+    .sidebar .sb-link { justify-content: flex-start !important; }
 
-    /* --- brand (sizes only) --- */
-    .sidebar .brand {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        padding: 0.5rem 0.5rem 0.9rem;
-        margin-bottom: 0.4rem;
-    }
-    .sidebar .brand-icon {
-        width: 34px;
-        height: 34px;
-        min-width: 34px;
-        border-radius: 9px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: var(--fs-icon);
-        background: rgba(255,255,255,0.08);
-    }
-    .sidebar .brand-text h5 {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: var(--fs-brand-title);
-        font-weight: 700;
-        line-height: 1.2;
-        color: var(--sb-text);
-    }
-    .sidebar .brand-text small {
-        font-size: var(--fs-brand-sub);
-        color: var(--sb-text-muted) !important;
-    }
-
-    /* --- section --- */
-    .sidebar-section { margin-bottom: 0.5rem; }
-    .sidebar-section-title {
-        font-size: var(--fs-section-title);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        padding: 0.6rem 0.65rem 0.3rem;
-        color: var(--sb-section-title);
-    }
-
-    /* --- nav link (warna biru) --- */
-    .sidebar .nav-link {
-        white-space: nowrap;
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 0.65rem;
-        padding: 0.5rem 0.65rem;
-        margin: 0.05rem 0;
-        border-radius: 8px;
-        font-size: var(--fs-nav);
-        font-weight: 500;
-        line-height: 1.3;
-        min-width: 0;
-        color: var(--sb-text-muted);
-        text-decoration: none;
-        transition: background 0.15s ease, color 0.15s ease;
-    }
-    .sidebar .nav-link:hover {
-        background: var(--sb-hover-bg);
-        color: #ffffff;
-    }
-    .sidebar .nav-link.active {
-        background: var(--sb-active-bg);
-        color: #ffffff;
-        font-weight: 500;
-    }
-    .sidebar .nav-link.active i {
-        color: var(--sb-icon);
-    }
-    .sidebar .nav-link i {
-        width: 18px;
-        height: 18px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-size: var(--fs-icon);
-        line-height: 1;
-        flex-shrink: 0;
-        color: var(--sb-icon);
-    }
-    .sidebar .nav-label {
-        flex: 1 1 auto;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .sidebar .nav-label,
-    .sidebar .brand-text,
-    .sidebar .sidebar-section-title {
-        transition: opacity 0.15s ease;
-        opacity: 1;
-    }
-
-    /* --- toggle button (desktop) --- */
-    .sidebar-toggle {
-        position: absolute;
-        top: 16px;
-        right: -12px;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: var(--sb-active-bg);
-        color: #fff;
-        font-size: 0.65rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 5;
-        transition: transform 0.22s ease, background 0.15s ease;
-    }
-    .sidebar-toggle:hover { background: var(--sb-active-bg); }
-
-    /* --- collapsed state (desktop icon-only) --- */
-    .sidebar.collapsed {
-        width: var(--sb-w-collapsed);
-    }
-    .sidebar.collapsed .nav-label,
-    .sidebar.collapsed .brand-text,
-    .sidebar.collapsed .sidebar-section-title {
-        opacity: 0;
-        position: absolute;
-        pointer-events: none;
-    }
-    .sidebar.collapsed .nav-link { justify-content: center; padding: 0.55rem; }
-    .sidebar.collapsed .brand { justify-content: center; padding-bottom: 0.7rem; }
-    .sidebar.collapsed .sidebar-toggle i { transform: rotate(180deg); }
-
-    /* tooltip on hover when collapsed */
-    .sidebar.collapsed .nav-link[data-title]:hover::after {
-        content: attr(data-title);
-        position: absolute;
-        left: calc(100% + 10px);
-        top: 50%;
-        transform: translateY(-50%);
-        background: var(--sb-active-bg);
-        color: #fff;
-        font-size: var(--fs-tooltip);
-        padding: 5px 10px;
-        border-radius: 6px;
-        white-space: nowrap;
-        z-index: 20;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-    }
-
-    /* --- mobile menu button (hidden on desktop) --- */
-    .mobile-menu-btn {
-        display: none;
-        position: fixed;
-        top: 14px;
-        left: 14px;
-        z-index: 1051;
-        width: 38px;
-        height: 38px;
-        border-radius: 8px;
-        border: none;
-        background: var(--sb-bg);
-        color: #fff;
-        font-size: 0.95rem;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.45);
-        z-index: 1049;
-    }
-
-    /* --- mobile behavior --- */
-    @media (max-width: 768px) {
-        .mobile-menu-btn { display: flex; }
-
-        body, body:has(.sidebar.collapsed) { margin-left: 0 !important; }
-        html.sb-pre-collapsed body { margin-left: 0 !important; }
-        html.sb-pre-collapsed .sidebar { width: var(--sb-w-expanded) !important; }
-        .main-content { margin-left: 0 !important; }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: var(--sb-w-expanded) !important;
-            transform: translateX(-100%);
-            transition: transform 0.25s ease;
-            z-index: 1050;
-        }
-        .sidebar.mobile-open { transform: translateX(0); }
-        .sidebar.mobile-open ~ .sidebar-overlay { display: block; }
-
-        .sidebar-toggle { display: none; }
-        .sidebar .nav-label,
-        .sidebar .brand-text,
-        .sidebar .sidebar-section-title { opacity: 1; position: static; }
-    }
+    .sidebar .sb-link[data-tooltip]:hover::before { display: none; }
+}
 </style>
 
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
 (function () {
-    var sidebar = document.getElementById('sidebar');
-    var toggleBtn = document.getElementById('sidebarToggle');
-    var mobileBtn = document.getElementById('mobileMenuBtn');
-    var overlay = document.getElementById('sidebarOverlay');
-
     var STORAGE_KEY = 'wms-sidebar-collapsed';
 
-    // Sinkronkan class collapsed sekarang bahwa DOM sudah siap, lepas class sementara di <html>
-    if (window.innerWidth > 768 && localStorage.getItem(STORAGE_KEY) === 'true') {
-        sidebar.classList.add('collapsed');
+    var sidebar    = document.getElementById('sidebar');
+    var toggleBtn  = document.getElementById('sidebarToggle');
+    var mobileBtn  = document.getElementById('mobileMenuBtn');
+    var overlay    = document.getElementById('sidebarOverlay');
+
+    /* ── Lucide render ──────────────────────────────────── */
+    function renderIcons() {
+        if (window.lucide) lucide.createIcons();
     }
-    // Aktifkan kembali transisi setelah state awal diterapkan (1 frame berikutnya)
+    renderIcons();
+    document.addEventListener('DOMContentLoaded', renderIcons);
+
+    /* ── Apply saved state on load (desktop only) ───────── */
+    if (window.innerWidth > 768) {
+        if (localStorage.getItem(STORAGE_KEY) === 'true') {
+            sidebar.classList.add('collapsed');
+            document.body.classList.add('sb-collapsed');
+        }
+    }
+    /* Remove flash-prevention class after state applied */
     requestAnimationFrame(function () {
         document.documentElement.classList.remove('sb-pre-collapsed');
     });
 
-    toggleBtn.addEventListener('click', function () {
-        var collapsed = sidebar.classList.toggle('collapsed');
-        localStorage.setItem(STORAGE_KEY, collapsed);
-    });
+    /* ── Desktop toggle ─────────────────────────────────── */
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var isCollapsed = sidebar.classList.toggle('collapsed');
+            document.body.classList.toggle('sb-collapsed', isCollapsed);
+            localStorage.setItem(STORAGE_KEY, isCollapsed);
+        });
+    }
 
+    /* ── Mobile open / close ────────────────────────────── */
     function openMobile() {
         sidebar.classList.add('mobile-open');
         overlay.style.display = 'block';
@@ -385,9 +573,13 @@
         overlay.style.display = 'none';
     }
 
-    mobileBtn.addEventListener('click', function () {
-        sidebar.classList.contains('mobile-open') ? closeMobile() : openMobile();
-    });
+    if (mobileBtn) {
+        mobileBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            sidebar.classList.contains('mobile-open') ? closeMobile() : openMobile();
+        });
+    }
+
     overlay.addEventListener('click', closeMobile);
 
     window.addEventListener('resize', function () {

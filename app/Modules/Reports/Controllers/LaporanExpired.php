@@ -29,6 +29,7 @@ class LaporanExpired extends BaseController
             COALESCE(batch.satuan, barang.satuan) as satuan,
             COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
             COALESCE(batch.satuan_berat, barang.satuan_berat) as satuan_berat,
+            barang.bisa_dipecah,
             donatur.nama_donatur
         ');
         $builder->join('barang_masuk', 'barang_masuk.id = batch.id_barang_masuk', 'left');
@@ -48,7 +49,10 @@ class LaporanExpired extends BaseController
             $builder->like('donatur.nama_donatur', $donaturFilter);
         }
         if (!empty($searchFilter)) {
-            $builder->like('barang.nama_barang', $searchFilter);
+            $builder->groupStart()
+                ->like('batch.nama_barang', $searchFilter)
+                ->orLike('barang.nama_barang', $searchFilter)
+                ->groupEnd();
         }
         if (!empty($kategoriFilter)) {
             $builder->where('batch.kategori', $kategoriFilter);
@@ -119,9 +123,14 @@ class LaporanExpired extends BaseController
 
                 $totalBatch++;
                 $totalBarang += $row['jumlah'];
+                $bisaDipecah = (int) ($row['bisa_dipecah'] ?? 0);
                 $beratPerSatuan = (float) $row['berat_per_satuan'];
-                $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
-                $weightInKg = (strtolower($row['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+                if ($bisaDipecah === 1) {
+                    $weightInKg = (float) $row['jumlah'];
+                } else {
+                    $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
+                    $weightInKg = (strtolower($row['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+                }
                 $totalBerat += $weightInKg;
                 
                 if ($sisaHari !== null && $sisaHari < 0) {
@@ -261,8 +270,16 @@ class LaporanExpired extends BaseController
         $no = 1;
         
         foreach ($laporan as $item) {
+            $bisaDipecah = (int) ($item['bisa_dipecah'] ?? 0);
             $beratPerSatuan = (float) $item['berat_per_satuan'];
-            $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+            if ($bisaDipecah === 1) {
+                $totalBeratRow = (float) $item['jumlah'];
+                if (strtolower($item['satuan_berat']) === 'gram') {
+                    $totalBeratRow *= 1000;
+                }
+            } else {
+                $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+            }
 
             // Status label string clean for excel
             $statusText = str_replace(['🔴 ', '🟡 ', '🟢 '], '', $item['status_label']);

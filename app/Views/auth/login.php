@@ -6,102 +6,121 @@
     <title>Login - Sistem Informasi FEFO Gudang FOI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        :root {
+            --primary: #2563EB;
+            --success: #15803D;
+            --success-dark: #166534;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border-c: #E5E7EB;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body { height: 100%; overflow: hidden; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f3f5;
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 24px 16px;
+            background: linear-gradient(160deg, #F8FAFC 0%, #F1F5F9 100%);
+            padding: 16px;
         }
 
         .login-card {
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 40px 36px 32px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border: 1px solid var(--border-c);
+            border-radius: 18px;
+            padding: 24px 32px 20px;
+            box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+            opacity: 0;
+            transform: translateY(14px);
+            animation: cardIn 0.4s ease-out forwards;
+        }
+
+        @keyframes cardIn {
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .card-header-custom {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 16px;
         }
 
-        .logo-circle {
-            width: 52px; height: 52px;
-            border-radius: 12px;
-            background: #0f4c35;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 16px;
+        .card-header-custom img {
+            width: 72px;
+            height: auto;
+            object-fit: contain;
+            margin-bottom: 8px;
         }
-
-        .logo-circle i { font-size: 22px; color: #ffffff; }
 
         .card-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 5px;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+            margin-bottom: 4px;
         }
 
         .card-sub {
-            font-size: 12.5px;
-            color: #6b7280;
+            font-size: 13.5px;
+            color: var(--text-muted);
+            line-height: 1.45;
         }
 
         .form-label-c {
             display: block;
-            font-size: 12px;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 6px;
-            letter-spacing: 0.02em;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 7px;
         }
 
-        .input-wrap { position: relative; margin-bottom: 16px; }
+        .input-wrap { position: relative; margin-bottom: 11px; }
 
         .input-wrap .input-icon {
             position: absolute;
-            left: 11px; top: 50%;
+            left: 16px; top: 50%;
             transform: translateY(-50%);
             font-size: 14px;
-            color: #9ca3af;
+            color: #94a3b8;
             pointer-events: none;
+            transition: color 0.15s;
         }
 
         .input-c {
             width: 100%;
-            height: 40px;
-            padding: 0 12px 0 34px;
-            font-size: 13.5px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: #f9fafb;
-            color: #111827;
+            height: 48px;
+            padding: 0 16px 0 44px;
+            font-size: 15px;
+            border: 1.5px solid var(--border-c);
+            border-radius: 12px;
+            background: #F8FAFC;
+            color: var(--text-main);
             outline: none;
             font-family: 'Inter', sans-serif;
-            transition: border-color 0.15s, box-shadow 0.15s;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
         }
 
         .input-c:focus {
-            border-color: #1d9e75;
+            border-color: var(--primary);
             background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(29,158,117,0.1);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
         }
 
-        .input-c::placeholder { color: #9ca3af; }
+        .input-wrap:focus-within .input-icon { color: var(--primary); }
+
+        .input-c::placeholder { color: #b6c0cc; }
 
         .input-c.is-invalid {
             border-color: #dc3545;
@@ -109,108 +128,126 @@
         }
 
         .invalid-feedback {
-            font-size: 11.5px;
+            font-size: 12px;
             color: #dc3545;
-            margin-top: 4px;
+            margin-top: 5px;
         }
 
         .toggle-pw {
             position: absolute;
-            right: 9px; top: 50%;
+            right: 12px; top: 50%;
             transform: translateY(-50%);
             background: none; border: none;
             cursor: pointer;
-            color: #9ca3af;
-            font-size: 14px;
-            padding: 4px;
+            color: #94a3b8;
+            font-size: 15px;
+            padding: 6px;
             display: flex; align-items: center;
+            transition: color 0.15s;
         }
 
-        .toggle-pw:hover { color: #6b7280; }
+        .toggle-pw:hover { color: var(--primary); }
 
         .remember-row {
-            display: flex; align-items: center;
-            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 14px;
         }
 
         .remember-check {
             display: flex; align-items: center;
             gap: 7px;
-            font-size: 12px;
-            color: #6b7280;
+            font-size: 14px;
+            color: #475569;
             cursor: pointer;
             user-select: none;
         }
 
-        .remember-check input { accent-color: #0f4c35; }
+        .remember-check input {
+            width: 15px; height: 15px;
+            accent-color: var(--success);
+            cursor: pointer;
+        }
 
         .btn-login {
-            width: 100%; height: 42px;
-            background: #0f4c35;
+            width: 100%; height: 48px;
+            background: var(--success);
             color: #ffffff;
             border: none;
-            border-radius: 8px;
-            font-size: 13.5px;
-            font-weight: 500;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            gap: 8px;
+            gap: 9px;
             font-family: 'Inter', sans-serif;
-            transition: background 0.15s;
-            letter-spacing: 0.02em;
+            box-shadow: 0 4px 10px rgba(21,128,61,0.18);
+            transition: background 0.15s, transform 0.1s;
         }
 
-        .btn-login:hover { background: #0c3d2a; }
-        .btn-login:active { background: #092e1f; }
+        .btn-login:hover { background: var(--success-dark); }
+        .btn-login:active { transform: scale(0.99); }
+
+        .btn-login.is-loading .btn-login-label,
+        .btn-login.is-loading .btn-login-icon { visibility: hidden; }
+
+        .btn-spinner {
+            display: none;
+            position: absolute;
+            width: 18px; height: 18px;
+            border: 2.5px solid rgba(255,255,255,0.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .btn-login.is-loading .btn-spinner { display: inline-block; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .card-footer-custom {
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid #f3f4f6;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
             text-align: center;
-            font-size: 11.5px;
-            color: #9ca3af;
-            line-height: 1.6;
-        }
-
-        .foi-tag {
-            display: flex; align-items: center;
-            justify-content: center; gap: 6px;
-            margin-top: 20px;
-            font-size: 11px;
-            color: #9ca3af;
-        }
-
-        .foi-dot {
-            width: 3px; height: 3px;
-            border-radius: 50%;
-            background: #d1d5db;
-            display: inline-block;
+            font-size: 13px;
+            color: #94a3b8;
         }
 
         .alert-custom {
-            font-size: 12.5px;
-            border-radius: 8px;
+            font-size: 13px;
+            border-radius: 10px;
             padding: 10px 14px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             border: 1px solid #fca5a5;
             background: #fff5f5;
             color: #b91c1c;
             display: flex;
             align-items: flex-start;
-            gap: 8px;
+            gap: 9px;
         }
 
         .alert-custom i { margin-top: 1px; flex-shrink: 0; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .login-card { animation: none; opacity: 1; transform: none; }
+            .btn-spinner { animation: none; }
+        }
+
+        @media (max-width: 480px) {
+            .login-card { padding: 26px 22px; }
+            .card-title { font-size: 26px; }
+        }
     </style>
 </head>
 <body>
 
     <div class="login-card">
+
         <div class="card-header-custom">
-        <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo FOI" style="max-width: 120px; height: auto; object-fit: contain; margin-bottom: 16px;">
-            <div class="card-title">Masuk ke akun Anda</div>
-            <div class="card-sub">Sistem Informasi Manajemen Stok Donasi — FEFO</div>
+            <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo Foodbank of Indonesia">
+            <div class="card-title">Selamat Datang</div>
+            <div class="card-sub">Masuk ke akun Anda untuk mengakses sistem Warehouse Management Foodbank Indonesia.</div>
         </div>
 
         <?= view('Myth\Auth\Views\_message_block') ?>
@@ -222,7 +259,7 @@
             </div>
         <?php endif; ?>
 
-        <form action="<?= url_to('login') ?>" method="post">
+        <form action="<?= url_to('login') ?>" method="post" id="loginForm">
             <?= csrf_field() ?>
 
             <label class="form-label-c">Email</label>
@@ -247,7 +284,7 @@
                        name="password"
                        class="input-c <?= session('errors.password') ? 'is-invalid' : '' ?>"
                        placeholder="Masukkan password"
-                       style="padding-right: 36px;"
+                       style="padding-right: 40px;"
                        required>
                 <button class="toggle-pw" type="button" id="togglePassword" aria-label="Tampilkan password">
                     <i class="fa-regular fa-eye" id="toggleIcon"></i>
@@ -266,21 +303,17 @@
                 </div>
             <?php endif; ?>
 
-            <button type="submit" class="btn-login">
-                <i class="fa-solid fa-right-to-bracket"></i>
-                Masuk
+            <button type="submit" class="btn-login" id="btnLogin">
+                <span class="btn-spinner"></span>
+                <i class="fa-solid fa-right-to-bracket btn-login-icon"></i>
+                <span class="btn-login-label">Masuk</span>
             </button>
         </form>
 
         <div class="card-footer-custom">
             Lupa password? Hubungi administrator sistem Anda.
         </div>
-    </div>
 
-    <div class="foi-tag">
-        <span>Foodbank of Indonesia</span>
-        <span class="foi-dot"></span>
-        <span>v1.0</span>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -294,6 +327,12 @@
             password.setAttribute('type', type);
             toggleIcon.classList.toggle('fa-eye');
             toggleIcon.classList.toggle('fa-eye-slash');
+        });
+
+        const loginForm = document.getElementById('loginForm');
+        const btnLogin = document.getElementById('btnLogin');
+        loginForm.addEventListener('submit', function () {
+            btnLogin.classList.add('is-loading');
         });
     </script>
 </body>

@@ -144,8 +144,16 @@
             <?php else: ?>
                 <?php $no = 1; foreach ($laporan as $item): ?>
                     <?php 
+                        $bisaDipecah    = (int) ($item['bisa_dipecah'] ?? 0);
                         $beratPerSatuan = (float) $item['berat_per_satuan'];
-                        $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+                        if ($bisaDipecah === 1) {
+                            $totalBeratRow = (float) $item['jumlah'];
+                            if (strtolower($item['satuan_berat']) === 'gram') {
+                                $totalBeratRow *= 1000;
+                            }
+                        } else {
+                            $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+                        }
                     ?>
                     <tr>
                         <td class="text-center"><?= $no++ ?></td>

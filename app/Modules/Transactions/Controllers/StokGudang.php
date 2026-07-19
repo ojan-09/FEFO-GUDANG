@@ -33,6 +33,8 @@ class StokGudang extends BaseController
             batch.stok_saat_ini,
             batch.tanggal_kedaluwarsa,
             batch.jumlah_ctn,
+            batch.jumlah_awal,
+            batch.bisa_dipecah,
             barang_masuk.keterangan as catatan,
             COALESCE(batch.nama_barang, barang.nama_barang) as nama_barang,
             COALESCE(batch.satuan, barang.satuan) as satuan,
@@ -52,7 +54,10 @@ class StokGudang extends BaseController
         $statusFilter = $this->request->getGet('status');
         
         if (!empty($searchFilter)) {
-            $builder->like('barang.nama_barang', $searchFilter);
+            $builder->groupStart()
+                ->like('batch.nama_barang', $searchFilter)
+                ->orLike('barang.nama_barang', $searchFilter)
+                ->groupEnd();
         }
         if (!empty($donaturFilter)) {
             $builder->like('donatur.nama_donatur', $donaturFilter);
@@ -72,7 +77,7 @@ class StokGudang extends BaseController
         $filteredData = [];
         foreach ($stokGudang as &$stok) {
             $status = 'Aman';
-            $stokTotal = (int) $stok['stok_saat_ini'];
+            $stokTotal = (float) $stok['stok_saat_ini'];
             
             if ($stokTotal > 0) {
                 $expiredDate = new \DateTime($stok['tanggal_kedaluwarsa']);
@@ -139,7 +144,7 @@ class StokGudang extends BaseController
         $today = new \DateTime(date('Y-m-d'));
         foreach ($batches as &$batch) {
             $batchStatus = 'Aman';
-            $stok = (int) $batch['stok_saat_ini'];
+            $stok = (float) $batch['stok_saat_ini'];
             
             if ($stok > 0) {
                 $expiredDate = new \DateTime($batch['tanggal_kedaluwarsa']);

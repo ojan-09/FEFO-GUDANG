@@ -3,651 +3,799 @@
 <?= $this->section('content') ?>
 
 <?php
-    $bulanTahunID = date('F Y');
     $bulanID = [
-        'January' => 'Januari',
-        'February' => 'Februari',
-        'March' => 'Maret',
-        'April' => 'April',
-        'May' => 'Mei',
-        'June' => 'Juni',
-        'July' => 'Juli',
-        'August' => 'Agustus',
-        'September' => 'September',
-        'October' => 'Oktober',
-        'November' => 'November',
-        'December' => 'Desember'
+        'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
+        'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
+        'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
+        'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
+    ];
+    $hariID = [
+        'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
+        'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'
     ];
     $bulanIniLabelTeks = strtr($bulanIniLabel, $bulanID);
-
-    $hariID = [
-        'Sunday' => 'Minggu',
-        'Monday' => 'Senin',
-        'Tuesday' => 'Selasa',
-        'Wednesday' => 'Rabu',
-        'Thursday' => 'Kamis',
-        'Friday' => 'Jumat',
-        'Saturday' => 'Sabtu'
-    ];
     $tanggalHariIni = strtr(date('l'), $hariID) . ', ' . date('d ') . strtr(date('F'), $bulanID) . date(' Y');
-
-    // Logomark kecil (motif kotak bertumpuk) dipakai di samping tiap keterangan/caption
-    $logoMark = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="dash-logomark"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
 ?>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <style>
-    :root{
-        --bg-page:#F6F7F5;
-        --bg-card:#FFFFFF;
-        --border-soft:#E7EAE6;
-        --text-primary:#1E2620;
-        --text-muted:#767F78;
+/* ── Reset & base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
-        --accent:#3F6C51;         /* sage green — primary */
-        --accent-soft:#EAF0EA;
-        --accent-slate:#5B6670;   /* neutral slate — secondary */
-        --accent-slate-soft:#EEF0F1;
-        --accent-amber:#B8842E;   /* muted amber — attention */
-        --accent-amber-soft:#F8F0E2;
-        --accent-terracotta:#B4574A; /* muted terracotta — urgent */
-        --accent-terracotta-soft:#F7E9E7;
-    }
+.wb {
+    --bg:          #F5F7FA;
+    --surface:     #FFFFFF;
+    --border:      #E5E7EB;
+    --border-focus:#D1D5DB;
+    --text:        #111827;
+    --muted:       #6B7280;
+    --subtle:      #9CA3AF;
+    --green:       #16A34A;
+    --green-bg:    #DCFCE7;
+    --amber:       #D97706;
+    --amber-bg:    #FEF3C7;
+    --red:         #DC2626;
+    --red-bg:      #FEE2E2;
+    --blue:        #2563EB;
+    --blue-bg:     #DBEAFE;
+    --slate:       #475569;
+    --slate-bg:    #F1F5F9;
 
-    .dash-wrap{
-        background:var(--bg-page);
-        font-family:'Inter', sans-serif;
-        color:var(--text-primary);
-        padding-bottom:1rem;
-    }
-    .dash-wrap h1,.dash-wrap h2,.dash-wrap h3,.dash-wrap h4,.dash-wrap h5,.dash-wrap h6{
-        font-family:'Plus Jakarta Sans', sans-serif;
-        letter-spacing:-0.01em;
-    }
-
-    .dash-card{
-        background:var(--bg-card);
-        border:1px solid var(--border-soft);
-        border-radius:1.1rem;
-        box-shadow:0 1px 2px rgba(30,38,32,0.03);
-    }
-
-    .dash-eyebrow{
-        font-size:.8rem;
-        font-weight:500;
-        color:var(--text-muted);
-    }
-
-    .dash-icon{
-        width:42px;
-        height:42px;
-        border-radius:12px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        font-size:1.05rem;
-        flex-shrink:0;
-    }
-    .dash-icon.tone-accent{ background:var(--accent-soft); color:var(--accent); }
-    .dash-icon.tone-slate{ background:var(--accent-slate-soft); color:var(--accent-slate); }
-    .dash-icon.tone-amber{ background:var(--accent-amber-soft); color:var(--accent-amber); }
-    .dash-icon.tone-terracotta{ background:var(--accent-terracotta-soft); color:var(--accent-terracotta); }
-
-    .dash-figure{
-        font-family:'Plus Jakarta Sans', sans-serif;
-        font-weight:700;
-        font-size:1.7rem;
-        color:var(--text-primary);
-    }
-
-    .dash-caption{
-        font-size:.82rem;
-        color:var(--text-muted);
-        display:flex;
-        align-items:center;
-        gap:.35rem;
-    }
-    .dash-logomark{
-        color:var(--accent);
-        opacity:.65;
-        flex-shrink:0;
-    }
-
-    .dash-btn-outline{
-        border:1px solid var(--border-soft);
-        color:var(--accent);
-        background:transparent;
-        font-weight:500;
-        transition:background .15s ease, border-color .15s ease;
-    }
-    .dash-btn-outline:hover{
-        background:var(--accent-soft);
-        border-color:var(--accent);
-        color:var(--accent);
-    }
-
-    .dash-badge{
-        display:inline-flex;
-        align-items:center;
-        gap:.35rem;
-        font-weight:500;
-        font-size:.8rem;
-        padding:.35rem .75rem;
-        border-radius:999px;
-    }
-    .dash-badge.tone-terracotta{ background:var(--accent-terracotta-soft); color:var(--accent-terracotta); }
-    .dash-badge.tone-amber{ background:var(--accent-amber-soft); color:var(--accent-amber); }
-    .dash-badge.tone-accent{ background:var(--accent-soft); color:var(--accent); }
-
-    .dash-summary-tile{
-        border:1px solid var(--border-soft);
-        border-radius:14px;
-        background:var(--bg-card);
-    }
-
-    .dash-table thead th{
-        background:var(--bg-page);
-        color:var(--text-muted);
-        font-weight:600;
-        font-size:.78rem;
-        text-transform:uppercase;
-        letter-spacing:.03em;
-        border-bottom:none;
-        padding:.85rem 1rem;
-    }
-    .dash-table tbody td{
-        padding:.9rem 1rem;
-        border-color:var(--border-soft);
-        vertical-align:middle;
-    }
-    .dash-table tbody tr:hover{
-        background:var(--bg-page);
-    }
-
-    .dash-role-pill{
-        background:var(--accent-soft);
-        color:var(--accent);
-        font-weight:500;
-        border-radius:999px;
-        padding:.4rem .9rem;
-        font-size:.85rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
+    padding: 0 0 2.5rem;
+    -webkit-font-smoothing: antialiased;
 }
 
-    .text-accent{ color:var(--accent) !important; }
-    .text-terracotta{ color:var(--accent-terracotta) !important; }
-    .text-amber{ color:var(--accent-amber) !important; }
+/* ── Header ─── target: 110px tall ───────────────────── */
+.wb-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    min-height: 72px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.wb-header-left h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    margin: 0 0 .15rem;
+    color: var(--text);
+    line-height: 1.1;
+}
+.wb-header-left p {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0;
+}
+.wb-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .1rem;
+}
+.wb-date {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+}
+.wb-clock {
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -.03em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+.wb-user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    background: var(--slate-bg);
+    color: var(--slate);
+    font-size: 11px;
+    font-weight: 500;
+    padding: .25rem .6rem;
+    border-radius: 999px;
+    margin-top: .2rem;
+}
+.wb-user-chip i { font-size: .8rem; }
+
+/* ── Page body ─────────────────────────────────────────── */
+.wb-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ── Card ──────────────────────────────────────────────── */
+.wb-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    overflow: hidden;
+    transition: box-shadow 180ms ease, transform 180ms ease;
+}
+.wb-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); transform: translateY(-1px); }
+.wb-card-body { padding: 14px 18px; }
+.wb-card-header {
+    padding: 11px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    border-bottom: 1px solid var(--border);
+}
+.wb-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -.01em;
+}
+
+/* ── KPI GRID ── target card height: 130px ────────────── */
+.wb-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+.wb-kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 18px;
+    min-height: 108px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    transition: box-shadow 180ms ease, transform 180ms ease;
+    cursor: default;
+}
+.wb-kpi:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); transform: translateY(-2px); }
+.wb-kpi-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.wb-kpi-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: .01em;
+    text-transform: uppercase;
+}
+.wb-kpi-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    flex-shrink: 0;
+}
+.wb-kpi-icon.green  { background: var(--green-bg);  color: var(--green); }
+.wb-kpi-icon.amber  { background: var(--amber-bg);  color: var(--amber); }
+.wb-kpi-icon.red    { background: var(--red-bg);    color: var(--red); }
+.wb-kpi-icon.blue   { background: var(--blue-bg);   color: var(--blue); }
+.wb-kpi-icon.slate  { background: var(--slate-bg);  color: var(--slate); }
+
+.wb-kpi-num {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -.04em;
+    color: var(--text);
+    line-height: 1;
+}
+.wb-kpi-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: .15rem;
+}
+
+/* ── Charts row ──────────────────────────────────────── */
+.wb-charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.wb-chart-wrap {
+    position: relative;
+    height: 260px;
+}
+
+/* ── Summary tiles ───────────────────────────────────── */
+.wb-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0;
+}
+.wb-tile {
+    padding: 14px 18px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
+.wb-tile:last-child { border-right: none; }
+.wb-tile-label {
+    font-size: .68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    font-weight: 500;
+}
+.wb-tile-val {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -.025em;
+    color: var(--text);
+}
+.wb-tile-unit {
+    font-size: .65rem;
+    color: var(--subtle);
+}
+
+/* ── Tables ──────────────────────────────────────────── */
+.wb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .78rem;
+}
+.wb-table thead th {
+    background: #F8F9FA;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: .55rem .9rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+.wb-table tbody td {
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+}
+.wb-table tbody tr:last-child td { border-bottom: none; }
+.wb-table tbody tr:hover td { background: #FAFAFA; }
+.wb-table .fw { font-weight: 500; }
+
+/* ── Badges ──────────────────────────────────────────── */
+.wb-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    font-size: .65rem;
+    font-weight: 500;
+    padding: .2rem .5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.wb-badge.red    { background: var(--red-bg);    color: var(--red); }
+.wb-badge.amber  { background: var(--amber-bg);  color: var(--amber); }
+.wb-badge.green  { background: var(--green-bg);  color: var(--green); }
+.wb-badge.blue   { background: var(--blue-bg);   color: var(--blue); }
+.wb-badge.slate  { background: var(--slate-bg);  color: var(--slate); }
+
+/* ── Link button ─────────────────────────────────────── */
+.wb-link-btn {
+    font-size: .72rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .28rem .65rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    transition: background 140ms, border-color 140ms, color 140ms;
+}
+.wb-link-btn:hover {
+    background: var(--bg);
+    border-color: var(--border-focus);
+    color: var(--text);
+}
+
+/* ── Two col row ─────────────────────────────────────── */
+.wb-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1.85fr;
+    gap: 14px;
+}
+
+/* ── Divider ─────────────────────────────────────────── */
+.wb-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+}
+
+/* ── Expired Summary tiles ───────────────────────────── */
+.wb-exp-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+}
+.wb-exp-tile {
+    padding: 14px 18px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+}
+.wb-exp-tile:last-child { border-right: none; }
+.wb-exp-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    flex-shrink: 0;
+}
+.wb-exp-num {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -.025em;
+    line-height: 1;
+}
+.wb-exp-lbl { font-size: .65rem; color: var(--muted); margin-top: .15rem; }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .wb-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .wb-summary-grid { grid-template-columns: repeat(3, 1fr); }
+    .wb-tile:nth-child(3) { border-right: none; }
+    .wb-tile:nth-child(4), .wb-tile:nth-child(5), .wb-tile:nth-child(6) { border-top: 1px solid var(--border); }
+    .wb-two-col { grid-template-columns: 1fr; gap: 14px; }
+}
+@media (max-width: 900px) {
+    .wb-body { padding: 12px 14px; gap: 12px; }
+    .wb-header { padding: 0 14px; min-height: auto; }
+    .wb-header-left h1 { font-size: 17px; }
+    .wb-charts-row { grid-template-columns: 1fr; gap: 12px; }
+    .wb-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .wb-kpi-num { font-size: 24px; }
+    .wb-summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .wb-tile:nth-child(2n) { border-right: none; }
+    .wb-tile:nth-child(n+3) { border-top: 1px solid var(--border); }
+    .wb-exp-row { grid-template-columns: 1fr; }
+    .wb-exp-tile { border-right: none; border-bottom: 1px solid var(--border); }
+    .wb-exp-tile:last-child { border-bottom: none; }
+}
+@media (max-width: 600px) {
+    .wb-kpi-grid { grid-template-columns: 1fr; }
+    .wb-kpi-num { font-size: 22px; }
+    .wb-summary-grid { grid-template-columns: 1fr 1fr; }
+    .wb-clock { font-size: .95rem; }
+    .wb-header-left h1 { font-size: 15px; }
+}
 </style>
 
-<div class="dash-wrap container-fluid py-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="dash-card">
-                <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div>
-                        <h4 class="fw-bold mb-2">Selamat datang, <?= esc(user()->username) ?> 👋</h4>
-                        <span class="dash-role-pill">
-                            <i class="bi bi-person-badge me-1"></i>
-                            <?= esc(get_user_role()) ?>
-                        </span>
-                    </div>
-                    <div class="text-end d-none d-md-block">
-                        <div class="dash-eyebrow mb-1"><i class="bi bi-calendar3 me-2"></i>Tanggal hari ini</div>
-                        <h5 class="fw-bold mb-0 text-accent"><?= $tanggalHariIni ?></h5>
-                    </div>
-                </div>
+<div class="wb">
+
+    <!-- ── HEADER ─────────────────────────────────────────── -->
+    <div class="wb-header">
+        <div class="wb-header-left">
+            <h1>Dashboard Gudang</h1>
+            <p>Foodbank of Indonesia — Sistem Manajemen Stok Donasi</p>
+            <div class="wb-user-chip mt-1">
+                <i class="bi bi-person-circle"></i>
+                <?= esc(user()->username) ?> &middot; <?= esc(get_user_role()) ?>
             </div>
+        </div>
+        <div class="wb-header-right">
+            <span class="wb-date"><i class="bi bi-calendar3 me-1"></i><?= $tanggalHariIni ?></span>
+            <div class="wb-clock" id="wb-clock">--:--:--</div>
         </div>
     </div>
 
-    <!-- Row 1: Statistik Utama -->
-    <div class="row g-3 mb-3">
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="dash-eyebrow"><i class="bi bi-box-seam me-1"></i>Total Jenis Barang</div>
-                        <div class="dash-icon tone-accent"><i class="bi bi-box"></i></div>
-                    </div>
-                    <div class="dash-figure"><?= number_format($totalJenisBarang, 0, ',', '.') ?></div>
-                    <div class="dash-caption"><?= $logoMark ?> Barang unik dengan stok &gt; 0</div>
+    <div class="wb-body">
+
+        <!-- ── KPI ROW ─────────────────────────────────────── -->
+        <div class="wb-kpi-grid">
+            <div class="wb-kpi">
+                <div class="wb-kpi-top">
+                    <span class="wb-kpi-label">Total Jenis Barang</span>
+                    <div class="wb-kpi-icon blue"><i class="bi bi-box"></i></div>
+                </div>
+                <div>
+                    <div class="wb-kpi-num" data-count="<?= $totalJenisBarang ?>">0</div>
+                    <div class="wb-kpi-sub">Barang dengan stok aktif</div>
+                </div>
+            </div>
+            <div class="wb-kpi">
+                <div class="wb-kpi-top">
+                    <span class="wb-kpi-label">Total Batch Aktif</span>
+                    <div class="wb-kpi-icon slate"><i class="bi bi-boxes"></i></div>
+                </div>
+                <div>
+                    <div class="wb-kpi-num" data-count="<?= $totalBatch ?>">0</div>
+                    <div class="wb-kpi-sub">Batch dengan stok tersedia</div>
+                </div>
+            </div>
+            <div class="wb-kpi">
+                <div class="wb-kpi-top">
+                    <span class="wb-kpi-label">Donasi Masuk — <?= $bulanIniLabelTeks ?></span>
+                    <div class="wb-kpi-icon green"><i class="bi bi-arrow-down-circle"></i></div>
+                </div>
+                <div>
+                    <div class="wb-kpi-num" data-count="<?= $donasiBulanIni ?>">0</div>
+                    <div class="wb-kpi-sub">Transaksi barang masuk bulan ini</div>
+                </div>
+            </div>
+            <div class="wb-kpi">
+                <div class="wb-kpi-top">
+                    <span class="wb-kpi-label">Penyaluran — <?= $bulanIniLabelTeks ?></span>
+                    <div class="wb-kpi-icon amber"><i class="bi bi-arrow-up-circle"></i></div>
+                </div>
+                <div>
+                    <div class="wb-kpi-num" data-count="<?= $penyaluranBulanIni ?>">0</div>
+                    <div class="wb-kpi-sub">Transaksi penyaluran bulan ini</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="dash-eyebrow"><i class="bi bi-boxes me-1"></i>Total Batch Aktif</div>
-                        <div class="dash-icon tone-slate"><i class="bi bi-boxes"></i></div>
-                    </div>
-                    <div class="dash-figure"><?= number_format($totalBatch, 0, ',', '.') ?></div>
-                    <div class="dash-caption"><?= $logoMark ?> Batch dengan stok tersedia</div>
+        <!-- ── CHARTS ─────────────────────────────────────── -->
+        <div class="wb-charts-row">
+            <div class="wb-card">
+                <div class="wb-card-header">
+                    <p class="wb-card-title">Grafik Donasi Masuk · 12 Bulan</p>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="dash-eyebrow"><i class="bi bi-box-arrow-in-down me-1"></i>Donasi Bulan Ini</div>
-                        <div class="dash-icon tone-accent"><i class="bi bi-arrow-down"></i></div>
-                    </div>
-                    <div class="dash-figure"><?= number_format($donasiBulanIni, 0, ',', '.') ?></div>
-                    <div class="dash-caption"><?= $logoMark ?> Bulan <?= $bulanIniLabelTeks ?></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="dash-eyebrow"><i class="bi bi-box-arrow-up me-1"></i>Penyaluran Bulan Ini</div>
-                        <div class="dash-icon tone-amber"><i class="bi bi-arrow-up"></i></div>
-                    </div>
-                    <div class="dash-figure"><?= number_format($penyaluranBulanIni, 0, ',', '.') ?></div>
-                    <div class="dash-caption"><?= $logoMark ?> Bulan <?= $bulanIniLabelTeks ?></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 2: Ringkasan Gudang -->
-    <div class="row g-3 mb-3">
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="dash-eyebrow"><i class="bi bi-speedometer2 me-1"></i>Total Berat Gudang</div>
-                        <div class="dash-icon tone-terracotta"><i class="bi bi-cart"></i></div>
-                    </div>
-                    <div class="dash-figure text-truncate"><?= format_berat($totalBeratGudang, 'Kg') ?></div>
-                    <div class="dash-caption"><?= $logoMark ?> Seluruh stok yang ada di gudang</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="dash-eyebrow"><i class="bi bi-people me-1"></i>Total Donatur</div>
-                        <div class="dash-icon tone-slate"><i class="bi bi-people"></i></div>
-                    </div>
-                    <div class="dash-figure"><?= number_format($totalDonatur, 0, ',', '.') ?></div>
-                    <div class="dash-caption"><?= $logoMark ?> Donatur terdaftar</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="dash-eyebrow"><i class="bi bi-building me-1"></i>Titik Penyaluran</div>
-                        <div class="dash-icon tone-amber"><i class="bi bi-building"></i></div>
-                    </div>
-                    <div class="dash-figure"><?= number_format($totalWilayah, 0, ',', '.') ?></div>
-                    <div class="dash-caption"><?= $logoMark ?> Wilayah target penyaluran</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="dash-eyebrow"><i class="bi bi-tags me-1"></i>Total Kategori</div>
-                        <div class="dash-icon tone-accent"><i class="bi bi-tags"></i></div>
-                    </div>
-                    <div class="dash-figure"><?= number_format($totalKategori, 0, ',', '.') ?></div>
-                    <div class="dash-caption"><?= $logoMark ?> Kategori klasifikasi barang</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 3: Grafik -->
-    <div class="row g-3 mb-3">
-        <div class="col-12 col-lg-6">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold mb-4">Grafik Donasi Masuk (12 Bulan)</h6>
-                    <div style="height: 280px;">
+                <div class="wb-card-body">
+                    <div class="wb-chart-wrap">
                         <canvas id="donasiChart"></canvas>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-12 col-lg-6">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold mb-4">Grafik Penyaluran Barang (12 Bulan)</h6>
-                    <div style="height: 280px;">
+            <div class="wb-card">
+                <div class="wb-card-header">
+                    <p class="wb-card-title">Grafik Penyaluran · 12 Bulan</p>
+                </div>
+                <div class="wb-card-body">
+                    <div class="wb-chart-wrap">
                         <canvas id="penyaluranChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Row 4: Barang Hampir Expired -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="dash-card">
-                <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h6 class="fw-bold mb-0">Barang Hampir Kedaluwarsa</h6>
-                    <a href="<?= base_url('laporan-expired') ?>" class="btn btn-sm dash-btn-outline rounded-pill px-3">Lihat Semua</a>
+        <!-- ── RINGKASAN GUDANG ─────────────────────────────── -->
+        <div class="wb-card">
+            <div class="wb-card-header">
+                <p class="wb-card-title">Ringkasan Gudang</p>
+            </div>
+            <div class="wb-summary-grid">
+                <div class="wb-tile">
+                    <div class="wb-tile-label">Total Berat Gudang</div>
+                    <div class="wb-tile-val"><?= format_berat($totalBeratGudang, 'Kg') ?></div>
+                    <div class="wb-tile-unit">Seluruh stok tersedia</div>
                 </div>
-                <div class="card-body p-4">
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <div class="dash-summary-tile d-flex align-items-center p-3">
-                                <div class="dash-icon tone-terracotta me-3"><i class="bi bi-exclamation-triangle"></i></div>
-                                <div>
-                                    <div class="dash-eyebrow mb-1">Expired</div>
-                                    <h5 class="mb-0 fw-bold text-terracotta"><?= number_format($countExpired, 0, ',', '.') ?> <small class="text-muted fw-normal">Batch</small></h5>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="dash-summary-tile d-flex align-items-center p-3">
-                                <div class="dash-icon tone-amber me-3"><i class="bi bi-hourglass-split"></i></div>
-                                <div>
-                                    <div class="dash-eyebrow mb-1">Hampir Expired (≤30 Hari)</div>
-                                    <h5 class="mb-0 fw-bold text-amber"><?= number_format($countHampirExpired, 0, ',', '.') ?> <small class="text-muted fw-normal">Batch</small></h5>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="dash-summary-tile d-flex align-items-center p-3">
-                                <div class="dash-icon tone-accent me-3"><i class="bi bi-check-circle"></i></div>
-                                <div>
-                                    <div class="dash-eyebrow mb-1">Aman (&gt;30 Hari)</div>
-                                    <h5 class="mb-0 fw-bold text-accent"><?= number_format($countAman, 0, ',', '.') ?> <small class="text-muted fw-normal">Batch</small></h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table dash-table align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th width="15%">Status</th>
-                                    <th>Nama Barang</th>
-                                    <th>Tanggal Kedaluwarsa</th>
-                                    <th>Sisa Hari</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if(empty($hampirExpiredList)): ?>
-                                <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">Tidak ada data barang yang akan kedaluwarsa.</td>
-                                </tr>
-                                <?php else: ?>
-                                    <?php foreach($hampirExpiredList as $item): ?>
-                                    <tr>
-                                        <td>
-                                            <?php if($item['status_expired'] == 'Expired'): ?>
-                                                <span class="dash-badge tone-terracotta"><i class="bi bi-x-circle"></i> Expired</span>
-                                            <?php elseif($item['status_expired'] == 'Hampir Expired'): ?>
-                                                <span class="dash-badge tone-amber"><i class="bi bi-exclamation-circle"></i> ≤30 Hari</span>
-                                            <?php else: ?>
-                                                <span class="dash-badge tone-accent"><i class="bi bi-check-circle"></i> Aman</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="fw-medium"><?= esc($item['nama_barang']) ?></td>
-                                        <td class="text-muted"><?= date('d M Y', strtotime($item['tanggal_kedaluwarsa'])) ?></td>
-                                        <td>
-                                            <?php if($item['sisa_hari'] < 0): ?>
-                                                <span class="text-terracotta fw-bold"><?= $item['sisa_hari'] ?> Hari</span>
-                                            <?php elseif($item['sisa_hari'] <= 30): ?>
-                                                <span class="text-amber fw-bold"><?= $item['sisa_hari'] ?> Hari</span>
-                                            <?php else: ?>
-                                                <span class="text-accent fw-bold"><?= $item['sisa_hari'] ?> Hari</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="wb-tile">
+                    <div class="wb-tile-label">Total Donatur</div>
+                    <div class="wb-tile-val"><?= number_format($totalDonatur, 0, ',', '.') ?></div>
+                    <div class="wb-tile-unit">Donatur terdaftar</div>
+                </div>
+                <div class="wb-tile">
+                    <div class="wb-tile-label">Titik Penyaluran</div>
+                    <div class="wb-tile-val"><?= number_format($totalWilayah, 0, ',', '.') ?></div>
+                    <div class="wb-tile-unit">Wilayah target</div>
+                </div>
+                <div class="wb-tile">
+                    <div class="wb-tile-label">Total Kategori</div>
+                    <div class="wb-tile-val"><?= number_format($totalKategori, 0, ',', '.') ?></div>
+                    <div class="wb-tile-unit">Klasifikasi barang</div>
+                </div>
+                <div class="wb-tile">
+                    <div class="wb-tile-label">Batch Kadaluwarsa</div>
+                    <div class="wb-tile-val" style="color:var(--red)"><?= number_format($countExpired, 0, ',', '.') ?></div>
+                    <div class="wb-tile-unit">Sudah melewati tanggal</div>
+                </div>
+                <div class="wb-tile">
+                    <div class="wb-tile-label">Hampir Kadaluwarsa</div>
+                    <div class="wb-tile-val" style="color:var(--amber)"><?= number_format($countHampirExpired, 0, ',', '.') ?></div>
+                    <div class="wb-tile-unit">≤ 30 hari tersisa</div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Row 5: Kategori & Top 5 Barang -->
-    <div class="row g-3">
-        <div class="col-12 col-xl-4">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold mb-4">Stok Berdasarkan Kategori (Kg)</h6>
-                    <div style="height: 280px; display: flex; justify-content: center; align-items: center;">
+        <!-- ── BARANG HAMPIR EXPIRED ────────────────────────── -->
+        <div class="wb-card">
+            <div class="wb-card-header">
+                <p class="wb-card-title">Barang Hampir Kedaluwarsa</p>
+                <a href="<?= site_url('laporan/expired') ?>" class="wb-link-btn">
+                    Lihat semua <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="wb-exp-row">
+                <div class="wb-exp-tile">
+                    <div class="wb-exp-icon red-bg" style="background:var(--red-bg);color:var(--red)">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <div>
+                        <div class="wb-exp-num" style="color:var(--red)"><?= number_format($countExpired, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
+                        <div class="wb-exp-lbl">Sudah Expired</div>
+                    </div>
+                </div>
+                <div class="wb-exp-tile">
+                    <div class="wb-exp-icon" style="background:var(--amber-bg);color:var(--amber)">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div>
+                        <div class="wb-exp-num" style="color:var(--amber)"><?= number_format($countHampirExpired, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
+                        <div class="wb-exp-lbl">Hampir Expired (≤ 30 Hari)</div>
+                    </div>
+                </div>
+                <div class="wb-exp-tile">
+                    <div class="wb-exp-icon" style="background:var(--green-bg);color:var(--green)">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div>
+                        <div class="wb-exp-num" style="color:var(--green)"><?= number_format($countAman, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
+                        <div class="wb-exp-lbl">Aman (&gt; 30 Hari)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="wb-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Nama Barang</th>
+                            <th>Tanggal Kedaluwarsa</th>
+                            <th>Sisa Hari</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if(empty($hampirExpiredList)): ?>
+                        <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted)">Tidak ada data barang yang akan kedaluwarsa.</td></tr>
+                        <?php else: ?>
+                            <?php foreach($hampirExpiredList as $item): ?>
+                            <tr>
+                                <td>
+                                    <?php if($item['status_expired'] == 'Expired'): ?>
+                                        <span class="wb-badge red"><i class="bi bi-x-circle"></i> Expired</span>
+                                    <?php elseif($item['status_expired'] == 'Hampir Expired'): ?>
+                                        <span class="wb-badge amber"><i class="bi bi-exclamation-circle"></i> ≤ 30 Hari</span>
+                                    <?php else: ?>
+                                        <span class="wb-badge green"><i class="bi bi-check-circle"></i> Aman</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="fw"><?= esc($item['nama_barang']) ?></td>
+                                <td style="color:var(--muted)"><?= date('d M Y', strtotime($item['tanggal_kedaluwarsa'])) ?></td>
+                                <td>
+                                    <?php if($item['sisa_hari'] < 0): ?>
+                                        <span style="color:var(--red);font-weight:600"><?= $item['sisa_hari'] ?> hari</span>
+                                    <?php elseif($item['sisa_hari'] <= 30): ?>
+                                        <span style="color:var(--amber);font-weight:600"><?= $item['sisa_hari'] ?> hari</span>
+                                    <?php else: ?>
+                                        <span style="color:var(--green);font-weight:600"><?= $item['sisa_hari'] ?> hari</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── KATEGORI + TOP 5 ───────────────────────────── -->
+        <div class="wb-two-col">
+            <div class="wb-card">
+                <div class="wb-card-header">
+                    <p class="wb-card-title">Distribusi Kategori (Kg)</p>
+                </div>
+                <div class="wb-card-body" style="display:flex;align-items:center;justify-content:center;">
+                    <div class="wb-chart-wrap" style="height:260px;width:100%">
                         <canvas id="kategoriChart"></canvas>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-12 col-xl-8">
-            <div class="dash-card h-100">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold mb-4">Top 5 Barang dengan Stok Terbanyak</h6>
-                    <div class="table-responsive">
-                        <table class="table dash-table align-middle mb-0">
-                            <thead>
+            <div class="wb-card">
+                <div class="wb-card-header">
+                    <p class="wb-card-title">Top 5 Barang — Stok Terbanyak</p>
+                </div>
+                <div class="table-responsive">
+                    <table class="wb-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama Barang</th>
+                                <th>Stok</th>
+                                <th>Satuan</th>
+                                <th style="text-align:right">Total Berat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(empty($topBarang)): ?>
+                            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Belum ada stok.</td></tr>
+                            <?php else: ?>
+                                <?php $no=1; foreach($topBarang as $b): ?>
                                 <tr>
-                                    <th width="5%">#</th>
-                                    <th>Nama Barang</th>
-                                    <th>Stok</th>
-                                    <th>Satuan</th>
-                                    <th class="text-end">Total Berat</th>
+                                    <td style="color:var(--muted);font-weight:600"><?= $no++ ?></td>
+                                    <td class="fw"><?= esc($b['nama_barang']) ?></td>
+                                    <td>
+                                        <span class="wb-badge blue"><?= number_format($b['total_stok'], 0, ',', '.') ?></span>
+                                    </td>
+                                    <td style="color:var(--muted)"><?= esc($b['satuan']) ?></td>
+                                    <td style="text-align:right;font-weight:500"><?= format_berat($b['total_berat'], 'Kg') ?></td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php if(empty($topBarang)): ?>
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">Belum ada stok barang di gudang.</td>
-                                </tr>
-                                <?php else: ?>
-                                    <?php $no=1; foreach($topBarang as $b): ?>
-                                    <tr>
-                                        <td class="fw-medium text-muted"><?= $no++ ?></td>
-                                        <td class="fw-bold"><?= esc($b['nama_barang']) ?></td>
-                                        <td>
-                                            <span class="dash-badge tone-accent">
-                                                <?= number_format($b['total_stok'], 0, ',', '.') ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-muted"><?= esc($b['satuan']) ?></td>
-                                        <td class="text-end fw-medium"><?= format_berat($b['total_berat'], 'Kg') ?></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+
+    </div><!-- /wb-body -->
+</div><!-- /wb -->
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    Chart.defaults.font.family = "'Inter', sans-serif";
+document.addEventListener('DOMContentLoaded', function () {
 
-    // Shared Tooltip Config
-    const sharedTooltipOptions = {
-        padding: 12,
-        backgroundColor: '#1E2620',
-        titleFont: { family: "'Plus Jakarta Sans', sans-serif", size: 13, weight: '600' },
-        bodyFont: { family: "'Inter', sans-serif", size: 12 },
+    /* ── Clock ─────────────────────────────────────────── */
+    const clockEl = document.getElementById('wb-clock');
+    function tick() {
+        const now = new Date();
+        clockEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    tick(); setInterval(tick, 1000);
+
+    /* ── Count-Up ──────────────────────────────────────── */
+    document.querySelectorAll('[data-count]').forEach(el => {
+        const target = parseInt(el.dataset.count, 10) || 0;
+        if (target === 0) { el.textContent = '0'; return; }
+        let start = 0;
+        const duration = 900;
+        const step = Math.ceil(target / (duration / 16));
+        const timer = setInterval(() => {
+            start = Math.min(start + step, target);
+            el.textContent = start.toLocaleString('id-ID');
+            if (start >= target) clearInterval(timer);
+        }, 16);
+    });
+
+    /* ── Shared chart defaults ─────────────────────────── */
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size   = 12;
+
+    const tooltip = {
+        padding: 10,
+        backgroundColor: '#111827',
+        titleColor: '#F9FAFB',
+        bodyColor: '#D1D5DB',
+        cornerRadius: 8,
         displayColors: false,
-        cornerRadius: 8
+        titleFont: { weight: '600', size: 12 },
+        bodyFont:  { size: 11 }
     };
 
-    // Grafik Donasi
-    const donasiCtx = document.getElementById('donasiChart').getContext('2d');
-    const donasiLabels = <?= $grafikLabels ?>;
-    const donasiData = <?= $grafikDonasiData ?>;
+    const gridColor  = '#F3F4F6';
+    const tickColor  = '#9CA3AF';
 
-    new Chart(donasiCtx, {
+    /* ── Donasi Chart ──────────────────────────────────── */
+    new Chart(document.getElementById('donasiChart'), {
         type: 'line',
         data: {
-            labels: donasiLabels,
+            labels: <?= $grafikLabels ?>,
             datasets: [{
                 label: 'Donasi Masuk',
-                data: donasiData,
-                borderColor: '#3F6C51',
-                backgroundColor: 'rgba(63, 108, 81, 0.08)',
-                borderWidth: 2.5,
-                pointBackgroundColor: '#3F6C51',
+                data:  <?= $grafikDonasiData ?>,
+                borderColor: '#2563EB',
+                backgroundColor: 'rgba(37,99,235,.07)',
+                borderWidth: 2,
+                pointBackgroundColor: '#2563EB',
                 pointRadius: 3,
                 pointHoverRadius: 5,
                 fill: true,
-                tension: 0.35
+                tension: 0.4
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: {
-                    ...sharedTooltipOptions,
-                    callbacks: {
-                        label: function(context) {
-                            return context.parsed.y + ' Transaksi';
-                        }
-                    }
-                }
+                tooltip: { ...tooltip, callbacks: { label: c => c.parsed.y + ' transaksi' } }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { borderDash: [4, 4], color: '#E7EAE6' },
-                    ticks: { precision: 0, color: '#767F78' }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#767F78' }
-                }
+                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0, color: tickColor } },
+                x: { grid: { display: false }, ticks: { color: tickColor } }
             }
         }
     });
 
-    // Grafik Penyaluran
-    const penyaluranCtx = document.getElementById('penyaluranChart').getContext('2d');
-    const penyaluranLabels = <?= $grafikLabels ?>;
-    const penyaluranData = <?= $grafikPenyaluranData ?>;
-
-    new Chart(penyaluranCtx, {
+    /* ── Penyaluran Chart ──────────────────────────────── */
+    new Chart(document.getElementById('penyaluranChart'), {
         type: 'line',
         data: {
-            labels: penyaluranLabels,
+            labels: <?= $grafikLabels ?>,
             datasets: [{
                 label: 'Penyaluran',
-                data: penyaluranData,
-                borderColor: '#B8842E',
-                backgroundColor: 'rgba(184, 132, 46, 0.08)',
-                borderWidth: 2.5,
-                pointBackgroundColor: '#B8842E',
+                data:  <?= $grafikPenyaluranData ?>,
+                borderColor: '#D97706',
+                backgroundColor: 'rgba(217,119,6,.07)',
+                borderWidth: 2,
+                pointBackgroundColor: '#D97706',
                 pointRadius: 3,
                 pointHoverRadius: 5,
                 fill: true,
-                tension: 0.35
+                tension: 0.4
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: {
-                    ...sharedTooltipOptions,
-                    callbacks: {
-                        label: function(context) {
-                            return context.parsed.y + ' Transaksi';
-                        }
-                    }
-                }
+                tooltip: { ...tooltip, callbacks: { label: c => c.parsed.y + ' transaksi' } }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { borderDash: [4, 4], color: '#E7EAE6' },
-                    ticks: { precision: 0, color: '#767F78' }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#767F78' }
-                }
+                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0, color: tickColor } },
+                x: { grid: { display: false }, ticks: { color: tickColor } }
             }
         }
     });
 
-    // Pie Chart Kategori
-    const kategoriCtx = document.getElementById('kategoriChart').getContext('2d');
-    const kategoriLabels = <?= $kategoriLabels ?>;
-    const kategoriData = <?= $kategoriData ?>;
-
-    new Chart(kategoriCtx, {
+    /* ── Kategori Donut ────────────────────────────────── */
+    new Chart(document.getElementById('kategoriChart'), {
         type: 'doughnut',
         data: {
-            labels: kategoriLabels,
+            labels: <?= $kategoriLabels ?>,
             datasets: [{
-                data: kategoriData,
-                backgroundColor: [
-                    '#3b82f6',
-                    '#e0a63e',
-                    '#8ea3c2',
-                    '#ef5b57',
-                    '#22c55e',
-                    '#475569'
-                ],
+                data: <?= $kategoriData ?>,
+                backgroundColor: ['#3B82F6','#F59E0B','#10B981','#EF4444','#8B5CF6','#6B7280'],
                 borderWidth: 0,
-                hoverOffset: 4
+                hoverOffset: 6
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%',
+            responsive: true, maintainAspectRatio: false,
+            cutout: '60%',
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 18,
-                        color: '#1E2620',
-                        font: { family: "'Inter', sans-serif", size: 12 }
-                    }
+                    labels: { usePointStyle: true, padding: 16, color: '#374151', font: { size: 11 } }
                 },
                 tooltip: {
-                    ...sharedTooltipOptions,
+                    ...tooltip,
                     callbacks: {
-                        label: function(context) {
-                            const value = context.parsed;
-                            const total = context.dataset.data.reduce((a, b) => Number(a) + Number(b), 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return ' ' + value.toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' Kg (' + percentage + '%)';
+                        label: function(c) {
+                            const total = c.dataset.data.reduce((a, b) => +a + +b, 0);
+                            const pct = Math.round((c.parsed / total) * 100);
+                            return ' ' + Number(c.parsed).toLocaleString('id-ID', {maximumFractionDigits:2}) + ' Kg (' + pct + '%)';
                         }
                     }
                 }
             }
         }
     });
+
 });
 </script>
 

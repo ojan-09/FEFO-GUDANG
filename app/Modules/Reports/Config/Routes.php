@@ -5,6 +5,12 @@ if (!isset($routes)) {
 }
 
 $routes->group('laporan', ['namespace' => 'App\Modules\Reports\Controllers', 'filter' => 'rbac:Administrator,Petugas Gudang,Pimpinan'], function ($routes) {
+    // === Laporan Penyesuaian ===
+    $routes->get('penyesuaian', 'LaporanPenyesuaian::index');
+    $routes->get('penyesuaian/export_pdf', 'LaporanPenyesuaian::export_pdf');
+    $routes->get('penyesuaian/export_excel', 'LaporanPenyesuaian::export_excel');
+
+    // === Laporan Stok ===
     $routes->get('stok', 'LaporanStokGudang::index');
     $routes->get('stok/pdf', 'LaporanStokGudang::pdf');
     $routes->get('stok/excel', 'LaporanStokGudang::excel');

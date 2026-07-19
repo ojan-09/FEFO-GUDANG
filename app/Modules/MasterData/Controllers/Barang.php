@@ -52,6 +52,7 @@ class Barang extends BaseController
             'berat_per_satuan' => 'required|decimal|greater_than[0]',
             'satuan_berat'     => 'required|in_list[Gram,Kg]',
             'minimum_stok'     => 'required|integer|greater_than_equal_to[0]',
+            'bisa_dipecah'     => 'required|in_list[0,1]',
         ];
 
         $errors = [
@@ -82,6 +83,10 @@ class Barang extends BaseController
                 'integer'                => 'Minimum stok harus berupa bilangan bulat.',
                 'greater_than_equal_to' => 'Minimum stok tidak boleh negatif.',
             ],
+            'bisa_dipecah' => [
+                'required' => 'Status Bisa Dipecah wajib dipilih.',
+                'in_list'  => 'Status Bisa Dipecah tidak valid.',
+            ],
         ];
 
         // Trim nama_barang
@@ -92,16 +97,26 @@ class Barang extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        // Repack (Bisa Dipecah -> konversi ke Kg) hanya boleh untuk kemasan Karung.
+        $satuan = $this->request->getPost('satuan');
+        $bisaDipecah = (int) $this->request->getPost('bisa_dipecah');
+        if ($bisaDipecah === 1 && strtolower($satuan) !== 'karung') {
+            return redirect()->back()->withInput()->with('errors', [
+                'bisa_dipecah' => 'Status "Bisa Dipecah" (Repack) hanya berlaku untuk barang berkemasan Karung.',
+            ]);
+        }
+
         $kodeBarang = $this->generateKodeBarang();
 
         $this->barangModel->insert([
             'kode_barang'      => $kodeBarang,
             'id_kategori'      => $this->request->getPost('id_kategori'),
             'nama_barang'      => $namaBarang,
-            'satuan'           => $this->request->getPost('satuan'),
+            'satuan'           => $satuan,
             'berat_per_satuan' => $this->request->getPost('berat_per_satuan'),
             'satuan_berat'     => $this->request->getPost('satuan_berat'),
             'minimum_stok'     => $this->request->getPost('minimum_stok'),
+            'bisa_dipecah'     => $bisaDipecah,
         ]);
 
         return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil ditambahkan.');
@@ -131,6 +146,7 @@ class Barang extends BaseController
             'berat_per_satuan' => 'required|decimal|greater_than[0]',
             'satuan_berat'     => 'required|in_list[Gram,Kg]',
             'minimum_stok'     => 'required|integer|greater_than_equal_to[0]',
+            'bisa_dipecah'     => 'required|in_list[0,1]',
         ];
 
         $errors = [
@@ -161,6 +177,10 @@ class Barang extends BaseController
                 'integer'                => 'Minimum stok harus berupa bilangan bulat.',
                 'greater_than_equal_to' => 'Minimum stok tidak boleh negatif.',
             ],
+            'bisa_dipecah' => [
+                'required' => 'Status Bisa Dipecah wajib dipilih.',
+                'in_list'  => 'Status Bisa Dipecah tidak valid.',
+            ],
         ];
 
         $namaBarang = trim($this->request->getPost('nama_barang') ?? '');
@@ -175,13 +195,23 @@ class Barang extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Barang tidak ditemukan.');
         }
 
+        // Repack (Bisa Dipecah -> konversi ke Kg) hanya boleh untuk kemasan Karung.
+        $satuan = $this->request->getPost('satuan');
+        $bisaDipecah = (int) $this->request->getPost('bisa_dipecah');
+        if ($bisaDipecah === 1 && strtolower($satuan) !== 'karung') {
+            return redirect()->back()->withInput()->with('errors', [
+                'bisa_dipecah' => 'Status "Bisa Dipecah" (Repack) hanya berlaku untuk barang berkemasan Karung.',
+            ]);
+        }
+
         $this->barangModel->update($id, [
             'id_kategori'      => $this->request->getPost('id_kategori'),
             'nama_barang'      => $namaBarang,
-            'satuan'           => $this->request->getPost('satuan'),
+            'satuan'           => $satuan,
             'berat_per_satuan' => $this->request->getPost('berat_per_satuan'),
             'satuan_berat'     => $this->request->getPost('satuan_berat'),
             'minimum_stok'     => $this->request->getPost('minimum_stok'),
+            'bisa_dipecah'     => $bisaDipecah,
         ]);
 
         return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil diperbarui.');
@@ -200,15 +230,13 @@ class Barang extends BaseController
 
     private function generateKodeBarang(): string
     {
-        $last = $this->barangModel->orderBy('id', 'DESC')->first();
-        if ($last && preg_match('/BRG-(\d+)/', $last['kode_barang'], $matches)) {
-            $lastNumber = (int) $matches[1];
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+        $db = \Config\Database::connect();
+        $row = $db->table('barang')
+            ->select('MAX(CAST(SUBSTRING(kode_barang, 5) AS UNSIGNED)) as max_num')
+            ->where('kode_barang LIKE', 'BRG-%')
+            ->get()->getRowArray();
+        $lastNumber = $row ? (int)$row['max_num'] : 0;
+        $newNumber = $lastNumber + 1;
         return 'BRG-' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
 }
-
-
