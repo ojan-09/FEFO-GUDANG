@@ -11,12 +11,13 @@ class LaporanPenyesuaian extends BaseController
 {
     public function index()
     {
+        helper('format');
         $start_date = $this->request->getGet('start_date') ?: date('Y-m-01');
         $end_date = $this->request->getGet('end_date') ?: date('Y-m-t');
 
         $db = \Config\Database::connect();
         $builder = $db->table('detail_penyesuaian_stok dps');
-        $builder->select('dps.*, ps.nomor_penyesuaian, ps.tanggal, ps.jenis_penyesuaian, ps.keterangan as ket_umum, b.nama_barang, b.kategori, batch.nomor_batch, batch.tanggal_kedaluwarsa');
+        $builder->select('dps.*, ps.nomor_penyesuaian, ps.tanggal, ps.jenis_penyesuaian, ps.keterangan as ket_umum, b.nama_barang, b.satuan, b.bisa_dipecah, batch.nomor_batch, batch.tanggal_kedaluwarsa');
         $builder->join('penyesuaian_stok ps', 'ps.id = dps.id_penyesuaian');
         $builder->join('barang b', 'b.id = dps.id_barang');
         $builder->join('batch', 'batch.id = dps.id_batch');
@@ -46,7 +47,7 @@ class LaporanPenyesuaian extends BaseController
 
         $db = \Config\Database::connect();
         $builder = $db->table('detail_penyesuaian_stok dps');
-        $builder->select('dps.*, ps.nomor_penyesuaian, ps.tanggal, ps.jenis_penyesuaian, ps.keterangan as ket_umum, b.nama_barang, b.kategori, batch.nomor_batch, batch.tanggal_kedaluwarsa');
+        $builder->select('dps.*, ps.nomor_penyesuaian, ps.tanggal, ps.jenis_penyesuaian, ps.keterangan as ket_umum, b.nama_barang, b.satuan, b.bisa_dipecah, batch.nomor_batch, batch.tanggal_kedaluwarsa');
         $builder->join('penyesuaian_stok ps', 'ps.id = dps.id_penyesuaian');
         $builder->join('barang b', 'b.id = dps.id_barang');
         $builder->join('batch', 'batch.id = dps.id_batch');
@@ -82,7 +83,7 @@ class LaporanPenyesuaian extends BaseController
 
         $db = \Config\Database::connect();
         $builder = $db->table('detail_penyesuaian_stok dps');
-        $builder->select('dps.*, ps.nomor_penyesuaian, ps.tanggal, ps.jenis_penyesuaian, ps.keterangan as ket_umum, b.nama_barang, b.kategori, batch.nomor_batch, batch.tanggal_kedaluwarsa');
+        $builder->select('dps.*, ps.nomor_penyesuaian, ps.tanggal, ps.jenis_penyesuaian, ps.keterangan as ket_umum, b.nama_barang, b.satuan, b.bisa_dipecah, batch.nomor_batch, batch.tanggal_kedaluwarsa');
         $builder->join('penyesuaian_stok ps', 'ps.id = dps.id_penyesuaian');
         $builder->join('barang b', 'b.id = dps.id_barang');
         $builder->join('batch', 'batch.id = dps.id_batch');
