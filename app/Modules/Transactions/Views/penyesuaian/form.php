@@ -209,11 +209,14 @@
     }
 
     /* Action buttons */
-    .btn-batal {
+    .btn-batal, .btn-back {
         height: 40px;
         padding: 0 20px;
         font-size: 14px;
         border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .btn-simpan {
@@ -222,6 +225,9 @@
         font-size: 14px;
         font-weight: 600;
         border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     hr.my-3 {
