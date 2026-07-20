@@ -38,7 +38,7 @@
         Informasi Kategori
     </h5>
 
-    <form action="<?= $action ?>" method="POST">
+    <form action="<?= $action ?>" method="POST" class="loading-form" data-overlay="true">
         <?= csrf_field() ?>
 
         <div class="mb-4">

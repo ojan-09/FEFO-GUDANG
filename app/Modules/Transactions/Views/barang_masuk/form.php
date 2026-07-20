@@ -338,7 +338,7 @@
     </div>
 <?php endif; ?>
 
-<form action="<?= $actionUrl ?>" method="POST" id="formDonasiMasuk" novalidate>
+<form action="<?= $actionUrl ?>" method="POST" id="formDonasiMasuk" class="loading-form" data-overlay="true" novalidate>
     <?= csrf_field() ?>
 
     <!-- ── Header card ── -->

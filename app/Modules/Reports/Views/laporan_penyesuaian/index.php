@@ -25,7 +25,7 @@
 /* ── PAGINATION ── */
 .dataTables_wrapper .dataTables_paginate { margin-top: 10px; }
 .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0 !important; border: none !important; background: transparent !important; margin: 0 1px !important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button .page-link { height: 32px !important; min-width: 32px; padding: 0 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; font-size: 12.5px; font-weight: 500; color: #334155 !important; background: #fff !important; transition: all .15s; }
+.dataTables_wrapper .dataTables_paginate .paginate_button .page-link { height: 32px !important; min-width: 32px; padding: 0 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; font-size: 12.5px; font-weight: 500; color: #334155 !important; background: #fff !important; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
 .dataTables_wrapper .dataTables_paginate .paginate_button.current .page-link, .dataTables_wrapper .dataTables_paginate .paginate_button.active .page-link { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
 .dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link { background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important; }
 .dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link { opacity: .45; cursor: default; }
@@ -66,10 +66,10 @@
                 <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
                     <i class="fa-solid fa-filter"></i> Filter Data
                 </button>
-                <a href="<?= site_url('laporan/penyesuaian/export_pdf') ?>?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-danger d-inline-flex align-items-center gap-2" target="_blank">
+                <a href="<?= site_url('laporan/penyesuaian/export_pdf') ?>?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-danger d-inline-flex align-items-center gap-2 btn-export-loading" data-loading-text="Membuat PDF..." target="_blank">
                     <i class="fa-regular fa-file-pdf"></i> Cetak PDF
                 </a>
-                <a href="<?= site_url('laporan/penyesuaian/export_excel') ?>?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-success d-inline-flex align-items-center gap-2">
+                <a href="<?= site_url('laporan/penyesuaian/export_excel') ?>?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-success d-inline-flex align-items-center gap-2 btn-export-loading" data-loading-text="Membuat Excel...">
                     <i class="fa-regular fa-file-excel"></i> Export Excel
                 </a>
             </div>
@@ -130,6 +130,7 @@
                 </tbody>
             </table>
         </div>
+
     </div>
 </div>
 
@@ -142,11 +143,7 @@ $(document).ready(function() {
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
         },
-        "order": [],
-        "pageLength": 50,
-        "drawCallback": function() {
-            $('.dataTables_paginate > .pagination').addClass('pagination-sm mb-0');
-        }
+        "order": []
     });
 });
 </script>

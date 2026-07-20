@@ -126,40 +126,12 @@
     color: #6b7280;
     padding-top: 10px;
 }
-.dataTables_wrapper .dataTables_paginate {
-    padding-top: 6px;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-    height: 34px;
-    min-width: 34px;
-    padding: 0 10px !important;
-    font-size: 12.5px !important;
-    border-radius: 8px !important;
-    border: 1px solid #e5e7eb !important;
-    background: #fff !important;
-    color: #374151 !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 2px;
-    transition: background .12s, border-color .12s;
-    box-sizing: border-box;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) {
-    background: #f1f5f9 !important;
-    border-color: #cbd5e1 !important;
-    color: #0f172a !important;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button.current {
-    background: #2563eb !important;
-    border-color: #2563eb !important;
-    color: #fff !important;
-    font-weight: 600;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
-    opacity: .4;
-    cursor: not-allowed;
-}
+.dataTables_wrapper .dataTables_paginate { margin-top: 10px; }
+.dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0 !important; border: none !important; background: transparent !important; margin: 0 1px !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button .page-link { height: 32px !important; min-width: 32px; padding: 0 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; font-size: 12.5px; font-weight: 500; color: #334155 !important; background: #fff !important; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.current .page-link, .dataTables_wrapper .dataTables_paginate .paginate_button.active .page-link { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link { background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link { opacity: .45; cursor: default; }
 
 /* ═══════════════════════════════════════════════
    TABLE
@@ -377,8 +349,9 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
-    </div>
 </div>
+
+
 
 </div><!-- /.dm-page -->
 
@@ -391,6 +364,7 @@
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
             },
+            order: [],
             order: [],
             columnDefs: [
                 { orderable: false, targets: [6] }

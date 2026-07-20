@@ -12,15 +12,14 @@ class LaporanPenyesuaian extends BaseController
     public function index()
     {
         helper('format');
+        $model = new \App\Modules\Transactions\Models\DetailPenyesuaianStokModel();
         $start_date = $this->request->getGet('start_date') ?: date('Y-m-01');
         $end_date = $this->request->getGet('end_date') ?: date('Y-m-t');
 
-        $db = \Config\Database::connect();
-        $builder = $db->table('detail_penyesuaian_stok dps');
-        $builder->select('dps.*, ps.nomor_penyesuaian, ps.tanggal, ps.jenis_penyesuaian, ps.keterangan as ket_umum, b.nama_barang, b.satuan, b.bisa_dipecah, batch.nomor_batch, batch.tanggal_kedaluwarsa');
-        $builder->join('penyesuaian_stok ps', 'ps.id = dps.id_penyesuaian');
-        $builder->join('barang b', 'b.id = dps.id_barang');
-        $builder->join('batch', 'batch.id = dps.id_batch');
+        $builder = $model->select('detail_penyesuaian_stok.*, ps.nomor_penyesuaian, ps.tanggal, ps.jenis_penyesuaian, ps.keterangan as ket_umum, b.nama_barang, b.satuan, b.bisa_dipecah, batch.nomor_batch, batch.tanggal_kedaluwarsa')
+                         ->join('penyesuaian_stok ps', 'ps.id = detail_penyesuaian_stok.id_penyesuaian')
+                         ->join('barang b', 'b.id = detail_penyesuaian_stok.id_barang')
+                         ->join('batch', 'batch.id = detail_penyesuaian_stok.id_batch');
         
         if ($start_date && $end_date) {
             $builder->where('ps.tanggal >=', $start_date);
@@ -42,6 +41,8 @@ class LaporanPenyesuaian extends BaseController
 
     public function export_pdf()
     {
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
         $start_date = $this->request->getGet('start_date');
         $end_date = $this->request->getGet('end_date');
 
@@ -78,6 +79,8 @@ class LaporanPenyesuaian extends BaseController
 
     public function export_excel()
     {
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
         $start_date = $this->request->getGet('start_date');
         $end_date = $this->request->getGet('end_date');
 

@@ -25,18 +25,18 @@ class PenyesuaianStok extends BaseController
 
     public function index()
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('penyesuaian_stok ps');
-        $builder->select('ps.*, users.username, COUNT(dps.id) as total_item');
-        $builder->join('users', 'users.id = ps.id_user', 'left');
-        $builder->join('detail_penyesuaian_stok dps', 'dps.id_penyesuaian = ps.id', 'left');
-        $builder->groupBy('ps.id');
-        $builder->orderBy('ps.tanggal', 'DESC');
-        $builder->orderBy('ps.id', 'DESC');
+        $transaksi = $this->penyesuaianModel
+            ->select('penyesuaian_stok.id, penyesuaian_stok.nomor_penyesuaian, penyesuaian_stok.tanggal, penyesuaian_stok.jenis_penyesuaian, penyesuaian_stok.keterangan, users.username, COUNT(dps.id) as total_item')
+            ->join('users', 'users.id = penyesuaian_stok.id_user', 'left')
+            ->join('detail_penyesuaian_stok dps', 'dps.id_penyesuaian = penyesuaian_stok.id', 'left')
+            ->groupBy('penyesuaian_stok.id')
+            ->orderBy('penyesuaian_stok.tanggal', 'DESC')
+            ->orderBy('penyesuaian_stok.id', 'DESC')
+            ->findAll();
 
         $data = [
-            'title' => 'Riwayat Penyesuaian Stok',
-            'transaksi' => $builder->get()->getResultArray()
+            'title'     => 'Riwayat Penyesuaian Stok',
+            'transaksi' => $transaksi
         ];
 
         return view('App\Modules\Transactions\Views\penyesuaian\index', $data);
@@ -236,7 +236,6 @@ class PenyesuaianStok extends BaseController
             'penyesuaian' => $penyesuaian,
             'details' => $details
         ];
-
         return view('App\Modules\Transactions\Views\penyesuaian\detail', $data);
     }
 

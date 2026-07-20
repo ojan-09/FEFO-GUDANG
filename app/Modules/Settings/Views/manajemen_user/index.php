@@ -370,7 +370,7 @@
                                         data-bs-toggle="modal" data-bs-target="#modalReset<?= $row['id'] ?>">
                                         <i class="fa-solid fa-key"></i>
                                     </button>
-                                    <form action="<?= site_url('manajemen-user/toggle-status/' . $row['id']) ?>" method="post" class="d-inline">
+                                    <form action="<?= site_url('manajemen-user/toggle-status/' . $row['id']) ?>" method="post" class="loading-form" data-overlay="true" class="d-inline">
                                         <?= csrf_field() ?>
                                         <?php if ($row['active']): ?>
                                             <button type="submit" class="wh-action-btn danger" title="Nonaktifkan"
@@ -391,7 +391,7 @@
                         <!-- Modal Edit -->
                         <div class="modal fade" id="modalEdit<?= $row['id'] ?>" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
-                                <form action="<?= site_url('manajemen-user/update/' . $row['id']) ?>" method="post">
+                                <form action="<?= site_url('manajemen-user/update/' . $row['id']) ?>" method="post" class="loading-form" data-overlay="true">
                                     <?= csrf_field() ?>
                                     <div class="modal-content">
                                         <div class="modal-header">
@@ -428,7 +428,7 @@
                         <!-- Modal Reset Password -->
                         <div class="modal fade" id="modalReset<?= $row['id'] ?>" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
-                                <form action="<?= site_url('manajemen-user/reset/' . $row['id']) ?>" method="post">
+                                <form action="<?= site_url('manajemen-user/reset/' . $row['id']) ?>" method="post" class="loading-form" data-overlay="true">
                                     <?= csrf_field() ?>
                                     <div class="modal-content">
                                         <div class="modal-header">
@@ -470,7 +470,7 @@
 <!-- Modal Tambah User -->
 <div class="modal fade" id="modalTambah" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form action="<?= site_url('manajemen-user/store') ?>" method="post">
+        <form action="<?= site_url('manajemen-user/store') ?>" method="post" class="loading-form" data-overlay="true">
             <?= csrf_field() ?>
             <div class="modal-content">
                 <div class="modal-header">
@@ -519,7 +519,7 @@ $(document).ready(function () {
     var table = $('#tableUsers').DataTable({
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
         // Pindahkan info & paginate ke container kustom
-        dom: 'rt',   // r=processing, t=table — toolbar & paginate kita handle manual
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',   // r=processing, t=table — toolbar & paginate kita handle manual
         initComplete: function () {
             // Sambungkan info & paginate ke slot kita
             $('#tableUsers_info').appendTo('#dtInfo');

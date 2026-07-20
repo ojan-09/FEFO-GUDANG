@@ -141,7 +141,7 @@
     font-size: 13px; font-weight: 600;
     border-radius: 999px; border: none;
     cursor: pointer; text-decoration: none;
-    transition: all .18s ease; white-space: nowrap; line-height: 1;
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease, opacity .18s ease, transform .18s ease; white-space: nowrap; line-height: 1;
 }
 .wil-btn-primary {
     background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
@@ -254,7 +254,7 @@
     border-radius: 10px; border: none;
     font-size: 14px; cursor: pointer;
     text-decoration: none;
-    transition: all .15s ease;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease;
 }
 .wil-action-edit  { background: #EFF6FF; color: #2563EB; }
 .wil-action-edit:hover  { background: #DBEAFE; color: #1D4ED8; transform: translateY(-2px); }

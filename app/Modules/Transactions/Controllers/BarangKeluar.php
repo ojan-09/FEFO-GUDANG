@@ -35,7 +35,7 @@ class BarangKeluar extends BaseController
     public function index()
     {
         $barangKeluar = $this->barangKeluarModel
-            ->select('barang_keluar.*, wilayah.nama_wilayah, users.username as petugas')
+            ->select('barang_keluar.id, barang_keluar.nomor_transaksi, barang_keluar.tujuan_penyaluran, barang_keluar.tanggal_keluar, wilayah.nama_wilayah, users.username as petugas')
             ->join('wilayah', 'wilayah.id = barang_keluar.id_wilayah', 'left')
             ->join('users', 'users.id = barang_keluar.id_user')
             ->orderBy('barang_keluar.id', 'DESC')
@@ -63,6 +63,7 @@ class BarangKeluar extends BaseController
         $data = [
             'title'        => 'Transaksi Barang Keluar',
             'barangKeluar' => $barangKeluar,
+            'detailStats'  => $detailStats
         ];
         return view('App\Modules\Transactions\Views\barang_keluar\index', $data);
     }

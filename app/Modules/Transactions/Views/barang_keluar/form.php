@@ -273,7 +273,7 @@
     </div>
 <?php endif; ?>
 
-<form action="<?= $actionUrl ?>" method="POST" id="formBarangKeluar">
+<form action="<?= $actionUrl ?>" method="POST" id="formBarangKeluar" class="loading-form" data-overlay="true">
     <?= csrf_field() ?>
 
     <!-- ── Informasi Transaksi card ── -->

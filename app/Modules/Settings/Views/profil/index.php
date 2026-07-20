@@ -66,7 +66,7 @@
                 </div>
             <?php endif ?>
 
-            <form action="<?= site_url('profil/update') ?>" method="post">
+            <form action="<?= site_url('profil/update') ?>" method="post" class="loading-form" data-overlay="true">
                 <?= csrf_field() ?>
 
                 <div class="mb-3">

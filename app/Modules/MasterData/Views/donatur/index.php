@@ -45,7 +45,7 @@
     background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
     color: #fff; cursor: pointer; text-decoration: none;
     box-shadow: 0 4px 12px rgba(37,99,235,.22);
-    transition: all .18s ease; white-space: nowrap;
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease, opacity .18s ease, transform .18s ease; white-space: nowrap;
 }
 .don-btn-add:hover {
     transform: translateY(-2px);
@@ -142,7 +142,7 @@
     background: #F8FAFC !important;
     color: #475569 !important;
     margin: 0 2px;
-    transition: all .15s; display: inline-block;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease; display: inline-block;
 }
 .don-card .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
     background: #EFF6FF !important;
@@ -216,7 +216,7 @@
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: 10px; border: none; font-size: 13px;
     cursor: pointer; text-decoration: none;
-    transition: all .15s ease;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease;
 }
 .don-action-edit   { background: #EFF6FF; color: #2563EB; }
 .don-action-edit:hover   { background: #2563EB; color: #fff; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(37,99,235,.25); }

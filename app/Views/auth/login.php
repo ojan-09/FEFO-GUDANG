@@ -304,11 +304,17 @@
             <?php endif; ?>
 
             <button type="submit" class="btn-login" id="btnLogin">
-                <span class="btn-spinner"></span>
-                <i class="fa-solid fa-right-to-bracket btn-login-icon"></i>
-                <span class="btn-login-label">Masuk</span>
+                <span class="btn-spinner" id="loginSpinner"></span>
+                <i class="fa-solid fa-right-to-bracket btn-login-icon" id="loginIcon"></i>
+                <span class="btn-login-label" id="loginLabel">Masuk</span>
             </button>
         </form>
+
+        <div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:9999; display:none; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Memverifikasi akun...</span>
+            </div>
+        </div>
 
         <div class="card-footer-custom">
             Lupa password? Hubungi administrator sistem Anda.
@@ -331,8 +337,16 @@
 
         const loginForm = document.getElementById('loginForm');
         const btnLogin = document.getElementById('btnLogin');
+        const loginLabel = document.getElementById('loginLabel');
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginIcon = document.getElementById('loginIcon');
+        
         loginForm.addEventListener('submit', function () {
             btnLogin.classList.add('is-loading');
+            btnLogin.disabled = true;
+            loginIcon.style.display = 'none';
+            loginLabel.innerText = 'Memverifikasi akun...';
+            loginOverlay.style.display = 'flex';
         });
     </script>
 </body>

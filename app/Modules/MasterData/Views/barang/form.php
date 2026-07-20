@@ -21,7 +21,7 @@
 
 <!-- Form -->
 <div class="panel-card">
-    <form action="<?= $action ?>" method="POST" id="formBarang">
+    <form action="<?= $action ?>" method="POST" id="formBarang" class="loading-form" data-overlay="true">
         <?= csrf_field() ?>
         <div class="row">
             <!-- Kolom Kiri -->

@@ -261,8 +261,8 @@
                     <a href="<?= site_url('laporan/expired') ?>" class="wh-btn-outline"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</a>
                 <?php endif; ?>
                 <div style="margin-left: auto; display: flex; gap: 8px;">
-                    <a href="<?= site_url('laporan/expired/pdf') ?>?<?= http_build_query($filters) ?>" target="_blank" class="wh-tb-btn"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
-                    <a href="<?= site_url('laporan/expired/excel') ?>?<?= http_build_query($filters) ?>" target="_blank" class="wh-btn-success"><i class="fa-solid fa-file-excel"></i> Export Excel</a>
+                    <a href="<?= site_url('laporan/expired/pdf') ?>?<?= http_build_query($filters) ?>" target="_blank" class="wh-tb-btn btn-export-loading" data-loading-text="Membuat PDF..."><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
+                    <a href="<?= site_url('laporan/expired/excel') ?>?<?= http_build_query($filters) ?>" target="_blank" class="wh-btn-success btn-export-loading" data-loading-text="Membuat Excel..."><i class="fa-solid fa-file-excel"></i> Export Excel</a>
                 </div>
             </div>
         </form>

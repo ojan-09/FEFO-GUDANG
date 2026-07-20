@@ -32,7 +32,7 @@
 
 <!-- Form -->
 <div class="panel-card">
-    <form action="<?= $action ?>" method="POST">
+    <form action="<?= $action ?>" method="POST" class="loading-form" data-overlay="true">
         <?= csrf_field() ?>
         <div class="row">
             <!-- Kolom Kiri -->

@@ -333,7 +333,7 @@
 
     <!-- ── KOLOM KANAN: Daftar & Simpan ── -->
     <div class="col-lg-8">
-        <form action="<?= site_url('transaksi/penyesuaian/store') ?>" method="POST" id="form-transaksi"
+        <form action="<?= site_url('transaksi/penyesuaian/store') ?>" method="POST" id="form-transaksi" class="loading-form" data-overlay="true"
             onsubmit="document.getElementById('btn-submit').disabled=true; document.getElementById('btn-submit').innerHTML='<i class=\'fa-solid fa-spinner fa-spin me-1\'></i> Menyimpan...';">
             <?= csrf_field() ?>
             <input type="hidden" name="jenis_penyesuaian" id="form_jenis_penyesuaian" value="Barang Rusak">

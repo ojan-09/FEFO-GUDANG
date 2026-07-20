@@ -354,8 +354,8 @@
             <div class="dt-length-wrap">
                 Tampilkan
                 <select id="dtLengthSelect">
-                    <option value="10">10</option>
-                    <option value="25" selected>25</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                 </select>
@@ -555,8 +555,8 @@ $(document).ready(function () {
     var table = $('#dataTable').DataTable({
         order: [],
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
-        pageLength: 25,
-        dom: 'rt',
+        pageLength:10,
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
         initComplete: function () {
             $('#dataTable_info').appendTo('#dtInfo');
             $('#dataTable_paginate').appendTo('#dtPaginate');

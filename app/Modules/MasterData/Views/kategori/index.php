@@ -45,7 +45,7 @@
     background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
     color: #fff; cursor: pointer; text-decoration: none;
     box-shadow: 0 4px 12px rgba(37,99,235,.22);
-    transition: all .18s ease; white-space: nowrap;
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease, opacity .18s ease, transform .18s ease; white-space: nowrap;
 }
 .kat-btn-add:hover {
     transform: translateY(-2px);
@@ -125,7 +125,7 @@
     color: #475569 !important;
     margin: 0 2px;
     line-height: 38px;
-    transition: all .15s;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease;
 }
 .kat-card .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
     background: #EFF6FF !important;
@@ -202,7 +202,7 @@
     border-radius: 10px; border: none;
     font-size: 13px; cursor: pointer;
     text-decoration: none;
-    transition: all .15s ease;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease;
 }
 .kat-action-edit  { background: #EFF6FF; color: #2563EB; }
 .kat-action-edit:hover  { background: #DBEAFE; color: #1D4ED8; transform: translateY(-2px); }

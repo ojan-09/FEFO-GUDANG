@@ -4,361 +4,312 @@
 
 <style>
 /* ═══════════════════════════════════════════════
-   DESIGN SYSTEM — Riwayat Penyesuaian Stok
-   Konsisten dengan: Dashboard, Donatur, Wilayah,
-   Donasi Masuk, Penyaluran Barang, Log Aktivitas
+   PAGE CONTAINER
 ═══════════════════════════════════════════════ */
-
 .dm-page {
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 1.45;
     max-width: 1500px;
     width: 100%;
     margin: 0 auto;
-    padding: 6px 4px 20px;
+    padding: 14px 16px 24px;
     box-sizing: border-box;
 }
 
-/* ── TOPBAR ── */
+/* ═══════════════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════════════ */
 .dm-topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 14px;
-    padding: 13px 18px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04);
-    min-height: 72px;
+    padding: 14px 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
 }
-
-.dm-topbar__left { display: flex; align-items: center; gap: 11px; }
-
-.dm-topbar__icon {
-    width: 40px; height: 40px;
-    border-radius: 11px;
-    background: linear-gradient(135deg, #eff6ff, #dbeafe);
-    border: 1px solid #bfdbfe;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-}
-
-.dm-topbar__icon i { font-size: 18px; color: #2563eb; }
-
 .dm-topbar__title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: #0f172a;
-    margin: 0 0 2px;
+    margin: 0;
     line-height: 1.2;
 }
-
+.dm-topbar__title i { font-size: 18px; margin-right: 8px; }
 .dm-topbar__sub {
     font-size: 12px;
     color: #64748b;
-    margin: 0;
+    margin: 2px 0 0;
 }
-
 .dm-btn-add {
-    height: 36px;
+    height: 38px;
     padding: 0 18px;
     font-size: 13px;
     font-weight: 600;
-    border-radius: 18px;
+    border-radius: 999px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
     white-space: nowrap;
-    text-decoration: none;
     transition: transform .15s, box-shadow .15s;
-    flex-shrink: 0;
+    text-decoration: none;
+}
+.dm-btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37,99,235,.25);
 }
 
-.dm-btn-add i { font-size: 12px; }
-.dm-btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,.25); }
-
-/* ── CARD ── */
+/* ═══════════════════════════════════════════════
+   DATA CARD
+═══════════════════════════════════════════════ */
 .dm-card {
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 14px;
     padding: 16px 18px;
-    box-shadow: 0 2px 8px rgba(15,23,42,.05);
+    box-shadow: 0 6px 18px rgba(15,23,42,.05);
 }
 
-/* ── DATATABLE TOOLBAR ── */
+/* ═══════════════════════════════════════════════
+   DATATABLE OVERRIDES
+═══════════════════════════════════════════════ */
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
-
 .dataTables_wrapper .dataTables_length label,
 .dataTables_wrapper .dataTables_filter label {
+    font-size: 13px;
+    color: #374151;
     display: flex;
     align-items: center;
-    gap: 7px;
-    font-size: 12.5px;
-    color: #475569;
+    gap: 8px;
     margin: 0;
 }
-
 .dataTables_wrapper .dataTables_length select {
-    height: 34px;
-    width: 72px;
+    height: 36px;
+    font-size: 13px;
+    padding: 0 28px 0 10px;
+    border: 1px solid #d1d5db;
     border-radius: 8px;
-    padding: 0 8px;
-    border: 1px solid #cbd5e1;
-    font-size: 12.5px;
-    color: #334155;
+    background: #fff;
+    color: #111827;
     outline: none;
-    background: #f8fafc;
+    appearance: auto;
+}
+.dataTables_wrapper .dataTables_filter input {
+    height: 36px;
+    width: 220px;
+    font-size: 13px;
+    padding: 0 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #111827;
+    outline: none;
     transition: border-color .15s;
 }
-
-.dataTables_wrapper .dataTables_length select:focus { border-color: #2563eb; }
-
-.dataTables_wrapper .dataTables_filter input {
-    height: 34px;
-    width: 220px;
-    border-radius: 8px;
-    padding: 0 10px;
-    border: 1px solid #cbd5e1;
-    font-size: 12.5px;
-    color: #334155;
-    outline: none;
-    background: #f8fafc;
-    transition: border-color .15s, box-shadow .15s;
-    margin-left: 5px;
-}
-
 .dataTables_wrapper .dataTables_filter input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37,99,235,.09);
-    background: #fff;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99,102,241,.12);
 }
-
-/* Align length + filter on same row */
-.dataTables_wrapper .row:first-child {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 2px;
+.dataTables_wrapper .dataTables_info {
+    font-size: 12px;
+    color: #6b7280;
+    padding-top: 10px;
 }
+.dataTables_wrapper .dataTables_paginate { margin-top: 10px; }
+.dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0 !important; border: none !important; background: transparent !important; margin: 0 1px !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button .page-link { height: 32px !important; min-width: 32px; padding: 0 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; font-size: 12.5px; font-weight: 500; color: #334155 !important; background: #fff !important; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.current .page-link,
+.dataTables_wrapper .dataTables_paginate .paginate_button.active .page-link { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link { background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link { opacity: .45; cursor: default; }
 
-/* ── TABLE HEADER ── */
-.dm-table {
+/* ═══════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════ */
+#tablePenyesuaian {
     width: 100% !important;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
+    font-size: 13px;
 }
-
-.dm-table thead th {
-    background: #f8fafc;
-    color: #64748b;
+#tablePenyesuaian thead th {
     font-size: 11px;
     font-weight: 700;
+    letter-spacing: .05em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 10px 12px;
-    border-bottom: 2px solid #e2e8f0;
-    border-top: 1px solid #e2e8f0;
-    white-space: nowrap;
-    height: 40px;
-    vertical-align: middle;
-}
-
-.dm-table thead th:first-child { border-radius: 8px 0 0 0; }
-.dm-table thead th:last-child  { border-radius: 0 8px 0 0; }
-
-/* ── TABLE BODY ── */
-.dm-table tbody td {
-    padding: 9px 12px;
-    vertical-align: middle;
-    border-bottom: 1px solid #f1f5f9;
-    color: #334155;
-    font-size: 13px;
-    height: 44px;
-}
-
-.dm-table tbody tr:last-child td { border-bottom: none; }
-
-.dm-table tbody tr:hover td {
+    color: #6b7280;
     background: #f8fafc;
-    transition: background .12s;
+    padding: 10px 12px;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+#tablePenyesuaian thead th:first-child { border-left: 1px solid #e5e7eb; }
+#tablePenyesuaian thead th:last-child  { border-right: 1px solid #e5e7eb; }
+
+#tablePenyesuaian tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background .1s;
+}
+#tablePenyesuaian tbody tr:hover { background: #f8fafc; }
+#tablePenyesuaian tbody td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    color: #1e293b;
+    font-size: 13px;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
 }
 
-/* ── BADGES — JENIS ── */
-.badge-jenis {
+/* column widths */
+#tablePenyesuaian .col-no     { width: 50px;  text-align: center; }
+#tablePenyesuaian .col-nomor  { width: 190px; }
+#tablePenyesuaian .col-tgl    { width: 130px; }
+#tablePenyesuaian .col-jenis  { width: 150px; }
+#tablePenyesuaian .col-ket    { /* auto */ }
+#tablePenyesuaian .col-item   { width: 100px; text-align: center; }
+#tablePenyesuaian .col-petugas{ width: 140px; }
+#tablePenyesuaian .col-aksi   { width: 90px;  text-align: center; }
+
+/* ═══════════════════════════════════════════════
+   BADGES — JENIS PENYESUAIAN
+═══════════════════════════════════════════════ */
+.badge-notrx {
+    display: inline-block;
     font-size: 11.5px;
     font-weight: 600;
-    padding: 3px 10px;
-    border-radius: 14px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #EEF4FF;
+    color: #2563eb;
+    letter-spacing: .01em;
+    white-space: nowrap;
+}
+.badge-jenis {
     display: inline-flex;
     align-items: center;
     height: 24px;
+    padding: 0 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 999px;
     white-space: nowrap;
-    line-height: 1;
 }
+.badge-jenis.rusak       { background: #fee2e2; color: #dc2626; }
+.badge-jenis.hilang      { background: #ffedd5; color: #ea580c; }
+.badge-jenis.kedaluwarsa { background: #f3f4f6; color: #4b5563; }
+.badge-jenis.positif     { background: #dcfce7; color: #16a34a; }
+.badge-jenis.negatif     { background: #fef9c3; color: #a16207; }
+.badge-jenis.opname      { background: #dbeafe; color: #2563eb; }
 
-.badge-jenis.rusak        { background: #fee2e2; color: #dc2626; }
-.badge-jenis.hilang       { background: #ffedd5; color: #ea580c; }
-.badge-jenis.kedaluwarsa  { background: #f3f4f6; color: #4b5563; }
-.badge-jenis.positif      { background: #dcfce7; color: #16a34a; }
-.badge-jenis.negatif      { background: #fef9c3; color: #a16207; }
-.badge-jenis.opname       { background: #dbeafe; color: #2563eb; }
-
-/* ── BADGE TOTAL ITEM ── */
 .badge-count {
     display: inline-flex;
     align-items: center;
-    height: 22px;
-    padding: 0 8px;
-    background: #f1f5f9;
-    color: #475569;
-    border-radius: 10px;
+    height: 24px;
+    padding: 0 10px;
     font-size: 11.5px;
     font-weight: 600;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    white-space: nowrap;
 }
 
-/* ── ACTION BUTTONS ── */
+/* ═══════════════════════════════════════════════
+   ACTION BUTTONS
+═══════════════════════════════════════════════ */
+.dm-action-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: nowrap;
+}
 .dm-btn-action {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
-    text-decoration: none;
     border: 1.5px solid;
-    transition: background .15s, color .15s, border-color .15s, transform .1s;
+    background: #fff;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    text-decoration: none;
     flex-shrink: 0;
 }
-
-.dm-btn-action:hover { transform: translateY(-1px); }
-
-.dm-btn-action.view  { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
-.dm-btn-action.view:hover  { background: #2563eb; color: #fff; border-color: #2563eb; }
-.dm-btn-action.edit  { background: #fffbeb; border-color: #fde68a; color: #d97706; }
-.dm-btn-action.edit:hover  { background: #f59e0b; color: #fff; border-color: #f59e0b; }
-.dm-btn-action.delete { background: #fff5f5; border-color: #fecaca; color: #ef4444; }
-.dm-btn-action.delete:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
-
-/* ── PAGINATION ── */
-.dataTables_wrapper .dataTables_paginate { margin-top: 10px; }
-
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-    padding: 0 !important;
-    border: none !important;
-    background: transparent !important;
-    margin: 0 1px !important;
+.dm-btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
 }
+.dm-btn-action.view  { color: #0284c7; border-color: #bae6fd; }
+.dm-btn-action.view:hover  { background: #e0f2fe; }
+.dm-btn-action.del   { color: #dc2626; border-color: #fecaca; }
+.dm-btn-action.del:hover   { background: #fee2e2; }
 
-.dataTables_wrapper .dataTables_paginate .paginate_button .page-link {
-    height: 32px !important;
-    min-width: 32px;
-    padding: 0 8px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-radius: 8px !important;
-    border: 1px solid #e2e8f0 !important;
-    font-size: 12.5px;
-    font-weight: 500;
-    color: #334155 !important;
-    background: #fff !important;
-    transition: all .15s;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button.current .page-link,
-.dataTables_wrapper .dataTables_paginate .paginate_button.active .page-link {
-    background: #2563eb !important;
-    color: #fff !important;
-    border-color: #2563eb !important;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link {
-    background: #eff6ff !important;
-    border-color: #bfdbfe !important;
-    color: #2563eb !important;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link {
-    opacity: .45;
-    cursor: default;
-}
-
-/* ── INFO TEXT ── */
-.dataTables_wrapper .dataTables_info {
-    font-size: 12px;
-    color: #64748b;
-    padding-top: 8px;
-}
-
-/* Bottom row align */
-.dataTables_wrapper .row:last-child {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 2px;
-}
-
-/* ── MISC ── */
-.text-primary-fw { color: #2563eb; font-weight: 600; }
-.col-no   { width: 44px; }
-.col-sm   { width: 80px; }
-.col-md   { width: 120px; }
-.col-act  { width: 70px; }
-
-/* ── RESPONSIVE MOBILE ── */
-@media (max-width: 768px) {
-    .dm-page { padding: 4px; }
-    .dm-topbar { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .dm-btn-add { width: 100%; justify-content: center; }
-    .dm-table thead th, .dm-table tbody td { font-size: 12px; padding: 8px; }
-    .dataTables_wrapper .row:last-child { flex-direction: column; gap: 10px; }
-    .dataTables_wrapper .dataTables_paginate { margin-top: 0; align-self: center; }
-    .dm-card { padding: 12px; }
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media (max-width: 767px) {
+    .dm-page { padding: 10px 10px; }
+    .dm-topbar { padding: 12px 14px; }
+    .dm-topbar__title { font-size: 16px; }
+    .dataTables_wrapper .dataTables_filter input { width: 160px; }
 }
 </style>
 
 <div class="dm-page">
 
-    <!-- ── TOPBAR ── -->
-    <div class="dm-topbar">
-        <div class="dm-topbar__left">
-            <div class="dm-topbar__icon">
-                <i class="fa-solid fa-scale-balanced"></i>
-            </div>
-            <div>
-                <h1 class="dm-topbar__title"><?= esc($title) ?></h1>
-                <p class="dm-topbar__sub">Histori penyesuaian stok di luar penyaluran — rusak, hilang, opname &amp; koreksi.</p>
-            </div>
-        </div>
-        <a href="<?= site_url('transaksi/penyesuaian/create') ?>" class="btn btn-primary dm-btn-add shadow-sm">
-            <i class="fa-solid fa-plus"></i> Tambah Penyesuaian
-        </a>
+<!-- ── Topbar ── -->
+<div class="dm-topbar">
+    <div>
+        <h1 class="dm-topbar__title">
+            <i class="fa-solid fa-scale-balanced"></i><?= esc($title) ?>
+        </h1>
+        <p class="dm-topbar__sub">Histori penyesuaian stok di luar penyaluran — rusak, hilang, opname &amp; koreksi</p>
     </div>
+    <a href="<?= site_url('transaksi/penyesuaian/create') ?>" class="btn btn-primary dm-btn-add">
+        <i class="fa-solid fa-plus"></i> Tambah Penyesuaian
+    </a>
+</div>
 
-    <!-- ── TABLE CARD ── -->
-    <div class="dm-card">
-        <div class="table-responsive">
-            <table class="table dm-table" id="tablePenyesuaian">
-                <thead>
+<!-- ── Flash Messages ── -->
+<?php if (session()->getFlashdata('success')) : ?>
+    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
+        <i class="fa-solid fa-circle-check me-2"></i><?= session()->getFlashdata('success') ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+<?php if (session()->getFlashdata('error')) : ?>
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><?= session()->getFlashdata('error') ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<!-- ── Data Card ── -->
+<div class="dm-card">
+    <div class="table-responsive">
+        <table class="table mb-0" id="tablePenyesuaian">
+            <thead>
                 <tr>
-                    <th class="text-center col-no">No</th>
-                    <th style="min-width:160px">Nomor Penyesuaian</th>
-                    <th class="col-md">Tanggal</th>
-                    <th style="min-width:150px">Jenis</th>
-                    <th style="min-width:220px">Keterangan</th>
-                    <th class="text-center col-sm">Total Item</th>
-                    <th style="min-width:120px">Petugas</th>
-                    <th class="text-center col-act">Aksi</th>
+                    <th class="col-no text-center">No</th>
+                    <th class="col-nomor">Nomor Penyesuaian</th>
+                    <th class="col-tgl">Tanggal</th>
+                    <th class="col-jenis">Jenis</th>
+                    <th class="col-ket">Keterangan</th>
+                    <th class="col-item text-center">Total Item</th>
+                    <th class="col-petugas">Petugas</th>
+                    <th class="col-aksi text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -373,31 +324,33 @@
                     }
                 ?>
                 <tr>
-                    <td class="text-center text-muted"><?= $no++ ?></td>
-                    <td class="text-primary-fw"><?= esc($row['nomor_penyesuaian']) ?></td>
-                    <td>
-                        <span class="text-muted" style="font-size:13px">
-                            <i class="fa-regular fa-calendar me-1"></i><?= date('d M Y', strtotime($row['tanggal'])) ?>
-                        </span>
+                    <td class="col-no text-center text-secondary"><?= $no++ ?></td>
+                    <td class="col-nomor">
+                        <span class="badge-notrx"><?= esc($row['nomor_penyesuaian']) ?></span>
                     </td>
-                    <td><span class="badge-jenis <?= $badgeClass ?>"><?= esc($row['jenis_penyesuaian']) ?></span></td>
-                    <td>
-                        <span class="d-inline-block text-truncate" style="max-width:260px; font-size:13.5px; color:#475569">
-                            <?= esc($row['keterangan']) ?>
-                        </span>
+                    <td class="col-tgl" style="color:#475569;">
+                        <?= date('d M Y', strtotime($row['tanggal'])) ?>
                     </td>
-                    <td class="text-center">
+                    <td class="col-jenis">
+                        <span class="badge-jenis <?= $badgeClass ?>"><?= esc($row['jenis_penyesuaian']) ?></span>
+                    </td>
+                    <td class="col-ket" style="color:#475569;">
+                        <?= esc($row['keterangan']) ?>
+                    </td>
+                    <td class="col-item text-center">
                         <span class="badge-count"><?= esc($row['total_item']) ?> Barang</span>
                     </td>
-                    <td style="font-size:13.5px"><?= esc($row['username']) ?></td>
-                    <td class="text-center">
-                        <div class="d-inline-flex gap-1">
+                    <td class="col-petugas" style="color:#475569;">
+                        <?= esc($row['username']) ?>
+                    </td>
+                    <td class="col-aksi">
+                        <div class="dm-action-group">
                             <a href="<?= site_url('transaksi/penyesuaian/detail/' . $row['id']) ?>"
-                               class="dm-btn-action view" title="Detail">
+                               class="dm-btn-action view" title="Lihat Detail">
                                 <i class="fa-solid fa-eye"></i>
                             </a>
                             <a href="<?= site_url('transaksi/penyesuaian/delete/' . $row['id']) ?>"
-                               class="dm-btn-action delete" title="Hapus (Rollback)"
+                               class="dm-btn-action del" title="Hapus (Rollback)"
                                onclick="return confirm('Apakah Anda yakin ingin menghapus dan merollback stok ini? Transaksi hanya bisa dihapus jika stok belum digunakan oleh transaksi lain.')">
                                 <i class="fa-solid fa-trash-can"></i>
                             </a>
@@ -407,25 +360,26 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
-        </div>
     </div>
-
 </div>
+
+</div><!-- /.dm-page -->
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-$(document).ready(function() {
+$(document).ready(function () {
     $('#tablePenyesuaian').DataTable({
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
         },
-        "order": [[2, "desc"], [0, "asc"]],
-        "pageLength": 25,
-        "drawCallback": function(settings) {
-            $('.dataTables_paginate > .pagination').addClass('pagination-sm mb-0');
-        }
+        order: [[2, 'desc']],
+        autoWidth: false,
+        columnDefs: [
+            { orderable: false, targets: [7] }
+        ],
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
     });
 });
 </script>

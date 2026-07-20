@@ -455,7 +455,7 @@ $(document).ready(function () {
         order: [],
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
         pageLength: 25,
-        dom: 'rt',
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
         columnDefs: [{ orderable: false, targets: [0] }],
         initComplete: function () {
             $('#dataTable_info').appendTo('#dtInfo');

@@ -25,11 +25,12 @@ class BarangMasuk extends BaseController
     public function index()
     {
         $barangMasuk = $this->barangMasukModel
-            ->select('barang_masuk.*, donatur.nama_donatur, users.username as petugas')
+            ->select('barang_masuk.id, barang_masuk.nomor_transaksi, barang_masuk.tanggal_masuk, donatur.nama_donatur, users.username as petugas')
             ->join('donatur', 'donatur.id = barang_masuk.id_donatur')
             ->join('users', 'users.id = barang_masuk.id_user')
             ->orderBy('barang_masuk.id', 'DESC')
             ->findAll();
+
         $bmIds = array_column($barangMasuk, 'id');
         $batchStats = [];
         if (!empty($bmIds)) {

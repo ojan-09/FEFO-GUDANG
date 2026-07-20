@@ -36,7 +36,7 @@
 <?php endif; ?>
 
 <div class="panel-card panel-form">
-    <form action="<?= $actionUrl ?>" method="POST" id="formWilayah" novalidate>
+    <form action="<?= $actionUrl ?>" method="POST" id="formWilayah" class="loading-form" data-overlay="true" novalidate>
         <?= csrf_field() ?>
 
         <div class="row">
