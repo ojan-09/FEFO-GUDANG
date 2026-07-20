@@ -30,7 +30,7 @@ class LaporanPenyaluran extends BaseController
             COALESCE(batch.satuan, barang.satuan) as satuan,
             COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
             COALESCE(batch.satuan_berat, barang.satuan_berat) as satuan_berat,
-            batch.bisa_dipecah,
+            COALESCE(batch.bisa_dipecah, barang.bisa_dipecah) as bisa_dipecah,
             users.username as petugas
         ');
         $builder->join('barang_keluar', 'barang_keluar.id = detail_barang_keluar.id_barang_keluar');

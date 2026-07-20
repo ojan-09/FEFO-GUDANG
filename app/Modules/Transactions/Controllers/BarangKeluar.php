@@ -102,7 +102,7 @@ class BarangKeluar extends BaseController
                     FROM batch
                     WHERE stok_saat_ini > 0
                       AND status = 'Aktif'
-                      AND tanggal_kedaluwarsa >= ?
+                      AND status = 'Aktif'
                     GROUP BY id_barang
                 ) b2 ON b1.id_barang = b2.id_barang AND b1.tanggal_kedaluwarsa = b2.min_exp
                 WHERE b1.id = (
@@ -119,13 +119,13 @@ class BarangKeluar extends BaseController
                 FROM batch
                 WHERE stok_saat_ini > 0
                   AND status = 'Aktif'
-                  AND tanggal_kedaluwarsa >= ?
+                  AND status = 'Aktif'
                 GROUP BY id_barang
             ) stock_summary ON stock_summary.id_barang = barang.id
             ORDER BY barang.nama_barang ASC
         ";
         
-        $semuaBarang = $db->query($sql, [$today, $today])->getResultArray();
+        $semuaBarang = $db->query($sql)->getResultArray();
 
         $data = [
             'title'           => 'Tambah Barang Keluar',
@@ -134,6 +134,39 @@ class BarangKeluar extends BaseController
             'wilayah'         => $this->wilayahModel->where('status', 'Aktif')->orderBy('nama_wilayah', 'ASC')->findAll(),
         ];
         return view('App\Modules\Transactions\Views\barang_keluar\form', $data);
+    }
+
+    /**
+     * AJAX Endpoint untuk memvalidasi apakah ada batch expired yang akan digunakan.
+     */
+    public function validateExpired()
+    {
+        $items = $this->request->getPost('items');
+        if (empty($items) || !is_array($items)) {
+            return $this->response->setJSON(['expired' => false, 'data' => []]);
+        }
+
+        $consolidated = [];
+        foreach ($items as $item) {
+            $idBrg = $item['id_barang'];
+            if (isset($consolidated[$idBrg])) {
+                $consolidated[$idBrg]['jumlah_keluar'] += (float)$item['jumlah_keluar'];
+            } else {
+                $consolidated[$idBrg] = [
+                    'id_barang'     => $item['id_barang'],
+                    'jumlah_keluar' => (float)$item['jumlah_keluar'],
+                ];
+            }
+        }
+        $items = array_values($consolidated);
+
+        $expiredBatches = $this->fefo->hasExpiredBatch($items);
+        
+        return $this->response->setJSON([
+            'expired' => !empty($expiredBatches),
+            'data'    => $expiredBatches,
+            'csrf'    => csrf_hash()
+        ]);
     }
 
     /**
@@ -215,6 +248,11 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['stok' => implode('<br>', $errorMsgs)]);
         }
 
+        $expiredBatches = $this->fefo->hasExpiredBatch($items);
+        if (!empty($expiredBatches) && $this->request->getPost('force_expired') !== 'true') {
+            return redirect()->back()->withInput()->with('errors', ['expired' => 'Terdapat barang yang sudah melewati tanggal kedaluwarsa. Mohon gunakan tombol yang benar pada peringatan.']);
+        }
+
         $db = \Config\Database::connect();
         $db->transStart();
 
@@ -243,10 +281,19 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal menyimpan transaksi. Silakan coba lagi.']);
         }
 
+        $tujuan = $this->request->getPost('tujuan_penyaluran') ?: '-';
+        $totalItem = array_sum(array_column($items, 'jumlah_keluar'));
+
+        $logMsg = "Menambahkan Penyaluran\nNo. {$nomorTransaksi}\nTujuan : {$tujuan}\nTotal Item : {$totalItem}";
+        
+        if (!empty($expiredBatches)) {
+            $logMsg = "Penyaluran menggunakan batch expired\nNo. {$nomorTransaksi}\nTujuan : {$tujuan}\nJumlah Batch Expired : " . count($expiredBatches);
+        }
+
         \App\Libraries\ActivityLogger::log(
             'Tambah Penyaluran',
             'Penyaluran Barang',
-            "Menambahkan transaksi Penyaluran {$nomorTransaksi}."
+            $logMsg
         );
 
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi Barang Keluar berhasil disimpan. Stok batch telah dipotong menggunakan metode FEFO.');
@@ -291,7 +338,7 @@ class BarangKeluar extends BaseController
                     FROM batch
                     WHERE (stok_saat_ini > 0 OR id IN (SELECT id_batch FROM detail_barang_keluar WHERE id_barang_keluar = ?))
                       AND status = 'Aktif'
-                      AND tanggal_kedaluwarsa >= ?
+                      AND status = 'Aktif'
                     GROUP BY id_barang
                 ) b2 ON b1.id_barang = b2.id_barang AND b1.tanggal_kedaluwarsa = b2.min_exp
                 WHERE b1.id = (
@@ -308,13 +355,12 @@ class BarangKeluar extends BaseController
                 FROM batch
                 WHERE (stok_saat_ini > 0 OR id IN (SELECT id_batch FROM detail_barang_keluar WHERE id_barang_keluar = ?))
                   AND status = 'Aktif'
-                  AND tanggal_kedaluwarsa >= ?
                 GROUP BY id_barang
             ) stock_summary ON stock_summary.id_barang = barang.id
             ORDER BY barang.nama_barang ASC
         ";
         
-        $semuaBarang = $db->query($sql, [$id, $today, $id, $id, $today])->getResultArray();
+        $semuaBarang = $db->query($sql, [$id, $id, $id])->getResultArray();
 
         $details = $this->detailModel->where('id_barang_keluar', $id)->findAll();
         $consolidatedDetails = [];
@@ -490,10 +536,13 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
         }
 
+        $tujuan = $this->request->getPost('tujuan_penyaluran') ?: '-';
+        $totalItem = array_sum(array_column($items, 'jumlah_keluar'));
+
         \App\Libraries\ActivityLogger::log(
             'Edit Penyaluran',
             'Penyaluran Barang',
-            "Mengubah transaksi Penyaluran {$barangKeluar['nomor_transaksi']}."
+            "Mengubah Penyaluran\nNo. {$barangKeluar['nomor_transaksi']}\nTujuan : {$tujuan}\nTotal Item : {$totalItem}"
         );
 
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi Barang Keluar berhasil diperbarui. Stok batch telah dihitung ulang menggunakan metode FEFO.');
@@ -561,7 +610,7 @@ class BarangKeluar extends BaseController
         \App\Libraries\ActivityLogger::log(
             'Hapus Penyaluran',
             'Penyaluran Barang',
-            "Menghapus transaksi Penyaluran {$barangKeluar['nomor_transaksi']}."
+            "Menghapus Penyaluran\nNo. {$barangKeluar['nomor_transaksi']}"
         );
 
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi berhasil dihapus. Stok batch telah dikembalikan.');

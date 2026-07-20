@@ -25,6 +25,7 @@ $routes->group('transaksi', ['namespace' => 'App\Modules\Transactions\Controller
     $routes->get('barang-keluar', 'BarangKeluar::index');
     $routes->get('barang-keluar/create', 'BarangKeluar::create');
     $routes->post('barang-keluar/store', 'BarangKeluar::store');
+    $routes->post('barang-keluar/validateExpired', 'BarangKeluar::validateExpired');
     $routes->get('barang-keluar/detail/(:num)', 'BarangKeluar::detail/$1');
     $routes->get('barang-keluar/berita-acara/(:num)', 'BarangKeluar::downloadBeritaAcara/$1');
     $routes->get('barang-keluar/edit/(:num)', 'BarangKeluar::edit/$1');

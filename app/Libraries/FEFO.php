@@ -172,6 +172,68 @@ class FEFO
     }
 
     /**
+     * Memeriksa apakah transaksi akan memakan batch yang sudah expired.
+     * Mengembalikan array berisi informasi batch expired yang digunakan.
+     *
+     * @param array $items
+     * @return array
+     */
+    public function hasExpiredBatch(array $items): array
+    {
+        $kebutuhan = [];
+        foreach ($items as $item) {
+            $idBrg = (int) $item['id_barang'];
+            $kebutuhan[$idBrg] = ($kebutuhan[$idBrg] ?? 0) + (float) $item['jumlah_keluar'];
+        }
+
+        $idBarangList = array_keys($kebutuhan);
+        if (empty($idBarangList)) return [];
+
+        $batches = $this->batchModel
+            ->select('batch.*, barang.nama_barang')
+            ->join('barang', 'barang.id = batch.id_barang')
+            ->whereIn('batch.id_barang', $idBarangList)
+            ->where('batch.status', 'Aktif')
+            ->where('batch.stok_saat_ini >', 0)
+            ->orderBy('batch.id_barang', 'ASC')
+            ->orderBy('batch.tanggal_kedaluwarsa', 'ASC')
+            ->findAll();
+
+        $batchPerBarang = [];
+        foreach ($batches as $batch) {
+            $batchPerBarang[$batch['id_barang']][] = $batch;
+        }
+
+        $expiredUsed = [];
+        $today = date('Y-m-d');
+
+        foreach ($kebutuhan as $idBarang => $jumlahKeluar) {
+            $sisaKebutuhan = $jumlahKeluar;
+            
+            if (empty($batchPerBarang[$idBarang])) continue;
+
+            foreach ($batchPerBarang[$idBarang] as $batch) {
+                if ($sisaKebutuhan <= 0) break;
+
+                $diambil = min($sisaKebutuhan, $batch['stok_saat_ini']);
+                
+                if ($batch['tanggal_kedaluwarsa'] < $today) {
+                    $expiredUsed[] = [
+                        'barang'  => $batch['nama_barang'],
+                        'batch'   => $batch['nomor_batch'],
+                        'expired' => $batch['tanggal_kedaluwarsa'],
+                        'jumlah'  => $diambil
+                    ];
+                }
+
+                $sisaKebutuhan -= $diambil;
+            }
+        }
+
+        return $expiredUsed;
+    }
+
+    /**
      * Jalankan algoritma FEFO:
      * 1. Cari batch aktif untuk barang tersebut
      * 2. Urutkan berdasarkan tanggal kedaluwarsa ASC (terdekat duluan)

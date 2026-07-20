@@ -307,7 +307,7 @@
                     <select class="dm-select" id="id_wilayah" name="id_wilayah" required>
                         <option value="">-- Pilih Wilayah --</option>
                         <?php foreach ($wilayah as $w) : ?>
-                            <option value="<?= $w['id'] ?>" <?= $valIdWilayah == $w['id'] ? 'selected' : '' ?>>
+                            <option value="<?= esc($w['id']) ?>" <?= $valIdWilayah == $w['id'] ? 'selected' : '' ?>>
                                 <?= esc($w['nama_wilayah']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -368,13 +368,22 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<!-- JS tidak diubah sama sekali -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     // Data barang dari server (dengan stok tersedia)
     const dataBarang = <?= json_encode($barang) ?>;
     const oldDetails = <?= json_encode($details ?? []) ?>;
     let rowCount = 0;
+
+    // FIX: helper escaping HTML untuk cegah XSS saat insert ke innerHTML
+    function escHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
 
     function updateDropdownOptions() {
         const selects = document.querySelectorAll('.select-barang');
@@ -411,11 +420,17 @@
         }
     }
 
+    // FIX: parse tanggal manual untuk hindari timezone offset bug
+    // "2026-01-15" diparsing sebagai UTC oleh new Date(), bisa mundur 1 hari di +7
     function formatTglExp(dateStr) {
         if (!dateStr) return '-';
-        const date = new Date(dateStr);
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+        const parts = String(dateStr).split('-');
+        if (parts.length !== 3) return dateStr;
+        const d = parseInt(parts[2], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parts[0];
+        return `${d} ${months[m]} ${y}`;
     }
 
     function tambahBaris(detail = null) {
@@ -428,22 +443,39 @@
             const statusLabel = parseInt(b.bisa_dipecah) === 1 ? 'Repack' : 'Utuh';
             const kemasanAsli = parseInt(b.bisa_dipecah) === 1 ? 'Karung' : (b.satuan_kemasan || b.satuan);
             const beratKemasan = parseFloat(b.berat_per_satuan) + ' ' + b.satuan_berat + '/' + kemasanAsli;
-            
-            const optionText = `${b.nama_barang} (Exp: ${tglFormatted} • ${kemasanAsli} • ${beratKemasan} • Stok: ${parseFloat(b.stok_tersedia)} ${unitTersedia} • ${statusLabel})`;
 
-            options += `<option value="${b.id}"
-                data-satuan="${b.satuan}"
-                data-satuan-kemasan="${kemasanAsli}"
-                data-berat="${b.berat_per_satuan}"
-                data-satuan-berat="${b.satuan_berat}"
-                data-bisa-dipecah="${b.bisa_dipecah}"
-                data-stok="${b.stok_tersedia}" ${isSelected}>
+            const expDateObj = new Date(b.tanggal_kedaluwarsa);
+            const todayObj = new Date();
+            todayObj.setHours(0,0,0,0);
+            
+            let expWarning = '';
+            if (expDateObj < todayObj) {
+                const diffTime = Math.abs(todayObj - expDateObj);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                expWarning = `🔴 Expired sejak ${tglFormatted} (Expired ${diffDays} hari)`;
+            } else {
+                expWarning = `Exp: ${tglFormatted}`;
+            }
+
+            // FIX: escHtml untuk semua nilai string yang masuk ke HTML (cegah XSS & attribute injection)
+            const optionText = escHtml(`${b.nama_barang} (${expWarning} • ${kemasanAsli} • ${beratKemasan} • Stok: ${parseFloat(b.stok_tersedia)} ${unitTersedia} • ${statusLabel})`);
+
+            options += `<option value="${escHtml(b.id)}"
+                data-satuan="${escHtml(b.satuan)}"
+                data-satuan-kemasan="${escHtml(kemasanAsli)}"
+                data-berat="${escHtml(b.berat_per_satuan)}"
+                data-satuan-berat="${escHtml(b.satuan_berat)}"
+                data-bisa-dipecah="${escHtml(b.bisa_dipecah)}"
+                data-stok="${escHtml(b.stok_tersedia)}" ${isSelected}>
                 ${optionText}
             </option>`;
         });
 
+        // FIX: rowId pakai rowCount saja (stabil), tidak berubah saat delete baris lain
+        const rowId = 'row-' + rowCount;
+
         const row = `
-            <tr id="row-${rowCount}">
+            <tr id="${rowId}">
                 <td class="tc-no row-number">${rowCount}</td>
                 <td class="tc-barang">
                     <select class="dm-select select-barang" name="items[${rowCount}][id_barang]" required>
@@ -458,13 +490,14 @@
                 </td>
                 <td class="tc-jumlah">
                     <input type="number" class="dm-input input-jumlah" name="items[${rowCount}][jumlah_keluar]"
-                           min="1" placeholder="0" value="${detail ? detail.jumlah_keluar : ''}" required>
+                           min="1" placeholder="0" value="${detail ? escHtml(detail.jumlah_keluar) : ''}" required
+                           data-stok="0">
                 </td>
                 <td class="tc-berat">
                     <input type="text" class="dm-input readonly field-berat" readonly value="-" style="text-align:center;">
                 </td>
                 <td class="tc-aksi">
-                    <button type="button" class="btn btn-outline-danger btn-hapus-row" data-row="row-${rowCount}">
+                    <button type="button" class="btn btn-outline-danger btn-hapus-row" data-row="${rowId}">
                         <i class="fa-solid fa-xmark" style="pointer-events:none;"></i>
                     </button>
                 </td>
@@ -474,9 +507,9 @@
         updateNomor();
         
         if (detail) {
-            const select = document.querySelector(`#row-${rowCount} .select-barang`);
+            const select = document.querySelector(`#${rowId} .select-barang`);
             select.dispatchEvent(new Event('change', { bubbles: true }));
-            const inputJumlah = document.querySelector(`#row-${rowCount} .input-jumlah`);
+            const inputJumlah = document.querySelector(`#${rowId} .input-jumlah`);
             inputJumlah.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
@@ -504,16 +537,18 @@
         if (e.target.classList.contains('select-barang')) {
             const row = e.target.closest('tr');
             const selected = e.target.options[e.target.selectedIndex];
+            const inputJumlah = row.querySelector('.input-jumlah');
 
             if (!e.target.value) {
                 row.querySelector('.field-satuan').value = '-';
                 row.querySelector('.field-stok').value = '-';
                 row.querySelector('.field-berat').value = '-';
-                const inputJumlah = row.querySelector('.input-jumlah');
                 inputJumlah.value = '';
                 inputJumlah.min = "1";
                 inputJumlah.step = "1";
                 inputJumlah.placeholder = "0";
+                // FIX: reset data-stok pada input-jumlah
+                inputJumlah.dataset.stok = "0";
                 updateDropdownOptions();
                 return;
             }
@@ -527,7 +562,6 @@
             if (!satuanBeratVal || satuanBeratVal === 'undefined' || satuanBeratVal === 'null' || satuanBeratVal.trim() === '') satuanBeratVal = '';
             
             const bisaDipecah = parseInt(selected.dataset.bisaDipecah) || 0;
-            const inputJumlah = row.querySelector('.input-jumlah');
 
             if (bisaDipecah === 1) {
                 row.querySelector('.field-satuan').value = 'Repack';
@@ -542,6 +576,10 @@
                 inputJumlah.step = "1";
                 inputJumlah.placeholder = "0";
             }
+
+            // FIX: simpan nilai stok murni (angka) ke data-stok input-jumlah
+            // supaya validasi submit bisa baca angka bukan parse teks display
+            inputJumlah.dataset.stok = stok;
             
             if (e.isTrusted) {
                 inputJumlah.value = '';
@@ -600,8 +638,10 @@
 
         let adaError = false;
         rows.forEach(row => {
-            const jumlah = parseFloat(row.querySelector('.input-jumlah').value) || 0;
-            const stok = parseFloat(row.querySelector('.field-stok').value) || 0;
+            const inputJumlah = row.querySelector('.input-jumlah');
+            const jumlah = parseFloat(inputJumlah.value) || 0;
+            // FIX: baca stok dari data-stok (angka murni) bukan parse teks field-stok
+            const stok = parseFloat(inputJumlah.dataset.stok) || 0;
             if (jumlah > stok) adaError = true;
         });
 
@@ -617,6 +657,134 @@
         }
 
         errorDiv.style.display = 'none';
+
+        const btnSimpan = document.getElementById('btnSimpan');
+        if (btnSimpan.dataset.submitted === 'true') {
+            e.preventDefault();
+            return false;
+        }
+
+        if (!document.getElementById('force_expired')) {
+            e.preventDefault(); // Stop native submit
+
+            btnSimpan.dataset.submitted = 'true';
+            btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengecek...';
+            btnSimpan.style.pointerEvents = 'none';
+            btnSimpan.style.opacity = '0.7';
+
+            let formData = new FormData(document.getElementById('formBarangKeluar'));
+
+            fetch('<?= site_url("transaksi/barang-keluar/validateExpired") ?>', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.csrf) {
+                    let csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
+                    if (csrfInput) csrfInput.value = res.csrf;
+                }
+
+                if (res.expired) {
+                    // Restore button state
+                    btnSimpan.dataset.submitted = 'false';
+                    btnSimpan.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Transaksi';
+                    btnSimpan.style.pointerEvents = 'auto';
+                    btnSimpan.style.opacity = '1';
+
+                    let tableHtml = `<table style="width:100%; text-align:left; border-collapse:collapse; font-size:13px; margin-top:10px;">
+                        <tr style="border-bottom:1px solid #ddd;">
+                            <th style="padding:4px;">Barang</th>
+                            <th style="padding:4px;">Batch</th>
+                            <th style="padding:4px;">Expired</th>
+                            <th style="padding:4px;">Qty</th>
+                        </tr>`;
+                    res.data.forEach(d => {
+                        let expDate = new Date(d.expired).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'});
+                        tableHtml += `<tr style="border-bottom:1px solid #eee;">
+                            <td style="padding:4px;">${escHtml(d.barang)}</td>
+                            <td style="padding:4px;">${escHtml(d.batch)}</td>
+                            <td style="padding:4px;">${escHtml(expDate)}</td>
+                            <td style="padding:4px;">${escHtml(d.jumlah)}</td>
+                        </tr>`;
+                    });
+                    tableHtml += `</table>`;
+
+                    if (window.hideOverlay) window.hideOverlay();
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⚠ Barang Expired Ditemukan',
+                        html: `Barang berikut sudah melewati tanggal kedaluwarsa.<br>${tableHtml}<br><br>Apakah Anda tetap ingin mengeluarkan barang ini?`,
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Ya, Tetap Keluarkan',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            let inputForce = document.createElement('input');
+                            inputForce.type = 'hidden';
+                            inputForce.id = 'force_expired';
+                            inputForce.name = 'force_expired';
+                            inputForce.value = 'true';
+                            document.getElementById('formBarangKeluar').appendChild(inputForce);
+                            
+                            btnSimpan.dataset.submitted = 'true';
+                            btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+                            btnSimpan.style.pointerEvents = 'none';
+                            btnSimpan.style.opacity = '0.7';
+                            if (window.showOverlay) window.showOverlay('Menyimpan Transaksi...');
+                            HTMLFormElement.prototype.submit.call(document.getElementById('formBarangKeluar'));
+                        }
+                    });
+                } else {
+                    let inputForce = document.createElement('input');
+                    inputForce.type = 'hidden';
+                    inputForce.id = 'force_expired';
+                    inputForce.name = 'force_expired';
+                    inputForce.value = 'false';
+                    document.getElementById('formBarangKeluar').appendChild(inputForce);
+                    
+                    btnSimpan.dataset.submitted = 'true';
+                    btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+                    btnSimpan.style.pointerEvents = 'none';
+                    btnSimpan.style.opacity = '0.7';
+                    if (window.showOverlay) window.showOverlay('Menyimpan Transaksi...');
+                    HTMLFormElement.prototype.submit.call(document.getElementById('formBarangKeluar'));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if (window.hideOverlay) window.hideOverlay();
+                Swal.fire('Error', 'Gagal memvalidasi barang.', 'error');
+                btnSimpan.dataset.submitted = 'false';
+                btnSimpan.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Transaksi';
+                btnSimpan.style.pointerEvents = 'auto';
+                btnSimpan.style.opacity = '1';
+            });
+
+            return false;
+        }
+
+        btnSimpan.dataset.submitted = 'true';
+        btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btnSimpan.style.pointerEvents = 'none';
+        btnSimpan.style.opacity = '0.7';
+    });
+
+    // Fix for Back-Forward Cache (bfcache) double submissions
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            const btnSimpan = document.getElementById('btnSimpan');
+            btnSimpan.dataset.submitted = 'false';
+            btnSimpan.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Transaksi';
+            btnSimpan.style.pointerEvents = 'auto';
+            btnSimpan.style.opacity = '1';
+        }
     });
 
     if (oldDetails.length > 0) { oldDetails.forEach(d => tambahBaris(d)); } else { tambahBaris(); }

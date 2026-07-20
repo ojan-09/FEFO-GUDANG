@@ -28,7 +28,7 @@ class LaporanDonasi extends BaseController
             COALESCE(batch.satuan, barang.satuan) as satuan,
             COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
             COALESCE(batch.satuan_berat, barang.satuan_berat) as satuan_berat,
-            barang.bisa_dipecah,
+            COALESCE(batch.bisa_dipecah, barang.bisa_dipecah) as bisa_dipecah,
             barang_masuk.nomor_transaksi,
             barang_masuk.tanggal_masuk,
             barang_masuk.keterangan,

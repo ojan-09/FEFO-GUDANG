@@ -262,10 +262,16 @@ class BarangMasuk extends BaseController
         if ($db->transStatus() === false) {
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal menyimpan transaksi. Silakan coba lagi.']);
         }
+        $id_donatur = $this->request->getPost('id_donatur');
+        $donaturModel = new \App\Modules\MasterData\Models\DonaturModel();
+        $donatur = $donaturModel->find($id_donatur);
+        $namaDonatur = $donatur ? $donatur['nama_donatur'] : '-';
+        $totalItem = array_sum(array_column($cleanItems, 'jumlah'));
+
         \App\Libraries\ActivityLogger::log(
             'Tambah Donasi',
             'Donasi Masuk',
-            "Menambahkan transaksi Donasi Masuk {$nomorTransaksi}."
+            "Menambahkan Donasi Masuk\nNo. {$nomorTransaksi}\nDonatur : {$namaDonatur}\nTotal Item : {$totalItem}"
         );
         return redirect()->to('/transaksi/barang-masuk')->with('success', 'Transaksi Barang Masuk berhasil disimpan.');
     }
@@ -286,7 +292,7 @@ class BarangMasuk extends BaseController
             return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak dapat diubah karena sebagian atau seluruh barang dari donasi ini sudah digunakan pada proses Penyaluran Barang.');
         }
         $batches = $this->batchModel
-            ->select('batch.*, COALESCE(batch.nama_barang, barang.nama_barang) AS nama_barang, barang.satuan AS satuan, COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) AS berat_per_satuan, COALESCE(batch.satuan_berat, barang.satuan_berat) AS satuan_berat')
+            ->select('batch.*, COALESCE(batch.nama_barang, barang.nama_barang) AS nama_barang, COALESCE(batch.satuan, barang.satuan) AS satuan, COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) AS berat_per_satuan, COALESCE(batch.satuan_berat, barang.satuan_berat) AS satuan_berat')
             ->join('barang', 'barang.id = batch.id_barang', 'left')
             ->where('batch.id_barang_masuk', $id)
             ->findAll();
@@ -582,10 +588,16 @@ class BarangMasuk extends BaseController
         if ($db->transStatus() === false) {
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
         }
+        $id_donatur = $this->request->getPost('id_donatur');
+        $donaturModel = new \App\Modules\MasterData\Models\DonaturModel();
+        $donatur = $donaturModel->find($id_donatur);
+        $namaDonatur = $donatur ? $donatur['nama_donatur'] : '-';
+        $totalItem = array_sum(array_column($cleanItems, 'jumlah'));
+
         \App\Libraries\ActivityLogger::log(
             'Edit Donasi',
             'Donasi Masuk',
-            "Mengubah transaksi Donasi Masuk {$barangMasuk['nomor_transaksi']}."
+            "Mengubah Donasi Masuk\nNo. {$barangMasuk['nomor_transaksi']}\nDonatur : {$namaDonatur}\nTotal Item : {$totalItem}"
         );
         return redirect()->to('/transaksi/barang-masuk')->with('success', 'Transaksi Barang Masuk berhasil diperbarui.');
     }
@@ -670,7 +682,7 @@ class BarangMasuk extends BaseController
             \App\Libraries\ActivityLogger::log(
                 'Hapus Donasi',
                 'Donasi Masuk',
-                "Menghapus transaksi Donasi Masuk {$barangMasuk['nomor_transaksi']}."
+                "Menghapus Donasi Masuk\nNo. {$barangMasuk['nomor_transaksi']}"
             );
         }
         return redirect()->to('/transaksi/barang-masuk')->with('success', 'Transaksi berhasil dihapus.');

@@ -434,7 +434,7 @@
             if (res.batches && res.batches.length > 0) {
                 res.batches.forEach(b => {
                     const expDate = new Date(b.tanggal_kedaluwarsa).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
-                    batchSelect.append(`<option value="${b.id}" data-stok="${b.stok_saat_ini}" data-nomor="${b.nomor_batch}" data-exp="${b.tanggal_kedaluwarsa}">[${b.nomor_batch}] Exp: ${expDate} | Stok: ${b.stok_saat_ini}</option>`);
+                    batchSelect.append(`<option value="${b.id}" data-stok="${b.stok_saat_ini}" data-nomor="${b.nomor_batch}" data-exp="${b.tanggal_kedaluwarsa}" data-satuan="${b.satuan || ''}">[${b.nomor_batch}] Exp: ${expDate} | Stok: ${b.stok_saat_ini}</option>`);
                 });
             } else {
                 batchSelect.html('<option value="">Tidak ada batch aktif untuk barang ini</option>');
@@ -446,6 +446,10 @@
         const selected = $('#id_batch option:selected');
         if (selected.val()) {
             stokMax = parseFloat(selected.data('stok'));
+            const batchSatuan = selected.data('satuan');
+            if (batchSatuan && batchSatuan !== 'undefined' && batchSatuan !== '') {
+                $('#satuan_tampil').val(batchSatuan);
+            }
             $('#stok-info').text(`Stok Tersedia: ${stokMax} ${$('#satuan_tampil').val()}`);
         } else {
             stokMax = 0;
@@ -561,5 +565,27 @@
         `);
         });
     }
+
+    document.getElementById('form_penyesuaian').addEventListener('submit', function (e) {
+        const btnSubmit = document.getElementById('btn-submit');
+        if (btnSubmit.dataset.submitted === 'true') {
+            e.preventDefault();
+            return false;
+        }
+        btnSubmit.dataset.submitted = 'true';
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btnSubmit.style.pointerEvents = 'none';
+        btnSubmit.style.opacity = '0.7';
+    });
+
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.dataset.submitted = 'false';
+            btnSubmit.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Transaksi';
+            btnSubmit.style.pointerEvents = 'auto';
+            btnSubmit.style.opacity = '1';
+        }
+    });
 </script>
 <?= $this->endSection() ?>

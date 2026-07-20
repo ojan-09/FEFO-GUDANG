@@ -26,6 +26,7 @@
         $oldItems = [];
     }
 
+    // FIX #5: Gunakan $valTanggalMasuk secara konsisten (sebelumnya di-hardcode ulang di input)
     $valTanggalMasuk = old('tanggal_masuk', $isEdit ? $barangMasuk['tanggal_masuk'] : date('Y-m-d'));
     $valIdDonatur    = old('id_donatur',    $isEdit ? $barangMasuk['id_donatur']    : '');
     $valEta          = old('eta',           $isEdit ? $barangMasuk['eta']           : '');
@@ -40,9 +41,6 @@
 .dm-page {
     font-size: 13px;
     line-height: 1.45;
-    /* Beri batas lebar maksimum supaya konten tidak melebar
-       keluar layar, lalu tengahkan. Padding kecil agar tidak
-       terpotong di kanan pada viewport sempit. */
     max-width: 1600px;
     width: 100%;
     margin: 0 auto;
@@ -179,7 +177,7 @@
 #tabelItem {
     width: 100%;
     table-layout: fixed;
-    min-width: 1060px;   /* cukup untuk 10 kolom tanpa overflow di 1366px */
+    min-width: 1060px;
     border-collapse: collapse;
     font-size: 12px;
 }
@@ -200,13 +198,12 @@
 #tabelItem tbody td {
     padding: 8px 7px;
     border: 1px solid #e5e7eb;
-    vertical-align: top;        /* rata atas supaya repack toggle tidak mendorong cell lain */
+    vertical-align: top;
 }
-/* NO & AKSI tetap center vertikal */
 #tabelItem tbody td.tc-no,
 #tabelItem tbody td.tc-aksi { vertical-align: middle; text-align: center; }
 
-/* column widths — total ≈ 1060px */
+/* column widths */
 #tabelItem .tc-no      { width: 42px;  text-align: center; }
 #tabelItem .tc-nama    { width: 210px; }
 #tabelItem .tc-kat     { width: 130px; }
@@ -228,7 +225,9 @@
 }
 
 /* ── Repack bits ── */
+/* FIX #6: Pindah inline style ke class */
 .repack-toggle-wrap  { margin-top: 5px; }
+.repack-toggle-wrap--hidden { display: none; }
 .chk-repack-label {
     font-size: 11px;
     color: #374151;
@@ -238,12 +237,19 @@
     gap: 4px;
     user-select: none;
 }
+.chk-repack {
+    width: 13px;
+    height: 13px;
+    accent-color: #16a34a;
+    cursor: pointer;
+}
 .repack-preview {
     font-size: 10.5px;
     color: #16a34a;
     font-weight: 600;
     margin-top: 2px;
 }
+.repack-preview--hidden { display: none; }
 .badge-barang-exists {
     display: none;
     font-size: 10px;
@@ -355,8 +361,9 @@
                 </div>
                 <div>
                     <label for="tanggal_masuk" class="dm-label">Tanggal Masuk <span class="text-danger">*</span></label>
+                    <!-- FIX #5: Gunakan $valTanggalMasuk, bukan hardcode date() lagi -->
                     <input type="date" class="dm-input" id="tanggal_masuk" name="tanggal_masuk"
-                           value="<?= old('tanggal_masuk', date('Y-m-d')) ?>" required>
+                           value="<?= esc($valTanggalMasuk) ?>" required>
                 </div>
                 <div>
                     <label for="id_donatur" class="dm-label">Donatur <span class="text-danger">*</span></label>
@@ -374,7 +381,7 @@
             <div class="dm-grid-12">
                 <div>
                     <label for="eta" class="dm-label">Estimasi Kedatangan</label>
-                    <input type="date" class="dm-input" id="eta" name="eta" value="<?= old('eta') ?>">
+                    <input type="date" class="dm-input" id="eta" name="eta" value="<?= esc($valEta) ?>">
                 </div>
                 <div>
                     <label for="keterangan" class="dm-label">Keterangan</label>
@@ -453,6 +460,7 @@
     const namaBarangPlaceholders = ['Beras Premium','Nasi Box Ayam','Brownies','Air Mineral'];
     let rowCount = 0;
 
+    // Hanya untuk generate unique row ID — tidak dipakai sebagai index name
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
     }
@@ -485,7 +493,9 @@
         const chkRepack    = row.querySelector('.chk-repack');
         if (!selectSatuan || !hiddenPecah || !toggleWrap || !chkRepack) return;
         const isKarung = selectSatuan.value === 'Karung';
-        toggleWrap.style.display = isKarung ? 'block' : 'none';
+
+        // FIX #6: Pakai class alih-alih inline style
+        toggleWrap.classList.toggle('repack-toggle-wrap--hidden', !isKarung);
         if (!isKarung) {
             chkRepack.checked = false;
             hiddenPecah.value = '0';
@@ -506,7 +516,12 @@
         const selectSatuanBerat = row.querySelector('[name$="[satuan_berat]"]');
         if (!chkRepack || !previewWrap || !previewText) return;
         hiddenPecah.value = chkRepack.checked ? '1' : '0';
-        if (!chkRepack.checked) { previewWrap.style.display = 'none'; return; }
+
+        // FIX #6: Pakai class
+        if (!chkRepack.checked) {
+            previewWrap.classList.add('repack-preview--hidden');
+            return;
+        }
         const jumlah     = parseFloat(inputJumlah?.value) || 0;
         const berat      = parseFloat(inputBerat?.value) || 0;
         const satuanBerat = selectSatuanBerat?.value ?? 'Kg';
@@ -516,9 +531,9 @@
                 ? totalKg.toLocaleString('id-ID') + ' Kg'
                 : totalKg.toLocaleString('id-ID', {maximumFractionDigits:2}) + ' Kg';
             previewText.textContent = `${jumlah} Karung = ${formatted}`;
-            previewWrap.style.display = 'block';
+            previewWrap.classList.remove('repack-preview--hidden');
         } else {
-            previewWrap.style.display = 'none';
+            previewWrap.classList.add('repack-preview--hidden');
         }
     }
 
@@ -544,98 +559,122 @@
         }
     }
 
+    // FIX #2: Re-index semua name="items[N][...]" setelah perubahan urutan baris
+    function reindexNames() {
+        document.querySelectorAll('#tbodyItem tr').forEach((tr, i) => {
+            const idx = i + 1;
+            tr.querySelectorAll('[name]').forEach(el => {
+                el.name = el.name.replace(/items\[\d+\]/, `items[${idx}]`);
+            });
+            // Perbarui nomor tampilan
+            const noCell = tr.querySelector('.row-number');
+            if (noCell) noCell.firstChild.textContent = idx;
+        });
+    }
+
     function tambahBaris(item = {}, shouldFocus = true) {
         rowCount++;
         const placeholder = namaBarangPlaceholders[(rowCount-1) % namaBarangPlaceholders.length];
-        const row = `
-        <tr id="row-${rowCount}">
-            <td class="tc-no text-secondary fw-semibold row-number">
-                ${rowCount}
-                <input type="hidden" name="items[${rowCount}][id]" value="${escapeHtml(item.id)}">
+
+        // Gunakan rowCount hanya sebagai ID unik sementara di DOM
+        const tmpIdx = rowCount;
+        const rowHtml = `
+        <tr id="row-${tmpIdx}">
+            <td class="tc-no text-secondary fw-semibold">
+                <span class="row-number">${tmpIdx}</span>
+                <input type="hidden" name="items[${tmpIdx}][id]" value="">
             </td>
             <td class="tc-nama">
                 <input type="text" class="dm-input input-nama-barang"
-                    name="items[${rowCount}][nama_barang]" maxlength="150"
+                    name="items[${tmpIdx}][nama_barang]" maxlength="150"
                     placeholder="Contoh: ${escapeHtml(placeholder)}"
-                    value="${escapeHtml(item.nama_barang)}"
                     list="daftarNamaBarang" autocomplete="off" required>
                 <span class="badge-barang-exists badge bg-success-subtle text-success border border-success-subtle">
                     <i class="fa-solid fa-circle-check me-1"></i>Barang terdaftar
                 </span>
             </td>
             <td class="tc-kat">
-                <select class="dm-select" name="items[${rowCount}][kategori]" required>
+                <select class="dm-select" name="items[${tmpIdx}][kategori]" required>
                     ${kategoriOptionsSelected(item.kategori)}
                 </select>
             </td>
             <td class="tc-sat">
-                <select class="dm-select input-satuan" name="items[${rowCount}][satuan]" required>
+                <select class="dm-select input-satuan" name="items[${tmpIdx}][satuan]" required>
                     ${selectOptions(satuanOptions, item.satuan)}
                 </select>
-                <input type="hidden" class="input-bisa-dipecah" name="items[${rowCount}][bisa_dipecah]" value="${escapeHtml(item.bisa_dipecah ?? '0')}">
-                <div class="repack-toggle-wrap" style="display:none;">
+                <input type="hidden" class="input-bisa-dipecah" name="items[${tmpIdx}][bisa_dipecah]" value="${escapeHtml(item.bisa_dipecah ?? '0')}">
+                <div class="repack-toggle-wrap repack-toggle-wrap--hidden">
                     <label class="chk-repack-label">
-                        <input type="checkbox" class="chk-repack" style="width:13px;height:13px;accent-color:#16a34a;cursor:pointer;">
+                        <input type="checkbox" class="chk-repack">
                         <span>Repack ke Kg</span>
                     </label>
-                    <div class="repack-preview" style="display:none;">
+                    <div class="repack-preview repack-preview--hidden">
                         → <span class="repack-preview-text"></span>
                     </div>
                 </div>
             </td>
             <td class="tc-ctn">
-                <input type="number" class="dm-input" name="items[${rowCount}][jumlah_ctn]"
-                    min="0" step="1" value="${escapeHtml(item.jumlah_ctn)}" placeholder="—">
+                <input type="number" class="dm-input" name="items[${tmpIdx}][jumlah_ctn]"
+                    min="0" step="1" placeholder="—">
             </td>
             <td class="tc-jml">
-                <input type="number" class="dm-input input-jumlah" name="items[${rowCount}][jumlah]"
-                    min="1" step="1" value="${escapeHtml(item.jumlah)}" required>
+                <input type="number" class="dm-input input-jumlah" name="items[${tmpIdx}][jumlah]"
+                    min="1" step="1" required>
             </td>
             <td class="tc-berat">
-                <input type="number" class="dm-input input-berat" name="items[${rowCount}][berat_per_satuan]"
-                    min="0.01" step="0.01" value="${escapeHtml(item.berat_per_satuan)}" placeholder="0.5" required>
+                <input type="number" class="dm-input input-berat" name="items[${tmpIdx}][berat_per_satuan]"
+                    min="0.01" step="0.01" placeholder="0.5" required>
             </td>
             <td class="tc-sberat">
-                <select class="dm-select" name="items[${rowCount}][satuan_berat]" required>
+                <select class="dm-select" name="items[${tmpIdx}][satuan_berat]" required>
                     ${selectOptions(satuanBeratOptions, item.satuan_berat)}
                 </select>
             </td>
             <td class="tc-exp">
-                <input type="date" class="dm-input input-expired" name="items[${rowCount}][tanggal_kedaluwarsa]"
-                    value="${escapeHtml(item.tanggal_kedaluwarsa)}" required>
+                <input type="date" class="dm-input input-expired" name="items[${tmpIdx}][tanggal_kedaluwarsa]"
+                    required>
             </td>
             <td class="tc-aksi">
-                <button type="button" class="btn btn-outline-danger btn-hapus-row" data-row="row-${rowCount}">
+                <button type="button" class="btn btn-outline-danger btn-hapus-row" data-row="row-${tmpIdx}">
                     <i class="fa-solid fa-xmark" style="pointer-events:none;"></i>
                 </button>
             </td>
         </tr>`;
-        document.getElementById('tbodyItem').insertAdjacentHTML('beforeend', row);
-        updateNomor();
-        const newRow = document.getElementById(`row-${rowCount}`);
+
+        document.getElementById('tbodyItem').insertAdjacentHTML('beforeend', rowHtml);
+
+        // FIX #3: Set nilai via DOM, bukan string interpolasi, untuk menghindari XSS
+        const newRow = document.getElementById(`row-${tmpIdx}`);
+        newRow.querySelector('.input-nama-barang').value   = item.nama_barang        ?? '';
+        newRow.querySelector('[name$="[jumlah_ctn]"]').value = item.jumlah_ctn       ?? '';
+        newRow.querySelector('.input-jumlah').value        = item.jumlah             ?? '';
+        newRow.querySelector('.input-berat').value         = item.berat_per_satuan   ?? '';
+        newRow.querySelector('.input-expired').value       = item.tanggal_kedaluwarsa ?? '';
+        newRow.querySelector('[name$="[id]"]').value       = item.id                 ?? '';
+
         const chk = newRow.querySelector('.chk-repack');
         if (chk) chk.checked = String(item.bisa_dipecah ?? '0') === '1';
+
         syncRepackOption(newRow, false);
         syncBarangMaster(newRow, false);
-        if (shouldFocus) newRow.querySelector('.input-nama-barang').focus();
-    }
 
-    function updateNomor() {
-        document.querySelectorAll('#tbodyItem tr').forEach((tr, i) => {
-            tr.querySelector('.row-number').firstChild.textContent = i + 1;
-        });
+        // Re-index agar name index selalu berurutan
+        reindexNames();
+
+        if (shouldFocus) newRow.querySelector('.input-nama-barang').focus();
     }
 
     let isFormSubmitted = false;
 
+    // FIX #1: Perbandingan tanggal pakai new Date() supaya eksplisit & aman
     function validateField(field) {
         if (!field.willValidate || field.disabled || field.readOnly) return true;
         let valid = field.checkValidity();
         if (field.classList.contains('input-jumlah') && parseFloat(field.value) < 1) valid = false;
         if (field.classList.contains('input-berat')  && parseFloat(field.value) <= 0) valid = false;
         if (field.classList.contains('input-expired')) {
-            const tm = document.getElementById('tanggal_masuk').value;
-            if (tm && field.value && field.value <= tm) valid = false;
+            const tmVal = document.getElementById('tanggal_masuk').value;
+            if (tmVal && field.value && new Date(field.value) <= new Date(tmVal)) valid = false;
         }
         field.classList.toggle('is-invalid', !valid);
         return valid;
@@ -680,7 +719,10 @@
         const btn = e.target.closest('.btn-hapus-row');
         if (!btn) return;
         document.getElementById(btn.dataset.row).remove();
-        updateNomor();
+
+        // FIX #2: Reindex setelah hapus agar name array selalu berurutan
+        reindexNames();
+
         if (isFormSubmitted) {
             const rows     = document.querySelectorAll('#tbodyItem tr');
             const errorDiv = document.getElementById('errorItem');
@@ -718,8 +760,34 @@
             if (firstError) firstError.focus();
         } else {
             const btnSimpan = document.getElementById('btnSimpan');
-            btnSimpan.disabled = true;
+            if (btnSimpan.dataset.submitted === 'true') {
+                e.preventDefault();
+                return false;
+            }
+            btnSimpan.dataset.submitted = 'true';
             btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...';
+            btnSimpan.style.pointerEvents = 'none';
+            btnSimpan.style.opacity = '0.7';
+            isFormSubmitted = true;
+        }
+    });
+
+    // Fix for Back-Forward Cache (bfcache) double submissions
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            const btnSimpan = document.getElementById('btnSimpan');
+            btnSimpan.dataset.submitted = 'false';
+            btnSimpan.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Transaksi';
+            btnSimpan.style.pointerEvents = 'auto';
+            btnSimpan.style.opacity = '1';
+            isFormSubmitted = false;
+        }
+    });
+
+    // FIX #8: Cegah user menutup halaman saat form sudah diisi
+    window.addEventListener('beforeunload', function(e) {
+        if (!isFormSubmitted && document.querySelectorAll('#tbodyItem tr').length > 0) {
+            e.preventDefault();
         }
     });
 

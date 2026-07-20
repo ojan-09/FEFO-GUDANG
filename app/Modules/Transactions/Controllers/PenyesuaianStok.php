@@ -153,7 +153,7 @@ class PenyesuaianStok extends BaseController
                         'tanggal_kedaluwarsa' => $expDate,
                         'status' => 'Aktif',
                         'kategori' => $barang['kategori'],
-                        'satuan' => $barang['satuan'],
+                        'satuan' => $item['satuan'] ?? $barang['satuan'],
                         'berat_per_satuan' => $barang['berat_per_satuan'],
                         'satuan_berat' => $barang['satuan_berat'],
                         'nama_barang' => $barang['nama_barang']
@@ -188,7 +188,7 @@ class PenyesuaianStok extends BaseController
                 'id_barang' => $barang['id'],
                 'id_batch' => $idBatch,
                 'jumlah' => $jumlah,
-                'satuan' => $barang['bisa_dipecah'] == 1 ? 'Kg' : $barang['satuan'],
+                'satuan' => $barang['bisa_dipecah'] == 1 ? 'Kg' : ($item['satuan'] ?? $barang['satuan']),
                 'stok_sebelum' => $stokSebelum,
                 'stok_sesudah' => $stokSesudah,
                 'keterangan' => $item['keterangan'] ?? null
@@ -202,13 +202,13 @@ class PenyesuaianStok extends BaseController
         }
 
         // Log Activity
-        $activityModel = new \App\Models\ActivityLogModel();
-        $activityModel->insert([
-            'id_user'   => user()->id,
-            'modul'     => 'Transaksi',
-            'aktivitas' => 'Menambahkan Penyesuaian Stok',
-            'deskripsi' => $nomor
-        ]);
+        $jenis = ucfirst($this->request->getPost('jenis_penyesuaian') ?: 'Lainnya');
+
+        \App\Libraries\ActivityLogger::log(
+            'Tambah',
+            'Penyesuaian Stok',
+            "Menambahkan Penyesuaian Stok\nNo. {$nomor}\nJenis : {$jenis}"
+        );
 
         return redirect()->to(site_url('transaksi/penyesuaian'))->with('success', 'Transaksi penyesuaian stok berhasil disimpan.');
     }
@@ -285,13 +285,11 @@ class PenyesuaianStok extends BaseController
         }
 
         // Log Activity
-        $activityModel = new \App\Models\ActivityLogModel();
-        $activityModel->insert([
-            'id_user'   => user()->id,
-            'modul'     => 'Transaksi',
-            'aktivitas' => 'Menghapus Penyesuaian Stok',
-            'deskripsi' => $penyesuaian['nomor_penyesuaian']
-        ]);
+        \App\Libraries\ActivityLogger::log(
+            'Hapus',
+            'Penyesuaian Stok',
+            "Menghapus Penyesuaian Stok\nNo. {$penyesuaian['nomor_penyesuaian']}"
+        );
 
         return redirect()->to(site_url('transaksi/penyesuaian'))->with('success', 'Penyesuaian stok berhasil dihapus dan stok telah di-rollback.');
     }

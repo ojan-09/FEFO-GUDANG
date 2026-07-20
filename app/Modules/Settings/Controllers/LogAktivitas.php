@@ -64,7 +64,7 @@ class LogAktivitas extends BaseController
             'title'     => 'Log Aktivitas (Audit Trail)',
             'logs'      => $logs,
             'roles'     => $this->groupModel->findAll(),
-            'moduls'    => ['Autentikasi', 'Manajemen User', 'Profil', 'Donasi Masuk', 'Penyaluran Barang'],
+            'moduls'    => ['Autentikasi', 'Manajemen User', 'Profil', 'Donasi Masuk', 'Penyaluran Barang', 'Penyesuaian Stok'],
             // Mengambil nilai filter untuk form
             'tanggal_mulai'   => $tanggal_mulai,
             'tanggal_selesai' => $tanggal_selesai,

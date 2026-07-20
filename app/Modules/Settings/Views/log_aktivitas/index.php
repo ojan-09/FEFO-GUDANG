@@ -1,3 +1,28 @@
+<?php
+    $totalLog    = count($logs);
+    $countLogin  = 0;
+    $countPenyaluran = 0;
+    $countDonasi = 0;
+    $countPenyesuaian = 0;
+
+    foreach ($logs as $l) {
+        $mod = strtolower($l['modul'] ?? '');
+        $act = strtolower($l['aktivitas'] ?? '');
+        
+        if (strpos($mod, 'login') !== false || strpos($mod, 'auth') !== false || strpos($act, 'login') !== false) {
+            $countLogin++;
+        }
+        if (strpos($mod, 'penyaluran') !== false) {
+            $countPenyaluran++;
+        }
+        if (strpos($mod, 'donasi') !== false || strpos($mod, 'barang masuk') !== false) {
+            $countDonasi++;
+        }
+        if (strpos($mod, 'penyesuaian') !== false) {
+            $countPenyesuaian++;
+        }
+    }
+?>
 <?= $this->extend('layout/main') ?>
 
 <?= $this->section('content') ?>
@@ -23,459 +48,546 @@
     .wh-page {
         background: var(--wh-bg);
         margin: -1.5rem -1.5rem 0 -1.5rem;
-        padding: 20px 24px 40px 24px;
+        padding: 16px 20px 32px 20px;
+        min-height: 100vh;
     }
 
     /* ---------- Header ---------- */
     .wh-header {
         background: var(--wh-card); border: 1px solid var(--wh-border);
-        border-radius: 18px; padding: 28px;
+        border-radius: 14px; padding: 18px 22px;
         display: flex; justify-content: space-between; align-items: center;
-        flex-wrap: wrap; gap: 16px; margin-bottom: 20px;
+        flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
     }
-    .wh-header h1 { font-size: 1.35rem; font-weight: 700; color: var(--wh-text); margin: 0 0 4px 0; }
-    .wh-header p  { margin: 0; font-size: 0.85rem; color: var(--wh-text-soft); }
-    .wh-total-badge {
-        background: var(--wh-primary-soft); border: 1px solid #BFDBFE;
-        border-radius: 12px; padding: 10px 16px; text-align: right;
-    }
-    .wh-total-badge .lbl { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--wh-primary); }
-    .wh-total-badge .val { font-size: 1.25rem; font-weight: 700; color: var(--wh-primary); }
+    .wh-header h1 { font-size: 1rem; font-weight: 700; color: var(--wh-text); margin: 0 0 2px 0; }
+    .wh-header p  { margin: 0; font-size: 0.75rem; color: var(--wh-text-soft); }
 
     /* ---------- Filter ---------- */
     .wh-filter-card {
         background: var(--wh-card); border: 1px solid var(--wh-border);
-        border-radius: 18px; padding: 24px; margin-bottom: 16px;
+        border-radius: 14px; padding: 16px 18px; margin-bottom: 12px;
     }
-    .wh-filter-card .form-label { font-size: 0.78rem; font-weight: 600; color: var(--wh-text); margin-bottom: 6px; }
+    .wh-filter-card .form-label { font-size: 0.7rem; font-weight: 600; color: var(--wh-text); margin-bottom: 5px; }
     .wh-filter-card .form-control,
     .wh-filter-card .form-select {
-        height: 44px; border-radius: 10px; border: 1px solid var(--wh-border);
-        font-size: 0.85rem; padding: 0.5rem 0.75rem;
+        height: 36px; border-radius: 8px; border: 1px solid var(--wh-border);
+        font-size: 0.78rem; padding: 0.375rem 0.65rem;
     }
     .wh-filter-card .form-control:focus,
     .wh-filter-card .form-select:focus {
-        border-color: var(--wh-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+        border-color: var(--wh-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12);
     }
     .wh-btn-primary {
-        background: var(--wh-primary); border: 1px solid var(--wh-primary); color: #fff;
-        height: 44px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
-        padding: 0 22px; display: inline-flex; align-items: center; gap: 7px;
-        transition: transform 120ms ease, background 120ms ease; cursor: pointer;
+        background: var(--wh-primary); color: #fff;
+        height: 36px; border-radius: 9px; font-size: 0.78rem; font-weight: 600;
+        padding: 0 16px; display: inline-flex; align-items: center; gap: 6px;
+        transition: transform 120ms ease, background 120ms ease; cursor: pointer; border: none;
     }
     .wh-btn-primary:hover { background: #1D4ED8; color: #fff; }
     .wh-btn-primary:active { transform: scale(0.98); }
     .wh-btn-outline {
         background: #fff; border: 1px solid var(--wh-border); color: var(--wh-text);
-        height: 44px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
-        padding: 0 18px; display: inline-flex; align-items: center; gap: 7px;
+        height: 36px; border-radius: 9px; font-size: 0.78rem; font-weight: 600;
+        padding: 0 14px; display: inline-flex; align-items: center; gap: 6px;
         transition: transform 120ms ease, background 120ms ease; text-decoration: none;
     }
     .wh-btn-outline:hover { background: var(--wh-dark-soft); color: var(--wh-text); }
     .wh-btn-outline:active { transform: scale(0.98); }
 
-    /* ---------- Mini KPI ---------- */
-    .wh-kpi-row {
-        display: grid; grid-template-columns: repeat(4, 1fr);
-        gap: 14px; margin-bottom: 16px;
+    /* KPI Dashboard */
+    .kpi-container {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        margin-bottom: 16px;
     }
-    .wh-kpi-mini {
-        background: var(--wh-card); border: 1px solid var(--wh-border);
-        border-radius: 16px; padding: 14px 18px; height: 90px;
-        display: flex; flex-direction: column; justify-content: space-between;
-        transition: transform 180ms ease, box-shadow 180ms ease;
+    .kpi-card {
+        background: #fff;
+        border: 1px solid var(--wh-border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        text-align: center;
     }
-    .wh-kpi-mini:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,24,40,.08); }
-    .wh-kpi-mini .k-label { font-size: 0.72rem; font-weight: 600; color: var(--wh-text-soft); text-transform: uppercase; letter-spacing: 0.04em; }
-    .wh-kpi-mini .k-value { font-size: 1.3rem; font-weight: 700; color: var(--wh-text); }
-    .wh-kpi-mini .k-icon  { font-size: 0.85rem; color: var(--wh-text-soft); }
+    .kpi-card .kpi-val {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--wh-text);
+        line-height: 1.2;
+    }
+    .kpi-card .kpi-lbl {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--wh-text-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-top: 3px;
+    }
 
-    /* ---------- Table Card ---------- */
-    .wh-table-card {
-        background: var(--wh-card); border: 1px solid var(--wh-border);
-        border-radius: 18px; box-shadow: 0 4px 20px rgba(15,23,42,.05);
-        overflow: hidden; padding: 0;
-    }
+    /* Colors */
+    .mod-donasi { color: #16A34A; }
+    .mod-penyaluran { color: #2563EB; }
+    .mod-penyesuaian { color: #9333EA; }
+    .mod-user { color: #EA580C; }
+    .mod-login { color: #1F2937; }
 
-    /* Custom Toolbar */
+    .bg-donasi { background: #DCFCE7; color: #16A34A; }
+    .bg-penyaluran { background: #DBEAFE; color: #2563EB; }
+    .bg-penyesuaian { background: #F3E8FF; color: #9333EA; }
+    .bg-user { background: #FFEDD5; color: #EA580C; }
+    .bg-login { background: #F3F4F6; color: #1F2937; }
+
+    /* Table Toolbar */
     .wh-dt-toolbar {
-        display: flex; justify-content: space-between; align-items: center;
-        flex-wrap: wrap; gap: 12px; padding: 16px 20px;
-        border-bottom: 1px solid var(--wh-separator);
+        background: #fff; border: 1px solid var(--wh-border); border-bottom: none;
+        border-radius: 14px 14px 0 0; padding: 12px 16px;
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
     }
-    .wh-dt-toolbar .dt-length-wrap {
-        display: flex; align-items: center; gap: 8px;
-        font-size: 0.82rem; color: var(--wh-text-soft);
-    }
-    .wh-dt-toolbar .dt-length-wrap select {
-        width: 80px; height: 42px; border-radius: 10px;
-        border: 1px solid var(--wh-border); font-size: 0.82rem; padding: 0 8px;
-    }
+    .wh-dt-toolbar .dt-length-wrap { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--wh-text-soft); }
+    .wh-dt-toolbar select { width: 80px; height: 34px; border-radius: 8px; border: 1px solid var(--wh-border); padding: 0 6px; font-size: 0.75rem; }
     .wh-dt-search { position: relative; }
-    .wh-dt-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--wh-text-soft); font-size: 0.82rem; }
-    .wh-dt-search input {
-        height: 42px; width: 260px; border-radius: 10px;
-        border: 1px solid var(--wh-border); font-size: 0.85rem;
-        padding: 0 12px 0 34px; color: var(--wh-text);
-    }
-    .wh-dt-search input:focus { outline: none; border-color: var(--wh-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+    .wh-dt-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--wh-text-soft); font-size: 13px; }
+    .wh-dt-search input { height: 34px; width: 220px; border-radius: 8px; border: 1px solid var(--wh-border); padding: 0 10px 0 30px; font-size: 0.78rem; }
 
-    /* Table */
-    #dataTable { border-collapse: separate; border-spacing: 0; width: 100%; }
-    #dataTable thead th {
-        background: var(--wh-bg); color: var(--wh-text-soft);
-        font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
-        padding: 0 20px; height: 54px;
-        border-bottom: 1px solid var(--wh-separator); border-top: none; white-space: nowrap;
-    }
-    #dataTable tbody td {
-        padding: 0 20px; height: 60px; vertical-align: middle;
-        border-bottom: 1px solid var(--wh-separator); border-top: none;
-        font-size: 0.83rem; color: var(--wh-text);
-    }
-    #dataTable, #dataTable th, #dataTable td { border-left: none; border-right: none; }
-    #dataTable tbody tr { transition: background 150ms ease; }
-    #dataTable tbody tr:hover { background: #F9FAFB; }
-    #dataTable tbody tr:last-child td { border-bottom: none; }
-
-    /* Avatar */
-    .wh-avatar {
-        width: 40px; height: 40px; border-radius: 50%;
-        display: inline-flex; align-items: center; justify-content: center;
-        font-size: 0.82rem; font-weight: 700; color: #fff; flex-shrink: 0;
-        background: linear-gradient(135deg, #2563EB, #7C3AED);
-    }
-    .wh-user-cell { display: flex; align-items: center; gap: 12px; }
-    .wh-user-cell .name  { font-weight: 600; font-size: 0.85rem; color: var(--wh-text); }
-    .wh-user-cell .role  { font-size: 0.73rem; color: var(--wh-text-soft); margin-top: 1px; }
-
-    /* Badge role */
-    .wh-role-badge {
-        display: inline-flex; align-items: center; border-radius: 999px;
-        padding: 4px 10px; font-size: 0.7rem; font-weight: 600; white-space: nowrap;
-    }
-    .wh-role-badge.admin      { background: #EEF2FF; color: #4338CA; }
-    .wh-role-badge.petugas    { background: #ECFDF5; color: #047857; }
-    .wh-role-badge.supervisor { background: var(--wh-warning-soft); color: #B45309; }
-    .wh-role-badge.default    { background: var(--wh-dark-soft); color: var(--wh-text-soft); }
-
-    /* Modul cell */
-    .wh-modul-cell { display: flex; align-items: flex-start; gap: 10px; }
-    .wh-modul-icon {
-        width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
-    }
-    .wh-modul-icon.user    { background: var(--wh-primary-soft); color: var(--wh-primary); }
-    .wh-modul-icon.package { background: var(--wh-success-soft); color: #047857; }
-    .wh-modul-icon.report  { background: var(--wh-cyan-soft); color: #0891B2; }
-    .wh-modul-icon.auth    { background: var(--wh-purple-soft); color: #6D28D9; }
-    .wh-modul-icon.system  { background: var(--wh-warning-soft); color: #B45309; }
-    .wh-modul-icon.default { background: var(--wh-dark-soft); color: var(--wh-text-soft); }
-    .wh-modul-name   { font-weight: 600; font-size: 0.83rem; color: var(--wh-text); }
-    .wh-modul-action { font-size: 0.75rem; color: #64748B; margin-top: 2px; }
-
-    /* Activity badge */
-    .wh-act-badge {
-        display: inline-flex; align-items: center; gap: 4px;
-        border-radius: 999px; padding: 3px 9px;
-        font-size: 0.68rem; font-weight: 600; white-space: nowrap;
-    }
-    .wh-act-badge i { font-size: 0.55rem; }
-    .act-login  { background: var(--wh-success-soft); color: #15803D; }
-    .act-tambah { background: var(--wh-primary-soft); color: #1D4ED8; }
-    .act-edit   { background: var(--wh-warning-soft); color: #B45309; }
-    .act-delete { background: var(--wh-danger-soft);  color: #B91C1C; }
-    .act-reset  { background: var(--wh-purple-soft);  color: #6D28D9; }
-    .act-export { background: var(--wh-cyan-soft);    color: #0891B2; }
-    .act-other  { background: var(--wh-dark-soft);    color: var(--wh-text-soft); }
-
-    /* Desc truncate */
-    .wh-desc {
-        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-        overflow: hidden; font-size: 0.8rem; color: var(--wh-text-soft);
-        max-width: 320px; cursor: default;
-    }
-
-    /* Time cell */
-    .wh-time-date { font-weight: 600; font-size: 0.83rem; color: var(--wh-text); }
-    .wh-time-hour { font-size: 0.75rem; color: #64748B; margin-top: 2px; }
-
-    /* DT bottom */
+    /* Bottom Bar DataTables */
     .wh-dt-bottom {
-        display: flex; justify-content: space-between; align-items: center;
-        flex-wrap: wrap; gap: 12px; padding: 14px 20px;
-        border-top: 1px solid var(--wh-separator);
-        font-size: 0.82rem; color: var(--wh-text-soft);
+        background: #fff; border: 1px solid var(--wh-border); border-top: none;
+        border-radius: 0 0 14px 14px; padding: 12px 16px;
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
     }
-    .dataTables_wrapper .dataTables_length,
-    .dataTables_wrapper .dataTables_filter { display: none; }
-    .dataTables_wrapper .dataTables_info { font-size: 0.82rem; color: var(--wh-text-soft); }
+    .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { display: none; }
+    .dataTables_wrapper .dataTables_info { font-size: 0.75rem; color: var(--wh-text-soft); }
     .dataTables_wrapper .dataTables_paginate .paginate_button {
-        width: 40px; height: 40px; border-radius: 10px !important;
-        padding: 0 !important; margin-left: 3px;
+        width: 30px; height: 30px; border-radius: 7px !important; padding: 0 !important; margin-left: 3px;
         display: inline-flex !important; align-items: center; justify-content: center;
-        border: 1px solid transparent !important; background: transparent !important;
-        color: var(--wh-text) !important; font-size: 0.82rem;
+        border: 1px solid var(--wh-border) !important; background: #fff !important; color: var(--wh-text) !important; font-size: 0.75rem; transition: background .12s;
     }
     .dataTables_wrapper .dataTables_paginate .paginate_button.current {
         background: var(--wh-primary) !important; color: #fff !important; border-color: var(--wh-primary) !important;
     }
     .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
-        background: var(--wh-primary-soft) !important; color: var(--wh-primary) !important;
+        background: var(--wh-primary-soft) !important; border-color: #BFDBFE !important; color: var(--wh-primary) !important;
     }
 
-    @media (max-width: 1024px) { .wh-kpi-row { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 768px)  {
-        .wh-kpi-row { grid-template-columns: 1fr; }
-        .wh-header  { flex-direction: column; align-items: flex-start; }
-        .wh-dt-toolbar { flex-direction: column; align-items: flex-start; }
-        .wh-dt-search input { width: 100%; }
-        #dataTable .wh-desc { max-width: 180px; }
+    /* Timeline Cards */
+    #dataTable { border: none !important; margin: 0 !important; }
+    #dataTable thead { display: none; }
+    #dataTable tbody tr { background: transparent !important; }
+    #dataTable tbody td { border: none !important; padding: 0 0 8px 0 !important; }
+    #dataTable.dataTable.no-footer { border-bottom: none; }
+
+    .timeline-card {
+        background: #F8FAFC;
+        border: 1px solid var(--wh-border);
+        border-radius: 12px;
+        padding: 13px 16px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .timeline-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(15,23,42,0.07);
+        border-color: #CBD5E1;
+        background: #fff;
+    }
+
+    .tl-time {
+        width: 105px;
+        flex-shrink: 0;
+        text-align: right;
+        position: relative;
+    }
+    .tl-time::after {
+        content: '';
+        position: absolute;
+        right: -26px;
+        top: 5px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #E2E8F0;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px #CBD5E1;
+    }
+    .timeline-card:hover .tl-time::after { background: var(--wh-primary); box-shadow: 0 0 0 1px var(--wh-primary); }
+    .tl-date { font-weight: 700; font-size: 0.78rem; color: var(--wh-text); }
+    .tl-hour { font-size: 0.7rem; color: var(--wh-text-soft); font-weight: 500; margin-top: 1px; }
+
+    .tl-content {
+        flex-grow: 1;
+        padding-left: 14px;
+        border-left: 2px solid #F1F5F9;
+        display: flex;
+        gap: 16px;
+    }
+
+    .tl-user {
+        width: 140px;
+        flex-shrink: 0;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    .tl-avatar {
+        width: 30px; height: 30px;
+        border-radius: 8px;
+        background: var(--wh-primary-soft);
+        color: var(--wh-primary);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.78rem;
+        flex-shrink: 0;
+    }
+    .tl-uname { font-weight: 700; font-size: 0.8rem; color: var(--wh-text); }
+    .tl-urole { font-size: 0.68rem; color: var(--wh-text-soft); font-weight: 500; margin-top: 1px; }
+
+    .tl-module {
+        width: 160px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .tl-icon { font-size: 1.1rem; margin-top: 1px; }
+    .tl-mod-name { font-weight: 700; font-size: 0.8rem; color: var(--wh-text); }
+    .tl-action { font-size: 0.63rem; font-weight: 700; padding: 2px 6px; border-radius: 5px; margin-top: 4px; display: inline-block; }
+
+    .tl-desc {
+        flex-grow: 1;
+        font-size: 0.78rem;
+        line-height: 1.55;
+        color: #334155;
+    }
+
+    /* Drawer */
+    .drawer-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(15,23,42,0.4); z-index: 1040;
+        opacity: 0; visibility: hidden; transition: opacity 0.3s;
+    }
+    .drawer-overlay.show { opacity: 1; visibility: visible; }
+
+    .detail-drawer {
+        position: fixed; top: 0; right: -400px; width: 400px; height: 100vh;
+        background: #fff; z-index: 1050; box-shadow: -8px 0 30px rgba(0,0,0,0.1);
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex; flex-direction: column;
+    }
+    .detail-drawer.show { right: 0; }
+    .drawer-header { padding: 18px 20px; border-bottom: 1px solid var(--wh-border); display: flex; justify-content: space-between; align-items: center; }
+    .drawer-header h3 { margin: 0; font-size: 1rem; font-weight: 800; color: var(--wh-text); }
+    .drawer-close { background: #F1F5F9; border: none; width: 28px; height: 28px; border-radius: 7px; font-size: 0.9rem; cursor: pointer; color: var(--wh-text-soft); transition: background 0.2s; }
+    .drawer-close:hover { background: #E2E8F0; color: var(--wh-text); }
+    .drawer-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+    .drawer-item { margin-bottom: 18px; }
+    .drawer-lbl { font-size: 0.68rem; font-weight: 700; color: var(--wh-text-soft); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.04em; }
+    .drawer-val { font-size: 0.88rem; color: var(--wh-text); font-weight: 500; line-height: 1.6; }
+
+    .drawer-action-btn {
+        margin-top: 20px; width: 100%; padding: 12px; border-radius: 10px;
+        background: var(--wh-primary-soft); color: var(--wh-primary);
+        border: 1px solid #BFDBFE; font-weight: 700; font-size: 0.85rem; text-align: center;
+        text-decoration: none; display: inline-block; transition: background 0.2s, color 0.2s;
+    }
+    .drawer-action-btn:hover { background: var(--wh-primary); color: #fff; }
+
+    @media (max-width: 992px) {
+        .tl-content { flex-direction: column; gap: 12px; }
+        .tl-user, .tl-module { width: 100%; }
+        .kpi-container { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 576px) {
+        .kpi-container { grid-template-columns: 1fr; }
+        .timeline-card { flex-direction: column; gap: 10px; padding: 12px 14px; }
+        .tl-time { text-align: left; width: 100%; }
+        .tl-time::after { display: none; }
+        .tl-content { border-left: none; padding-left: 0; }
+        .detail-drawer { width: 100%; right: -100%; }
     }
 </style>
 
-<?php
-    // Hitung KPI mini dari array $logs (view-level aggregation, no new queries)
-    $totalLog    = count($logs);
-    $today       = date('Y-m-d');
-    $weekStart   = date('Y-m-d', strtotime('monday this week'));
-    $monthStart  = date('Y-m-01');
-    $countToday  = 0; $countWeek = 0; $countMonth = 0;
-    foreach ($logs as $l) {
-        $d = substr($l['created_at'], 0, 10);
-        if ($d === $today)               $countToday++;
-        if ($d >= $weekStart)            $countWeek++;
-        if ($d >= $monthStart)           $countMonth++;
-    }
-?>
-
 <div class="wh-page">
-
-    <!-- Header -->
     <div class="wh-header">
         <div>
-            <h1>Log Aktivitas</h1>
-            <p>Audit trail seluruh aktivitas pengguna pada sistem Warehouse Management.</p>
-        </div>
-        <div class="wh-total-badge">
-            <div class="lbl">Total Log</div>
-            <div class="val"><?= number_format($totalLog, 0, ',', '.') ?> Aktivitas</div>
+            <h1>Log Aktivitas (Audit Trail)</h1>
+            <p>Pantau seluruh riwayat aktivitas operasional dalam gudang.</p>
         </div>
     </div>
 
-    <!-- Filter -->
+    <!-- Mini Dashboard KPI -->
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <div class="kpi-val"><?= $totalLog ?></div>
+            <div class="kpi-lbl">Total Aktivitas</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-val"><?= $countLogin ?></div>
+            <div class="kpi-lbl">Login</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-val"><?= $countPenyaluran ?></div>
+            <div class="kpi-lbl">Penyaluran</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-val"><?= $countDonasi ?></div>
+            <div class="kpi-lbl">Donasi Masuk</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-val"><?= $countPenyesuaian ?></div>
+            <div class="kpi-lbl">Penyesuaian</div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
     <div class="wh-filter-card">
-        <form method="GET" action="<?= site_url('log-aktivitas') ?>" class="row g-3 align-items-end">
+        <form action="" method="get" class="row g-3 align-items-end">
             <div class="col-md-2">
                 <label class="form-label">Tanggal Mulai</label>
-                <input type="date" class="form-control" name="tanggal_mulai" value="<?= esc($tanggal_mulai) ?>">
+                <input type="date" name="tanggal_mulai" class="form-control" value="<?= esc($tanggal_mulai) ?>">
             </div>
             <div class="col-md-2">
                 <label class="form-label">Tanggal Selesai</label>
-                <input type="date" class="form-control" name="tanggal_selesai" value="<?= esc($tanggal_selesai) ?>">
+                <input type="date" name="tanggal_selesai" class="form-control" value="<?= esc($tanggal_selesai) ?>">
             </div>
             <div class="col-md-2">
                 <label class="form-label">Modul</label>
-                <select class="form-select" name="modul">
+                <select name="modul" class="form-select">
                     <option value="">Semua Modul</option>
                     <?php foreach ($moduls as $m): ?>
-                        <option value="<?= $m ?>" <?= $filter_modul == $m ? 'selected' : '' ?>><?= $m ?></option>
+                        <option value="<?= $m ?>" <?= ($filter_modul == $m) ? 'selected' : '' ?>><?= $m ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Role</label>
-                <select class="form-select" name="role">
+                <label class="form-label">Aktivitas</label>
+                <select name="aktivitas" class="form-select">
+                    <option value="">Semua Aktivitas</option>
+                    <option value="Login" <?= ($filter_aktivitas == 'Login') ? 'selected' : '' ?>>Login</option>
+                    <option value="Tambah" <?= ($filter_aktivitas == 'Tambah') ? 'selected' : '' ?>>Tambah</option>
+                    <option value="Edit" <?= ($filter_aktivitas == 'Edit') ? 'selected' : '' ?>>Edit</option>
+                    <option value="Hapus" <?= ($filter_aktivitas == 'Hapus') ? 'selected' : '' ?>>Hapus</option>
+                    <option value="Reset" <?= ($filter_aktivitas == 'Reset') ? 'selected' : '' ?>>Reset Password</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Role User</label>
+                <select name="role" class="form-select">
                     <option value="">Semua Role</option>
                     <?php foreach ($roles as $r): ?>
-                        <option value="<?= $r->name ?>" <?= $filter_role == $r->name ? 'selected' : '' ?>><?= $r->name ?></option>
+                        <option value="<?= $r->name ?>" <?= ($filter_role == $r->name) ? 'selected' : '' ?>><?= ucfirst($r->name) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Pencarian</label>
-                <input type="text" class="form-control" name="search" placeholder="Cari nama, deskripsi..." value="<?= esc($search) ?>">
-            </div>
-            <div class="col-md-1 d-flex gap-2">
-                <button type="submit" class="wh-btn-primary w-100"><i class="fa-solid fa-magnifying-glass"></i></button>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="wh-btn-primary w-100 justify-content-center"><i class="fa-solid fa-filter"></i> Terapkan</button>
+                <a href="<?= site_url('pengaturan/log-aktivitas') ?>" class="wh-btn-outline px-3" title="Reset Filter"><i class="fa-solid fa-rotate-right"></i></a>
             </div>
         </form>
     </div>
 
-    <!-- Mini KPI -->
-    <div class="wh-kpi-row">
-        <div class="wh-kpi-mini">
-            <div class="k-label">Total Aktivitas</div>
-            <div class="k-value"><?= number_format($totalLog, 0, ',', '.') ?></div>
+    <!-- Table Toolbar (DataTables Dom) -->
+    <div class="wh-dt-toolbar">
+        <div class="dt-length-wrap">
+            Tampilkan
+            <select id="dtLengthSelect">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+            data
         </div>
-        <div class="wh-kpi-mini">
-            <div class="k-label">Hari Ini</div>
-            <div class="k-value"><?= number_format($countToday, 0, ',', '.') ?></div>
-        </div>
-        <div class="wh-kpi-mini">
-            <div class="k-label">Minggu Ini</div>
-            <div class="k-value"><?= number_format($countWeek, 0, ',', '.') ?></div>
-        </div>
-        <div class="wh-kpi-mini">
-            <div class="k-label">Bulan Ini</div>
-            <div class="k-value"><?= number_format($countMonth, 0, ',', '.') ?></div>
+        <div class="wh-dt-search">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="dtSearchInput" placeholder="Cari aktivitas atau user..." value="<?= esc($search) ?>">
         </div>
     </div>
 
-    <!-- Table Card -->
-    <div class="wh-table-card">
+    <!-- Timeline Wrapper -->
+    <div style="background: transparent;">
+        <table id="dataTable" class="w-100 m-0">
+            <thead><tr><th>Log</th></tr></thead>
+            <tbody>
+                <?php foreach ($logs as $log): 
+                    $modul = strtolower($log['modul'] ?? '');
+                    
+                    $icon = 'fa-circle-dot'; $colorCls = 'mod-login'; $bgCls = 'bg-login';
+                    if (strpos($modul, 'donasi') !== false || strpos($modul, 'masuk') !== false) {
+                        $icon = 'fa-inbox-in'; $colorCls = 'mod-donasi'; $bgCls = 'bg-donasi';
+                    } elseif (strpos($modul, 'penyaluran') !== false || strpos($modul, 'keluar') !== false) {
+                        $icon = 'fa-box-arrow-right'; $colorCls = 'mod-penyaluran'; $bgCls = 'bg-penyaluran';
+                    } elseif (strpos($modul, 'penyesuaian') !== false) {
+                        $icon = 'fa-scale-balanced'; $colorCls = 'mod-penyesuaian'; $bgCls = 'bg-penyesuaian';
+                    } elseif (strpos($modul, 'user') !== false || strpos($modul, 'profil') !== false) {
+                        $icon = 'fa-users-gear'; $colorCls = 'mod-user'; $bgCls = 'bg-user';
+                    } elseif (strpos($modul, 'auth') !== false || strpos($modul, 'login') !== false) {
+                        $icon = 'fa-shield-halved'; $colorCls = 'mod-login'; $bgCls = 'bg-login';
+                    }
 
-        <!-- Toolbar -->
-        <div class="wh-dt-toolbar">
-            <div class="dt-length-wrap">
-                Tampilkan
-                <select id="dtLengthSelect">
-                    <option value="25" selected>25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                entri
-            </div>
-            <div class="wh-dt-search">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="dtSearchInput" placeholder="Cari pengguna, modul, aktivitas...">
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table align-middle mb-0" id="dataTable" width="100%" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th width="50" class="text-center">No</th>
-                        <th>Waktu</th>
-                        <th>Pengguna</th>
-                        <th>Modul / Aktivitas</th>
-                        <th>Deskripsi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($logs)): ?>
-                        <tr>
-                            <td colspan="5" style="text-align:center; padding: 60px 20px;">
-                                <i class="fa-solid fa-box-open" style="font-size:2.5rem; color:var(--wh-border);"></i>
-                                <p style="margin-top:14px; color:var(--wh-text); font-weight:600;">Tidak ada log aktivitas ditemukan.</p>
-                                <p style="color:var(--wh-text-soft); font-size:0.85rem;">Coba ubah filter pencarian Anda.</p>
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php $no = 1; foreach ($logs as $log): ?>
-                            <?php
-                                // Avatar inisial
-                                $namaUser  = $log['nama_user'] ?? 'Sistem';
-                                $nameParts = explode(' ', trim($namaUser));
-                                $initials  = strtoupper(substr($nameParts[0], 0, 1));
-                                if (count($nameParts) > 1) $initials .= strtoupper(substr(end($nameParts), 0, 1));
-
-                                // Role badge class
-                                $roleVal = strtolower($log['role'] ?? '');
-                                $roleCls = 'default';
-                                if (strpos($roleVal, 'admin') !== false)      $roleCls = 'admin';
-                                elseif (strpos($roleVal, 'petugas') !== false) $roleCls = 'petugas';
-                                elseif (strpos($roleVal, 'supervisor') !== false) $roleCls = 'supervisor';
-
-                                // Modul icon
-                                $modul    = strtolower($log['modul'] ?? '');
-                                $modulCls = 'default'; $modulIcon = 'fa-circle-dot';
-                                if (strpos($modul, 'user') !== false)                { $modulCls = 'user';    $modulIcon = 'fa-user'; }
-                                elseif (strpos($modul, 'stok') !== false || strpos($modul, 'barang') !== false || strpos($modul, 'donasi') !== false) { $modulCls = 'package'; $modulIcon = 'fa-boxes-stacked'; }
-                                elseif (strpos($modul, 'laporan') !== false || strpos($modul, 'export') !== false) { $modulCls = 'report';  $modulIcon = 'fa-file-lines'; }
-                                elseif (strpos($modul, 'login') !== false || strpos($modul, 'auth') !== false || strpos($modul, 'password') !== false) { $modulCls = 'auth'; $modulIcon = 'fa-shield-halved'; }
-                                elseif (strpos($modul, 'pengaturan') !== false || strpos($modul, 'log') !== false) { $modulCls = 'system'; $modulIcon = 'fa-gear'; }
-
-                                // Activity badge
-                                $aktv    = strtolower($log['aktivitas'] ?? '');
-                                $actCls  = 'act-other'; $actIcon = 'fa-circle';
-                                if (strpos($aktv, 'login') !== false)                           { $actCls = 'act-login';  $actIcon = 'fa-circle-check'; }
-                                elseif (strpos($aktv, 'tambah') !== false || strpos($aktv, 'create') !== false || strpos($aktv, 'store') !== false) { $actCls = 'act-tambah'; $actIcon = 'fa-plus'; }
-                                elseif (strpos($aktv, 'edit') !== false || strpos($aktv, 'update') !== false)    { $actCls = 'act-edit';   $actIcon = 'fa-pen'; }
-                                elseif (strpos($aktv, 'hapus') !== false || strpos($aktv, 'delete') !== false)   { $actCls = 'act-delete'; $actIcon = 'fa-trash'; }
-                                elseif (strpos($aktv, 'reset') !== false)                       { $actCls = 'act-reset';  $actIcon = 'fa-key'; }
-                                elseif (strpos($aktv, 'export') !== false)                      { $actCls = 'act-export'; $actIcon = 'fa-file-arrow-down'; }
-                            ?>
-                            <tr>
-                                <td class="text-center"><?= $no++ ?></td>
-                                <td>
-                                    <div class="wh-time-date"><?= date('d M Y', strtotime($log['created_at'])) ?></div>
-                                    <div class="wh-time-hour"><?= date('H:i:s', strtotime($log['created_at'])) ?> WIB</div>
-                                </td>
-                                <td>
-                                    <div class="wh-user-cell">
-                                        <div class="wh-avatar"><?= $initials ?></div>
-                                        <div>
-                                            <div class="name"><?= esc($namaUser) ?></div>
-                                            <div class="role">
-                                                <span class="wh-role-badge <?= $roleCls ?>"><?= esc($log['role'] ?? '-') ?></span>
-                                            </div>
-                                        </div>
+                    $namaUser = $log['nama_user'] ?? 'Sistem';
+                    $initials = strtoupper(substr($namaUser, 0, 1));
+                    
+                    // JSON Data for Drawer
+                    $drawerData = htmlspecialchars(json_encode([
+                        'modul' => $log['modul'],
+                        'aksi' => $log['aktivitas'],
+                        'tanggal' => date('d M Y - H:i', strtotime($log['created_at'])) . ' WIB',
+                        'operator' => $namaUser,
+                        'deskripsi' => $log['deskripsi']
+                    ]), ENT_QUOTES, 'UTF-8');
+                ?>
+                <tr>
+                    <td>
+                        <div class="timeline-card" onclick="openDrawer(this)" data-info="<?= $drawerData ?>">
+                            <div class="tl-time">
+                                <div class="tl-date"><?= date('d M Y', strtotime($log['created_at'])) ?></div>
+                                <div class="tl-hour"><?= date('H:i:s', strtotime($log['created_at'])) ?> WIB</div>
+                            </div>
+                            <div class="tl-content">
+                                <div class="tl-user">
+                                    <div class="tl-avatar"><?= $initials ?></div>
+                                    <div>
+                                        <div class="tl-uname"><?= esc($namaUser) ?></div>
+                                        <div class="tl-urole"><?= esc($log['role'] ?? 'Sistem') ?></div>
                                     </div>
-                                </td>
-                                <td>
-                                    <div class="wh-modul-cell">
-                                        <div class="wh-modul-icon <?= $modulCls ?>"><i class="fa-solid <?= $modulIcon ?>"></i></div>
-                                        <div>
-                                            <div class="wh-modul-name"><?= esc($log['modul']) ?></div>
-                                            <div class="wh-modul-action">
-                                                <span class="wh-act-badge <?= $actCls ?>">
-                                                    <i class="fa-solid <?= $actIcon ?>"></i><?= esc($log['aktivitas']) ?>
-                                                </span>
-                                            </div>
-                                        </div>
+                                </div>
+                                <div class="tl-module">
+                                    <i class="fa-solid <?= $icon ?> <?= $colorCls ?> tl-icon"></i>
+                                    <div>
+                                        <div class="tl-mod-name"><?= esc($log['modul']) ?></div>
+                                        <div class="tl-action <?= $bgCls ?>"><?= esc($log['aktivitas']) ?></div>
                                     </div>
-                                </td>
-                                <td>
-                                    <div class="wh-desc" title="<?= esc($log['deskripsi']) ?>"><?= esc($log['deskripsi']) ?></div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Bottom bar -->
-        <div class="wh-dt-bottom">
-            <div id="dtInfo"></div>
-            <div id="dtPaginate"></div>
-        </div>
+                                </div>
+                                <div class="tl-desc">
+                                    <?= nl2br(esc($log['deskripsi'])) ?>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 
+    <!-- Bottom bar (DataTables Dom) -->
+    <div class="wh-dt-bottom">
+        <div id="dtInfo"></div>
+        <div id="dtPaginate"></div>
+    </div>
+</div>
+
+<!-- Drawer Elements -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="detail-drawer" id="detailDrawer">
+    <div class="drawer-header">
+        <h3 id="drwTitle">Ringkasan Aktivitas</h3>
+        <button class="drawer-close" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="drawer-body">
+        <div class="drawer-item">
+            <div class="drawer-lbl">Modul</div>
+            <div class="drawer-val" id="drwModul">-</div>
+        </div>
+        <div class="drawer-item">
+            <div class="drawer-lbl">Aksi</div>
+            <div class="drawer-val" id="drwAksi">-</div>
+        </div>
+        <div class="drawer-item">
+            <div class="drawer-lbl">Waktu</div>
+            <div class="drawer-val" id="drwTanggal">-</div>
+        </div>
+        <div class="drawer-item">
+            <div class="drawer-lbl">Operator</div>
+            <div class="drawer-val" id="drwOperator">-</div>
+        </div>
+        <div class="drawer-item">
+            <div class="drawer-lbl">Detail & Keterangan</div>
+            <div class="drawer-val" id="drwDeskripsi" style="background:#F8FAFC; padding:16px; border-radius:12px; border:1px solid var(--wh-border); margin-top:8px;">-</div>
+        </div>
+        
+        <div id="drwActionContainer" style="display:none; margin-top:32px;">
+            <a href="#" id="drwActionBtn" class="drawer-action-btn">Lihat Halaman Transaksi <i class="fa-solid fa-arrow-right ms-2"></i></a>
+        </div>
+    </div>
 </div>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
+function openDrawer(element) {
+    const data = JSON.parse(element.getAttribute('data-info'));
+    
+    document.getElementById('drwModul').innerText = data.modul;
+    document.getElementById('drwAksi').innerText = data.aksi;
+    document.getElementById('drwTanggal').innerText = data.tanggal;
+    document.getElementById('drwOperator').innerText = data.operator;
+    
+    // Parse deskripsi back to HTML
+    document.getElementById('drwDeskripsi').innerHTML = data.deskripsi.replace(/\n/g, "<br>");
+    
+    // Action Button Logic
+    const btn = document.getElementById('drwActionBtn');
+    const container = document.getElementById('drwActionContainer');
+    
+    // Try to extract Transaction Number (e.g. BM-2026..., BK-2026..., ADJ-2026...)
+    let trxNo = '';
+    const lines = data.deskripsi.split('\n');
+    for(let line of lines) {
+        if(line.includes('No.')) {
+            trxNo = line.replace('No.', '').trim();
+            break;
+        }
+    }
+    
+    if (trxNo !== '') {
+        container.style.display = 'block';
+        if (trxNo.startsWith('BM-')) {
+            btn.href = '<?= site_url('transaksi/barang-masuk') ?>'; 
+        } else if (trxNo.startsWith('BK-')) {
+            btn.href = '<?= site_url('transaksi/barang-keluar') ?>';
+        } else if (trxNo.startsWith('ADJ-')) {
+            btn.href = '<?= site_url('transaksi/penyesuaian') ?>';
+        } else {
+            container.style.display = 'none';
+        }
+    } else {
+        container.style.display = 'none';
+    }
+
+    document.getElementById('drawerOverlay').classList.add('show');
+    document.getElementById('detailDrawer').classList.add('show');
+}
+
+function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('show');
+    document.getElementById('detailDrawer').classList.remove('show');
+}
+
 $(document).ready(function () {
     var table = $('#dataTable').DataTable({
         order: [],
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
         pageLength: 25,
-        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+        dom: '<"d-none"i><"d-none"p>rt', 
         columnDefs: [{ orderable: false, targets: [0] }],
-        initComplete: function () {
-            $('#dataTable_info').appendTo('#dtInfo');
-            $('#dataTable_paginate').appendTo('#dtPaginate');
+        drawCallback: function () {
+            // DataTables creates info and paginate elements. We move them.
+            $('#dtInfo').empty().append($('.dataTables_info'));
+            $('#dtPaginate').empty().append($('.dataTables_paginate'));
         }
     });
 
+    // Custom Length
     $('#dtLengthSelect').on('change', function () {
         table.page.len(parseInt(this.value)).draw();
     });
 
+    // Custom Search
     $('#dtSearchInput').on('keyup input', function () {
         table.search(this.value).draw();
-    });
-
-    table.on('draw', function () {
-        var info     = $('#dataTable_info');
-        var paginate = $('#dataTable_paginate');
-        if (info.parent().attr('id')     !== 'dtInfo')     info.appendTo('#dtInfo');
-        if (paginate.parent().attr('id') !== 'dtPaginate') paginate.appendTo('#dtPaginate');
     });
 });
 </script>

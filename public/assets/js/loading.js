@@ -139,11 +139,16 @@ $(document).ready(function () {
 
         let $form = $(this);
 
-        // Cari tombol submit yang sedang aktif (yang diklik user),
-        // fallback ke tombol submit pertama jika tidak ada.
         let $btn = $form.find('button[type="submit"]:focus')
                         .add($form.find('button[type="submit"]').first())
                         .first();
+
+        // FIX: Mencegah double submit
+        if ($btn.data('is-submitted') === true) {
+            e.preventDefault();
+            return false;
+        }
+        $btn.data('is-submitted', true);
 
         let loadingText = $btn.data('loading-text') || 'Memproses...';
 
@@ -152,13 +157,32 @@ $(document).ready(function () {
             window.showOverlay(overlayMsg);
         }
 
-        // Simpan HTML asli sebelum diganti
         $btn.data('original-html', $btn.html());
         $btn.html(
             '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
             loadingText
         );
-        $btn.prop('disabled', true).addClass('disabled');
+        
+        // FIX: Jangan gunakan prop('disabled', true) langsung karena bisa menggagalkan submit di beberapa browser
+        $btn.addClass('disabled').css('pointer-events', 'none').css('opacity', '0.7');
+    });
+
+    // FIX: bfcache handler (saat user klik "Back" di browser, reset state tombol form)
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            $('form.loading-form button[type="submit"]').each(function () {
+                let $btn = $(this);
+                if ($btn.data('original-html')) {
+                    $btn.html($btn.data('original-html'))
+                        .removeClass('disabled')
+                        .css('pointer-events', 'auto')
+                        .css('opacity', '1')
+                        .removeData('original-html');
+                }
+                $btn.data('is-submitted', false);
+            });
+            if (window.hideOverlay) window.hideOverlay();
+        }
     });
 
     // Restore tombol jika terjadi AJAX error (submit via AJAX)
@@ -195,11 +219,12 @@ $(document).ready(function () {
             loadingText
         );
         $btn.addClass('disabled').css('pointer-events', 'none');
-        window.showOverlay(loadingText);
+
+        // Hapus window.showOverlay() agar halaman tidak terkunci
+        // Karena biasanya export membuka tab baru atau file lgsg di-download.
 
         // Reset setelah 5 detik
         setTimeout(function () {
-            window.hideOverlay();
             if ($btn.data('original-html')) {
                 $btn.html($btn.data('original-html'))
                     .removeClass('disabled')

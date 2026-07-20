@@ -143,6 +143,18 @@
                 <span class="sb-icon"><i data-lucide="history"></i></span>
                 <span class="sb-label">Log Aktivitas</span>
             </a>
+            <a href="<?= site_url('pengaturan/backup') ?>"
+               class="sb-link <?= url_is('pengaturan/backup*') ? 'active' : '' ?>"
+               data-tooltip="Backup & Restore">
+                <span class="sb-icon"><i data-lucide="database-backup"></i></span>
+                <span class="sb-label">Backup & Restore</span>
+            </a>
+            <a href="<?= site_url('pengaturan/system/health') ?>"
+               class="sb-link <?= url_is('pengaturan/system/health*') ? 'active' : '' ?>"
+               data-tooltip="System Health">
+                <span class="sb-icon"><i data-lucide="activity"></i></span>
+                <span class="sb-label">System Health</span>
+            </a>
         </div>
         <?php endif; ?>
 
@@ -176,6 +188,8 @@
         <i data-lucide="layout-dashboard"></i>
         <span>Dashboard</span>
     </a>
+
+    <?php if (in_groups(['Administrator', 'Petugas Gudang'])): ?>
     <a href="<?= site_url('transaksi/barang-masuk') ?>" class="sb-bb-item <?= url_is('transaksi/barang-masuk*') ? 'active' : '' ?>">
         <i data-lucide="arrow-down-to-line"></i>
         <span>Masuk</span>
@@ -184,14 +198,28 @@
         <i data-lucide="arrow-up-from-line"></i>
         <span>Keluar</span>
     </a>
+    <?php endif; ?>
+
     <a href="<?= site_url('transaksi/stok-gudang') ?>" class="sb-bb-item <?= url_is('transaksi/stok-gudang*') ? 'active' : '' ?>">
         <i data-lucide="warehouse"></i>
         <span>Stok</span>
+    </a>
+
+    <?php if (in_groups(['Administrator', 'Petugas Gudang'])): ?>
+    <button class="sb-bb-item" id="mobileMenuBtn" type="button" aria-label="Buka menu">
+        <i data-lucide="menu"></i>
+        <span>Menu</span>
+    </button>
+    <?php else: ?>
+    <a href="<?= site_url('laporan/stok') ?>" class="sb-bb-item <?= url_is('laporan/stok*') ? 'active' : '' ?>">
+        <i data-lucide="file-bar-chart-2"></i>
+        <span>Laporan</span>
     </a>
     <button class="sb-bb-item" id="mobileMenuBtn" type="button" aria-label="Buka menu">
         <i data-lucide="menu"></i>
         <span>Menu</span>
     </button>
+    <?php endif; ?>
 </nav>
 
 <style>

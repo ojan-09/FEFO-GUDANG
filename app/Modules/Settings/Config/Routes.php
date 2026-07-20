@@ -24,3 +24,18 @@ $routes->group('log-aktivitas', ['namespace' => 'App\Modules\Settings\Controller
     $routes->get('/', 'LogAktivitas::index');
 });
 
+// Route for Backup & Restore
+$routes->group('pengaturan/backup', ['namespace' => 'App\Modules\Settings\Controllers', 'filter' => 'rbac:Administrator'], function($routes) {
+    $routes->get('/', 'Backup::index');
+    $routes->post('doBackup', 'Backup::doBackup');
+    $routes->post('restore', 'Backup::restore');
+    $routes->get('download/(:segment)', 'Backup::download/$1');
+    $routes->post('delete/(:segment)', 'Backup::delete/$1');
+    $routes->get('verify/(:segment)', 'Backup::verify/$1');
+});
+
+// Route for System Health
+$routes->group('pengaturan/system/health', ['namespace' => 'App\Modules\Settings\Controllers', 'filter' => 'rbac:Administrator'], function($routes) {
+    $routes->get('/', 'SystemHealth::index');
+});
+
