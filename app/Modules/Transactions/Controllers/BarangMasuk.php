@@ -263,7 +263,7 @@ class BarangMasuk extends BaseController
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal menyimpan transaksi. Silakan coba lagi.']);
         }
         $id_donatur = $this->request->getPost('id_donatur');
-        $donaturModel = new \App\Modules\MasterData\Models\DonaturModel();
+        $donaturModel = new DonaturModel();
         $donatur = $donaturModel->find($id_donatur);
         $namaDonatur = $donatur ? $donatur['nama_donatur'] : '-';
         $totalItem = array_sum(array_column($cleanItems, 'jumlah'));
@@ -589,7 +589,7 @@ class BarangMasuk extends BaseController
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
         }
         $id_donatur = $this->request->getPost('id_donatur');
-        $donaturModel = new \App\Modules\MasterData\Models\DonaturModel();
+        $donaturModel = new DonaturModel();
         $donatur = $donaturModel->find($id_donatur);
         $namaDonatur = $donatur ? $donatur['nama_donatur'] : '-';
         $totalItem = array_sum(array_column($cleanItems, 'jumlah'));
