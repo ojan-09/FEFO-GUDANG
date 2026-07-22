@@ -188,15 +188,29 @@
         // Hitung total berat dalam array details
         $totalBeratGram = 0;
         $totalCtn = 0;
+        $totalQty = 0;
         foreach ($details as $d) {
-            // Konversi ke gram jika belum
-            $beratItem = (float)$d['berat_per_satuan'];
+            $isRepack = (isset($d['bisa_dipecah']) && $d['bisa_dipecah'] == 1);
             $satuanB = strtolower($d['satuan_berat']);
-            if ($satuanB === 'kg' || $satuanB === 'kilogram') {
-                $beratItem *= 1000;
+            $jumlahKeluar = (float)$d['jumlah_keluar'];
+            
+            if ($isRepack) {
+                // Jika repack, jumlah_keluar sudah merupakan beratnya
+                $beratG = $jumlahKeluar;
+                if ($satuanB === 'kg' || $satuanB === 'kilogram') {
+                    $beratG *= 1000;
+                }
+                $totalBeratGram += $beratG;
+            } else {
+                // Jika tidak repack, jumlah_keluar adalah jumlah kemasan
+                $beratItem = (float)$d['berat_per_satuan'];
+                if ($satuanB === 'kg' || $satuanB === 'kilogram') {
+                    $beratItem *= 1000;
+                }
+                $totalBeratGram += ($beratItem * $jumlahKeluar);
             }
-            $totalBeratGram += ($beratItem * $d['jumlah_keluar']);
             $totalCtn += (int)($d['jumlah_ctn'] ?? 0);
+            $totalQty += $jumlahKeluar;
         }
         $totalBeratKg = $totalBeratGram / 1000;
     ?>
@@ -241,21 +255,33 @@
         <tbody>
             <?php $no = 1; foreach ($details as $d) : ?>
                 <?php
-                    // Convert berat_per_satuan to Kg for subtotal
-                    $beratS = (float)$d['berat_per_satuan'];
+                    $isRepack = (isset($d['bisa_dipecah']) && $d['bisa_dipecah'] == 1);
                     $satuanB = strtolower($d['satuan_berat']);
-                    if ($satuanB === 'gram') {
-                        $beratSKg = $beratS / 1000;
+                    
+                    if ($isRepack) {
+                        if ($satuanB === 'gram') {
+                            $subTotalKg = $d['jumlah_keluar'] / 1000;
+                        } else {
+                            $subTotalKg = $d['jumlah_keluar'];
+                        }
+                        $satuanTampil = ucfirst($d['satuan_berat']); // Misal: Kg atau Gram
                     } else {
-                        $beratSKg = $beratS;
+                        // Convert berat_per_satuan to Kg for subtotal
+                        $beratS = (float)$d['berat_per_satuan'];
+                        if ($satuanB === 'gram') {
+                            $beratSKg = $beratS / 1000;
+                        } else {
+                            $beratSKg = $beratS;
+                        }
+                        $subTotalKg = $beratSKg * $d['jumlah_keluar'];
+                        $satuanTampil = esc($d['satuan']);
                     }
-                    $subTotalKg = $beratSKg * $d['jumlah_keluar'];
                 ?>
                 <tr>
                     <td><?= $no++ ?></td>
                     <td style="text-align: left;"><?= esc($d['nama_barang']) ?></td>
                     <td><?= esc($d['jumlah_keluar']) ?></td>
-                    <td><?= esc($d['satuan']) ?></td>
+                    <td><?= $satuanTampil ?></td>
                     <td><?= !empty($d['jumlah_ctn']) ? esc($d['jumlah_ctn']) : '-' ?></td>
                     <td><?= format_berat($subTotalKg, 'Kg') ?></td>
                     <td>Baik</td>
@@ -263,7 +289,8 @@
             <?php endforeach; ?>
             <tr>
                 <td colspan="2" style="text-align: center; font-weight: bold;">Total</td>
-                <td colspan="2" style="text-align: center; font-weight: bold;">-</td>
+                <td style="text-align: center; font-weight: bold;"><?= $totalQty ?></td>
+                <td style="text-align: center; font-weight: bold;">-</td>
                 <td style="font-weight: bold;"><?= $totalCtn ?></td>
                 <td style="font-weight: bold;"><?= format_berat($totalBeratKg, 'Kg') ?></td>
                 <td></td>
