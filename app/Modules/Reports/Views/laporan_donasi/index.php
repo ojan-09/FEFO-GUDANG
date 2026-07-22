@@ -148,6 +148,17 @@
     #tabelLaporanDonasi, #tabelLaporanDonasi th, #tabelLaporanDonasi td {
         border-left: none; border-right: none;
     }
+    .wh-table-card { position: relative; min-height: 300px; }
+    .wh-table-spinner {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        background: var(--wh-card); z-index: 50;
+        color: var(--wh-text-soft); gap: 12px; font-weight: 500;
+    }
+    .wh-table-spinner i { font-size: 2.2rem; color: var(--wh-primary); }
+    .wh-table-card.loaded .wh-table-spinner { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    .wh-table-card:not(.loaded) { max-height: 400px; overflow: hidden; }
+    .wh-table-card:not(.loaded) table { opacity: 0; }
     #tabelLaporanDonasi tbody tr { transition: background 120ms ease; }
     #tabelLaporanDonasi tbody tr:hover { background: #F3F4F6; }
 
@@ -343,6 +354,10 @@
 
     <!-- Table -->
     <div class="wh-table-card">
+        <div class="wh-table-spinner">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <div>Memuat data laporan...</div>
+        </div>
         <table class="table table-hover align-middle mb-0" id="tabelLaporanDonasi" style="width:100%;">
             <thead>
                 <tr>
@@ -461,6 +476,9 @@ $(document).ready(function () {
         columnDefs: [{ orderable: false, targets: [0] }],
         dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
         responsive: true,
+        initComplete: function() {
+            $('#tabelLaporanDonasi').closest('.wh-table-card').addClass('loaded');
+        }
     });
 });
 </script>

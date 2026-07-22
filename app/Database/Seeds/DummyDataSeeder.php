@@ -41,8 +41,8 @@ class DummyDataSeeder extends Seeder
         for ($i = 1; $i <= 5000; $i++) {
             // Buat Barang Masuk
             $db->table('barang_masuk')->insert([
-                'nomor_terima' => 'BM-DUMMY-' . str_pad($i, 4, '0', STR_PAD_LEFT),
-                'tanggal_terima' => date('Y-m-d', strtotime('-' . rand(1, 365) . ' days')),
+                'nomor_transaksi' => 'BM-DUMMY-' . str_pad($i, 4, '0', STR_PAD_LEFT),
+                'tanggal_masuk' => date('Y-m-d', strtotime('-' . rand(1, 365) . ' days')),
                 'id_donatur' => $donaturId,
                 'id_user' => $userId,
                 'created_at' => date('Y-m-d H:i:s'),
@@ -86,7 +86,7 @@ class DummyDataSeeder extends Seeder
             $db->table('detail_barang_keluar')->insert([
                 'id_barang_keluar' => $bkId,
                 'id_batch' => $batch_id,
-                'jumlah' => rand(1, 5),
+                'jumlah_keluar' => rand(1, 5),
             ]);
         }
         $db->transComplete();
@@ -98,7 +98,7 @@ class DummyDataSeeder extends Seeder
             $db->table('penyesuaian_stok')->insert([
                 'nomor_penyesuaian' => 'ADJ-DUMMY-' . str_pad($i, 4, '0', STR_PAD_LEFT),
                 'tanggal' => date('Y-m-d', strtotime('-' . rand(1, 90) . ' days')),
-                'jenis_penyesuaian' => array_rand(array_flip(['Rusak', 'Hilang', 'Kadaluarsa', 'Lainnya'])),
+                'jenis_penyesuaian' => array_rand(array_flip(['Barang Rusak','Barang Hilang','Barang Kedaluwarsa','Koreksi Positif','Koreksi Negatif'])),
                 'keterangan' => 'Keterangan dummy ' . $i,
                 'id_user' => $userId,
                 'created_at' => date('Y-m-d H:i:s'),

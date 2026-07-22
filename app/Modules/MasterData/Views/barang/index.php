@@ -76,7 +76,8 @@
             columnDefs: [
                 { orderable: false, targets: [0, 8] }
             ],
-            dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>'
+            dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+            responsive: true
         });
     });
 </script>

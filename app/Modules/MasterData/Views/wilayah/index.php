@@ -297,7 +297,8 @@
             { orderable: false, targets: [0, 3] },
             { className: "text-center", targets: [0, 3] }
         ],
-        dom: 'rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+        dom: '<"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+        responsive: true,
     });
 
     $('#wilSearch').on('keyup', function () {
