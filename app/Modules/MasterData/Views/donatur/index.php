@@ -131,38 +131,6 @@
     font-size: 12px; color: #94A3B8; padding-top: 14px;
 }
 
-/* Pagination */
-.don-card .dataTables_wrapper .dataTables_paginate { padding-top: 10px; }
-.don-card .dataTables_wrapper .dataTables_paginate .paginate_button {
-    min-width: 40px; height: 40px;
-    padding: 0 14px; line-height: 38px;
-    font-size: 13px; font-weight: 500;
-    border-radius: 10px !important;
-    border: 1px solid #E2E8F0 !important;
-    background: #F8FAFC !important;
-    color: #475569 !important;
-    margin: 0 2px;
-    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease; display: inline-block;
-}
-.don-card .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-    background: #EFF6FF !important;
-    border-color: #BFDBFE !important;
-    color: #2563EB !important;
-    transform: translateY(-1px);
-}
-.don-card .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-.don-card .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-    background: linear-gradient(135deg,#2563EB,#1D4ED8) !important;
-    border-color: #2563EB !important;
-    color: #fff !important;
-    transform: none;
-}
-.don-card .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
-.don-card .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
-    opacity: .4; cursor: default; transform: none;
-    background: #F8FAFC !important; color: #94A3B8 !important;
-}
-
 /* ── TABLE ── */
 #tabelDonatur { width: 100% !important; border-collapse: collapse; margin: 0 !important; }
 
@@ -264,8 +232,8 @@
 
     <!-- CARD -->
     <div class="don-card">
-        <div class="table-responsive">
-            <table class="table mb-0" id="tabelDonatur">
+        <div>
+            <table class="table mb-0" id="tabelDonatur" style="width: 100%;">
                 <thead>
                     <tr>
                         <th width="50"  class="text-center">No</th>
@@ -277,49 +245,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($donatur as $i => $d) : ?>
-                    <tr>
-                        <td class="text-center"><span class="don-no"><?= $i + 1 ?></span></td>
-                        <td><span class="don-name"><?= esc($d['nama_donatur']) ?></span></td>
-                        <td>
-                            <?php if ($d['jenis_donatur'] === 'Individu') : ?>
-                                <span class="don-badge don-badge-individu">
-                                    <i class="fa-solid fa-user" style="font-size:9px"></i> Individu
-                                </span>
-                            <?php else : ?>
-                                <span class="don-badge don-badge-perusahaan">
-                                    <i class="fa-solid fa-building" style="font-size:9px"></i> Perusahaan
-                                </span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <span class="don-meta">
-                                <i class="fa-solid fa-phone"></i>
-                                <?= esc($d['kontak']) ?>
-                            </span>
-                        </td>
-                        <td>
-                            <?php if (!empty($d['email'])) : ?>
-                            <span class="don-meta">
-                                <i class="fa-solid fa-envelope"></i>
-                                <?= esc($d['email']) ?>
-                            </span>
-                            <?php else : ?>
-                            <span class="don-empty">—</span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="text-center">
-                            <div class="don-actions">
-                                <a href="<?= site_url('masterdata/donatur/edit/' . $d['id']) ?>" class="don-action-btn don-action-edit" title="Edit">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                                <a href="<?= site_url('masterdata/donatur/delete/' . $d['id']) ?>" class="don-action-btn don-action-delete" title="Hapus" onclick="return confirm('Yakin ingin menghapus donatur ini?')">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
+                <!-- DataTables will populate this tbody via AJAX -->
                 </tbody>
             </table>
         </div>
@@ -331,15 +257,44 @@
 
 <?= $this->section('scripts') ?>
 <script>
+    var csrfName = '<?= csrf_token() ?>';
+    var csrfHash = '<?= csrf_hash() ?>';
+
     $(document).ready(function () {
         $('#tabelDonatur').DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "<?= site_url('masterdata/donatur/ajaxData') ?>",
+                type: "POST",
+                data: function (d) {
+                    d[csrfName] = csrfHash;
+                }
             },
-            "order": [],
-            "columnDefs": [
-                { "orderable": false, "targets": [5] }
-            ]
+            drawCallback: function (settings) {
+                var response = settings.json;
+                if (response && response[csrfName]) {
+                    csrfHash = response[csrfName];
+                }
+            },
+            language: {
+                emptyTable: "Tidak ada data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(disaring dari _MAX_ total data)",
+                lengthMenu: "Tampilkan _MENU_ data",
+                loadingRecords: "Memuat...",
+                processing: "Memproses...",
+                search: "Cari:",
+                zeroRecords: "Tidak ditemukan data yang sesuai",
+                paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+            },
+            order: [],
+            columnDefs: [
+                { orderable: false, targets: [0, 5] },
+                { className: "text-center", targets: [0, 5] }
+            ],
+            dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>'
         });
     });
 </script>

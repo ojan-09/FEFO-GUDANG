@@ -310,8 +310,7 @@
 
     <!-- Table -->
     <div class="wh-table-card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="tabelLaporanDonasi">
+    <table class="table table-hover align-middle mb-0" id="tabelLaporanDonasi" style="width:100%;">
                 <thead>
                     <tr>
                         <th width="30" class="text-center">No</th>
@@ -377,8 +376,7 @@
                     <?php endif; ?>
                 </tbody>
             </table>
-        </div>
-    </div>
+
 
     <!-- Summary Cards -->
     <div class="wh-summary-grid">
@@ -407,4 +405,21 @@
 
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+$(document).ready(function() {
+    $('#tabelLaporanDonasi').DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+        },
+        "order": [],
+        "columnDefs": [
+            { "orderable": false, "targets": [0] }
+        ],
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+    });
+});
+</script>
 <?= $this->endSection() ?>

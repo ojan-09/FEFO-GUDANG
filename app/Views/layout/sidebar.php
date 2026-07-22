@@ -17,7 +17,7 @@
     </button>
 
     <div class="sb-logo">
-        <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo FOI">
+        <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo FOI" width="34" height="34" style="object-fit: contain; flex-shrink: 0; display: block;">
         <div class="sb-logo-text">
             <span class="sb-logo-title">Foodbank of Indonesia</span>
             <span class="sb-logo-sub">Warehouse Management</span>

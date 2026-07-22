@@ -180,21 +180,6 @@
         border-top: 1px solid var(--wh-separator);
         font-size: 0.82rem; color: var(--wh-text-soft);
     }
-    .dataTables_wrapper .dataTables_paginate .paginate_button {
-        width: 40px; height: 40px; border-radius: 10px !important;
-        padding: 0 !important; margin-left: 3px;
-        display: inline-flex !important; align-items: center; justify-content: center;
-        border: 1px solid transparent !important; background: transparent !important;
-        color: var(--wh-text) !important; font-size: 0.82rem;
-    }
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: var(--wh-primary) !important; color: #fff !important;
-        border-color: var(--wh-primary) !important;
-    }
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
-        background: #EFF6FF !important; color: var(--wh-primary) !important;
-    }
-
     /* Hide default DT controls */
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter { display: none; }
@@ -306,8 +291,7 @@
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table align-middle mb-0" id="tableUsers">
+        <table class="table align-middle mb-0" id="tableUsers">
                 <thead>
                     <tr>
                         <th width="50">No</th>
@@ -456,18 +440,8 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
-
-        <!-- DT Bottom -->
-        <div class="wh-dt-bottom">
-            <div id="dtInfo" class="dataTables_info"></div>
-            <div id="dtPaginate" class="dataTables_paginate"></div>
-        </div>
-
     </div>
 </div>
-
-<!-- Modal Tambah User -->
 <div class="modal fade" id="modalTambah" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form action="<?= site_url('manajemen-user/store') ?>" method="post" class="loading-form" data-overlay="true">
@@ -519,12 +493,7 @@ $(document).ready(function () {
     var table = $('#tableUsers').DataTable({
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
         // Pindahkan info & paginate ke container kustom
-        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',   // r=processing, t=table — toolbar & paginate kita handle manual
-        initComplete: function () {
-            // Sambungkan info & paginate ke slot kita
-            $('#tableUsers_info').appendTo('#dtInfo');
-            $('#tableUsers_paginate').appendTo('#dtPaginate');
-        }
+        dom: 'rt<"wh-dt-bottom"ip>'
     });
 
     // Toolbar: length
@@ -536,14 +505,6 @@ $(document).ready(function () {
     $('#dtSearchInput').on('keyup input', function () {
         table.search(this.value).draw();
     });
-
-    // Setelah draw, pindahkan lagi karena DataTables mungkin re-render
-    table.on('draw', function () {
-        var info     = $('#tableUsers_info');
-        var paginate = $('#tableUsers_paginate');
-        if (info.parent().attr('id') !== 'dtInfo')     info.appendTo('#dtInfo');
-        if (paginate.parent().attr('id') !== 'dtPaginate') paginate.appendTo('#dtPaginate');
     });
-});
 </script>
 <?= $this->endSection() ?>

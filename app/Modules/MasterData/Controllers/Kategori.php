@@ -17,8 +17,7 @@ class Kategori extends BaseController
     public function index()
     {
         $data = [
-            'title'    => 'Data Kategori',
-            'kategori' => $this->kategoriModel->orderBy('id', 'DESC')->findAll(),
+            'title'    => 'Data Kategori'
         ];
         return view('App\Modules\MasterData\Views\kategori\index', $data);
     }
@@ -88,6 +87,47 @@ class Kategori extends BaseController
 
         $this->kategoriModel->delete($id);
         return redirect()->to('/masterdata/kategori')->with('success', 'Kategori berhasil dihapus.');
+    }
+
+    /**
+     * AJAX endpoint untuk DataTables server-side
+     */
+    public function ajaxData()
+    {
+        if (!$this->request->isAJAX()) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $postData = $this->request->getPost();
+        $list     = $this->kategoriModel->getDatatables($postData);
+        $data     = [];
+        $no       = $postData['start'];
+
+        foreach ($list as $row) {
+            $no++;
+            $rowData = [];
+
+            $rowData[] = '<div class="text-center">' . $no . '</div>';
+            $rowData[] = '<span class="fw-semibold text-dark">' . esc($row['nama_kategori']) . '</span>';
+            $rowData[] = '<span class="text-muted"><i class="fa-regular fa-calendar me-1"></i> ' . date('d M Y, H:i', strtotime($row['created_at'])) . '</span>';
+            
+            $aksi = '<div class="kat-actions">
+                        <button type="button" class="kat-action-btn kat-action-edit" onclick="editKategori(' . $row['id'] . ', \'' . htmlspecialchars($row['nama_kategori'], ENT_QUOTES) . '\')" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <a href="' . site_url('masterdata/kategori/delete/' . $row['id']) . '" class="kat-action-btn kat-action-delete" onclick="return confirm(\'Hapus kategori ini?\')" title="Hapus"><i class="fa-solid fa-trash"></i></a>
+                     </div>';
+            $rowData[] = $aksi;
+            $data[] = $rowData;
+        }
+
+        $output = [
+            "draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            "recordsTotal"    => $this->kategoriModel->countAllData(),
+            "recordsFiltered" => $this->kategoriModel->countFiltered($postData),
+            "data"            => $data,
+            csrf_token()      => csrf_hash()
+        ];
+
+        return $this->response->setJSON($output);
     }
 }
 

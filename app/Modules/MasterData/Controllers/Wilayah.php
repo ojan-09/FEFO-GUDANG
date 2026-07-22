@@ -21,8 +21,7 @@ class Wilayah extends BaseController
     public function index()
     {
         $data = [
-            'title'   => 'Master Wilayah',
-            'wilayah' => $this->wilayahModel->orderBy('nama_wilayah', 'ASC')->findAll(),
+            'title'   => 'Master Wilayah'
         ];
         return view('App\Modules\MasterData\Views\wilayah\index', $data);
     }
@@ -44,12 +43,18 @@ class Wilayah extends BaseController
     public function store()
     {
         $rules = [
-            'nama_wilayah'   => 'required|max_length[150]|is_unique[wilayah.nama_wilayah]',
+            'nama_wilayah'   => 'required|max_length[150]',
             'status'         => 'required|in_list[Aktif,Nonaktif]',
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $nama_wilayah = trim($this->request->getPost('nama_wilayah'));
+        $existing = $this->wilayahModel->where('nama_wilayah', $nama_wilayah)->first();
+        if ($existing) {
+            return redirect()->back()->withInput()->with('errors', ['nama_wilayah' => 'Nama Wilayah sudah terdaftar.']);
         }
 
         $this->wilayahModel->insert([
@@ -88,12 +93,18 @@ class Wilayah extends BaseController
         }
 
         $rules = [
-            'nama_wilayah'   => "required|max_length[150]|is_unique[wilayah.nama_wilayah,id,{$id}]",
+            'nama_wilayah'   => "required|max_length[150]",
             'status'         => 'required|in_list[Aktif,Nonaktif]',
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $nama_wilayah = trim($this->request->getPost('nama_wilayah'));
+        $existing = $this->wilayahModel->where('nama_wilayah', $nama_wilayah)->where('id !=', $id)->first();
+        if ($existing) {
+            return redirect()->back()->withInput()->with('errors', ['nama_wilayah' => 'Nama Wilayah sudah terdaftar.']);
         }
 
         $this->wilayahModel->update($id, [
@@ -127,5 +138,50 @@ class Wilayah extends BaseController
         return redirect()->to('/masterdata/wilayah')->with('success', 'Data Wilayah berhasil dihapus.');
     }
 
+    /**
+     * AJAX endpoint untuk DataTables server-side
+     */
+    public function ajaxData()
+    {
+        if (!$this->request->isAJAX()) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $postData = $this->request->getPost();
+        $list     = $this->wilayahModel->getDatatables($postData);
+        $data     = [];
+        $no       = $postData['start'];
+
+        foreach ($list as $row) {
+            $no++;
+            $rowData = [];
+
+            $rowData[] = '<div class="text-center text-muted" style="font-size:13px;">' . $no . '</div>';
+            $rowData[] = '<span class="fw-semibold text-dark">' . esc($row['nama_wilayah']) . '</span>';
+            
+            $statusBadge = $row['status'] == 'Aktif' 
+                ? '<span class="badge" style="background:#dcfce7; color:#16a34a;"><i class="fa-solid fa-check me-1"></i>Aktif</span>' 
+                : '<span class="badge" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-xmark me-1"></i>Nonaktif</span>';
+            
+            $rowData[] = $statusBadge;
+            
+            $aksi = '<div class="wil-actions">
+                        <a href="' . site_url('masterdata/wilayah/edit/' . $row['id']) . '" class="wil-action-btn wil-action-edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                        <a href="' . site_url('masterdata/wilayah/delete/' . $row['id']) . '" class="wil-action-btn wil-action-delete" title="Hapus" onclick="return confirm(\'Yakin ingin menghapus wilayah ini?\')"><i class="fa-solid fa-trash"></i></a>
+                     </div>';
+            $rowData[] = $aksi;
+            $data[] = $rowData;
+        }
+
+        $output = [
+            "draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            "recordsTotal"    => $this->wilayahModel->countAllData(),
+            "recordsFiltered" => $this->wilayahModel->countFiltered($postData),
+            "data"            => $data,
+            csrf_token()      => csrf_hash()
+        ];
+
+        return $this->response->setJSON($output);
+    }
 }
 

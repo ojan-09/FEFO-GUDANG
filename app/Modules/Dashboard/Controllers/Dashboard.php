@@ -56,7 +56,7 @@ class Dashboard extends BaseController
                     $total += (float)$s['stok_saat_ini'];
                 } else {
                     $berat = $s['stok_saat_ini'] * $s['berat_per_satuan'];
-                    if (strtolower($s['satuan_berat']) === 'gram') {
+                    if (strtolower($s['satuan_berat'] ?? '') === 'gram') {
                         $berat = $berat / 1000;
                     }
                     $total += $berat;
@@ -121,7 +121,7 @@ class Dashboard extends BaseController
                 $id = $b['id'];
                 $stok = (float)$b['stok_saat_ini'];
                 $beratPerSatuan = (float)$b['berat_per_satuan'];
-                $satuanBerat = strtolower($b['satuan_berat']);
+                $satuanBerat = strtolower($b['satuan_berat'] ?? '');
                 $bisaDipecah = (int)$b['bisa_dipecah'];
 
                 if ($bisaDipecah === 1) {
@@ -167,7 +167,7 @@ class Dashboard extends BaseController
                 $label = $row['label'];
                 $stok = (float)$row['stok_saat_ini'];
                 $beratPerSatuan = (float)$row['berat_per_satuan'];
-                $satuanBerat = strtolower($row['satuan_berat']);
+                $satuanBerat = strtolower($row['satuan_berat'] ?? '');
                 $bisaDipecah = (int)$row['bisa_dipecah'];
 
                 if ($bisaDipecah === 1) {

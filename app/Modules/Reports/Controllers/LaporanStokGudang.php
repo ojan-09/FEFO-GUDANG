@@ -64,6 +64,20 @@ class LaporanStokGudang extends BaseController
             $builder->where('batch.tanggal_kedaluwarsa <=', $endDateFilter);
         }
 
+        if (!empty($statusFilter)) {
+            $todayStr = date('Y-m-d');
+            $hampirExpiredStr = date('Y-m-d', strtotime('+30 days'));
+            
+            if ($statusFilter === 'Expired') {
+                $builder->where('batch.tanggal_kedaluwarsa <', $todayStr);
+            } elseif ($statusFilter === 'Hampir Expired') {
+                $builder->where('batch.tanggal_kedaluwarsa >=', $todayStr);
+                $builder->where('batch.tanggal_kedaluwarsa <=', $hampirExpiredStr);
+            } elseif ($statusFilter === 'Aman') {
+                $builder->where('batch.tanggal_kedaluwarsa >', $hampirExpiredStr);
+            }
+        }
+
         $builder->orderBy('batch.tanggal_kedaluwarsa', 'ASC');
         $stokGudang = $builder->get()->getResultArray();
 
@@ -73,9 +87,8 @@ class LaporanStokGudang extends BaseController
         
         foreach ($stokGudang as &$stok) {
             $status = 'Aman';
-            $stokTotal = (float) $stok['stok_saat_ini'];
             
-            if ($stokTotal > 0) {
+            if (!empty($stok['tanggal_kedaluwarsa'])) {
                 $expiredDate = new \DateTime($stok['tanggal_kedaluwarsa']);
                 $diff = $today->diff($expiredDate);
                 $days = (int) $diff->format('%R%a');
@@ -88,10 +101,6 @@ class LaporanStokGudang extends BaseController
             }
             
             $stok['status'] = $status;
-            
-            if (!empty($statusFilter) && $status !== $statusFilter) {
-                continue;
-            }
             
             $filteredData[] = $stok;
             
@@ -200,8 +209,8 @@ class LaporanStokGudang extends BaseController
             'F2' => 'Nama Barang',
             'G2' => "Jumlah\n(pcs)",
             'H2' => 'SKU',
-            'I2' => 'Gram',
-            'J2' => 'Total Berat',
+            'I2' => "Berat/Satuan\n(Sesuai Satuan)",
+            'J2' => "Total Berat\n(Sesuai Satuan)",
             'K2' => "Jumlah\n(CTN)",
             'L2' => 'Catatan'
         ];
@@ -251,8 +260,8 @@ class LaporanStokGudang extends BaseController
             $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet->setCellValue('H' . $row, $item['satuan']);
             
-            $sheet->setCellValue('I' . $row, $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-');
-            $sheet->setCellValue('J' . $row, $totalBeratRow > 0 ? format_berat($totalBeratRow, $item['satuan_berat']) : '-');
+            $sheet->setCellValue('I' . $row, $beratPerSatuan > 0 ? $beratPerSatuan : '-');
+            $sheet->setCellValue('J' . $row, $totalBeratRow > 0 ? $totalBeratRow : '-');
             
             $sheet->setCellValue('K' . $row, $item['jumlah_ctn'] ?? '');
             $sheet->setCellValue('L' . $row, $item['catatan'] ?? '');
@@ -291,12 +300,12 @@ class LaporanStokGudang extends BaseController
         $sheet->getColumnDimension('L')->setWidth(15);
         
         // Baris Total
-        $sheet->mergeCells("A{$row}:I{$row}");
+        $sheet->mergeCells("A{$row}:H{$row}");
         $sheet->setCellValue("A{$row}", "Total");
         $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle("A{$row}:J{$row}")->getFont()->setBold(true);
-        $sheet->setCellValue("B{$row}", "Total Berat");
-        $sheet->setCellValue("C{$row}", format_berat($result['filters']['total_berat'], 'Kg'));
+        $sheet->setCellValue("I{$row}", "Total Berat (Kg)");
+        $sheet->setCellValue("J{$row}", $result['filters']['total_berat']);
         $sheet->getStyle("A{$row}:L{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
         
         $row++;

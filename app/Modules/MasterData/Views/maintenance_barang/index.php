@@ -177,20 +177,6 @@
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter { display: none; }
     .dataTables_wrapper .dataTables_info { font-size: 0.82rem; color: var(--wh-text-soft); }
-    .dataTables_wrapper .dataTables_paginate .paginate_button {
-        width: 40px; height: 40px; border-radius: 10px !important;
-        padding: 0 !important; margin-left: 3px;
-        display: inline-flex !important; align-items: center; justify-content: center;
-        border: 1px solid transparent !important; background: transparent !important;
-        color: var(--wh-text) !important; font-size: 0.82rem;
-    }
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: var(--wh-primary) !important; color: #fff !important; border-color: var(--wh-primary) !important;
-    }
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
-        background: var(--wh-primary-soft) !important; color: var(--wh-primary) !important;
-    }
-
     /* ---------- Modal ---------- */
     .modal-content {
         border-radius: 18px; border: 1px solid var(--wh-border);
@@ -367,69 +353,61 @@
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table align-middle mb-0" id="dataTable">
-                <thead>
+        <table class="table align-middle mb-0" id="dataTable" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th width="50">No</th>
+                    <th>Kode Barang</th>
+                    <th>Nama Barang</th>
+                    <th>Total Batch</th>
+                    <th class="text-center" width="140">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($barang)): ?>
                     <tr>
-                        <th width="50">No</th>
-                        <th>Kode Barang</th>
-                        <th>Nama Barang</th>
-                        <th>Total Batch</th>
-                        <th class="text-center" width="140">Aksi</th>
+                        <td colspan="5" style="text-align:center; padding: 60px 20px;">
+                            <i class="fa-solid fa-box-open" style="font-size:2.5rem; color:var(--wh-border);"></i>
+                            <p style="margin-top:14px; color:var(--wh-text); font-weight:600;">Master Barang Kosong</p>
+                            <p style="color:var(--wh-text-soft); font-size:0.85rem;">Belum terdapat master barang internal.</p>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($barang)): ?>
+                <?php else: ?>
+                    <?php foreach ($barang as $key => $b): ?>
+                        <?php
+                            $jBatch   = (int) $b['jumlah_batch'];
+                            $batchCls = 'zero';
+                            if ($jBatch >= 1 && $jBatch <= 5) $batchCls = 'few';
+                            elseif ($jBatch > 5)               $batchCls = 'many';
+                        ?>
                         <tr>
-                            <td colspan="5" style="text-align:center; padding: 60px 20px;">
-                                <i class="fa-solid fa-box-open" style="font-size:2.5rem; color:var(--wh-border);"></i>
-                                <p style="margin-top:14px; color:var(--wh-text); font-weight:600;">Master Barang Kosong</p>
-                                <p style="color:var(--wh-text-soft); font-size:0.85rem;">Belum terdapat master barang internal.</p>
+                            <td><?= $key + 1 ?></td>
+                            <td><span class="wh-kode-badge"><?= esc($b['kode_barang']) ?></span></td>
+                            <td>
+                                <div class="wh-nama-main"><?= esc($b['nama_barang']) ?></div>
+                                <div class="wh-nama-sub">Master Barang Internal</div>
+                            </td>
+                            <td>
+                                <span class="wh-batch-badge <?= $batchCls ?>">
+                                    <i class="fa-solid fa-layer-group" style="font-size:0.6rem;"></i>
+                                    <?= $jBatch ?> Batch Aktif
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="wh-rename-btn btn-rename"
+                                    data-id="<?= $b['id'] ?>"
+                                    data-nama="<?= esc($b['nama_barang']) ?>"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#renameModal"
+                                    title="Rename Barang">
+                                    <i class="fa-solid fa-pen-to-square"></i> Rename
+                                </button>
                             </td>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($barang as $key => $b): ?>
-                            <?php
-                                $jBatch   = (int) $b['jumlah_batch'];
-                                $batchCls = 'zero';
-                                if ($jBatch >= 1 && $jBatch <= 5) $batchCls = 'few';
-                                elseif ($jBatch > 5)               $batchCls = 'many';
-                            ?>
-                            <tr>
-                                <td><?= $key + 1 ?></td>
-                                <td><span class="wh-kode-badge"><?= esc($b['kode_barang']) ?></span></td>
-                                <td>
-                                    <div class="wh-nama-main"><?= esc($b['nama_barang']) ?></div>
-                                    <div class="wh-nama-sub">Master Barang Internal</div>
-                                </td>
-                                <td>
-                                    <span class="wh-batch-badge <?= $batchCls ?>">
-                                        <i class="fa-solid fa-layer-group" style="font-size:0.6rem;"></i>
-                                        <?= $jBatch ?> Batch Aktif
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="wh-rename-btn btn-rename"
-                                        data-id="<?= $b['id'] ?>"
-                                        data-nama="<?= esc($b['nama_barang']) ?>"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#renameModal"
-                                        title="Rename Barang">
-                                        <i class="fa-solid fa-pen-to-square"></i> Rename
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Bottom -->
-        <div class="wh-dt-bottom">
-            <div id="dtInfo"></div>
-            <div id="dtPaginate"></div>
-        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -554,13 +532,20 @@ document.addEventListener('DOMContentLoaded', function () {
 $(document).ready(function () {
     var table = $('#dataTable').DataTable({
         order: [],
-        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+        language: {
+            emptyTable: "Tidak ada data",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered: "(disaring dari _MAX_ total data)",
+            lengthMenu: "Tampilkan _MENU_ data",
+            loadingRecords: "Memuat...",
+            processing: "Memproses...",
+            search: "Cari:",
+            zeroRecords: "Tidak ditemukan data yang sesuai",
+            paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+        },
         pageLength:10,
-        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
-        initComplete: function () {
-            $('#dataTable_info').appendTo('#dtInfo');
-            $('#dataTable_paginate').appendTo('#dtPaginate');
-        }
+        dom: 'rt<"wh-dt-bottom"ip>'
     });
 
     $('#dtLengthSelect').on('change', function () {

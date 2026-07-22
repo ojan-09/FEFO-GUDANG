@@ -132,17 +132,17 @@
                         
                         <td class="text-end text-muted fw-bold">
                             <?= ($row['bisa_dipecah'] == 1) ? $row['stok_sebelum'] : number_format($row['stok_sebelum'], 0, ',', '.') ?> 
-                            <small class="fw-normal"><?= esc($row['satuan']) ?></small>
+                            <small class="fw-normal"><?= esc($row['satuan']) ?><?= ($row['bisa_dipecah'] == 1) ? ' (Repack)' : '' ?></small>
                         </td>
                         
                         <td class="text-end fw-bold <?= $colorClass ?>">
                             <?= $sign ?> <?= ($row['bisa_dipecah'] == 1) ? $row['jumlah'] : number_format($row['jumlah'], 0, ',', '.') ?> 
-                            <small class="fw-normal"><?= esc($row['satuan']) ?></small>
+                            <small class="fw-normal"><?= esc($row['satuan']) ?><?= ($row['bisa_dipecah'] == 1) ? ' (Repack)' : '' ?></small>
                         </td>
 
                         <td class="text-end fw-bold text-dark">
                             <?= ($row['bisa_dipecah'] == 1) ? $row['stok_sesudah'] : number_format($row['stok_sesudah'], 0, ',', '.') ?> 
-                            <small class="fw-normal text-muted"><?= esc($row['satuan']) ?></small>
+                            <small class="fw-normal text-muted"><?= esc($row['satuan']) ?><?= ($row['bisa_dipecah'] == 1) ? ' (Repack)' : '' ?></small>
                         </td>
                         
                         <td class="fst-italic text-muted" style="font-size: 13px;">

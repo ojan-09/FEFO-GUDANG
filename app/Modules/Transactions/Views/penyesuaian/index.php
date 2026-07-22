@@ -298,8 +298,7 @@
 
 <!-- ── Data Card ── -->
 <div class="dm-card">
-    <div class="table-responsive">
-        <table class="table mb-0" id="tablePenyesuaian">
+    <table class="table mb-0" id="tablePenyesuaian" style="width: 100%;">
             <thead>
                 <tr>
                     <th class="col-no text-center">No</th>
@@ -313,54 +312,10 @@
                 </tr>
             </thead>
             <tbody>
-                <?php $no = 1; foreach ($transaksi as $row) :
-                    $badgeClass = 'kedaluwarsa';
-                    switch ($row['jenis_penyesuaian']) {
-                        case 'Barang Rusak':       $badgeClass = 'rusak';    break;
-                        case 'Barang Hilang':      $badgeClass = 'hilang';   break;
-                        case 'Koreksi Positif':    $badgeClass = 'positif';  break;
-                        case 'Koreksi Negatif':    $badgeClass = 'negatif';  break;
-                        case 'Hasil Stock Opname': $badgeClass = 'opname';   break;
-                    }
-                ?>
-                <tr>
-                    <td class="col-no text-center text-secondary"><?= $no++ ?></td>
-                    <td class="col-nomor">
-                        <span class="badge-notrx"><?= esc($row['nomor_penyesuaian']) ?></span>
-                    </td>
-                    <td class="col-tgl" style="color:#475569;">
-                        <?= date('d M Y', strtotime($row['tanggal'])) ?>
-                    </td>
-                    <td class="col-jenis">
-                        <span class="badge-jenis <?= $badgeClass ?>"><?= esc($row['jenis_penyesuaian']) ?></span>
-                    </td>
-                    <td class="col-ket" style="color:#475569;">
-                        <?= esc($row['keterangan']) ?>
-                    </td>
-                    <td class="col-item text-center">
-                        <span class="badge-count"><?= esc($row['total_item']) ?> Barang</span>
-                    </td>
-                    <td class="col-petugas" style="color:#475569;">
-                        <?= esc($row['username']) ?>
-                    </td>
-                    <td class="col-aksi">
-                        <div class="dm-action-group">
-                            <a href="<?= site_url('transaksi/penyesuaian/detail/' . $row['id']) ?>"
-                               class="dm-btn-action view" title="Lihat Detail">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                            <a href="<?= site_url('transaksi/penyesuaian/delete/' . $row['id']) ?>"
-                               class="dm-btn-action del" title="Hapus (Rollback)"
-                               onclick="return confirm('Apakah Anda yakin ingin menghapus dan merollback stok ini? Transaksi hanya bisa dihapus jika stok belum digunakan oleh transaksi lain.')">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+                <!-- DataTables will populate this tbody via AJAX -->
             </tbody>
         </table>
-    </div>
+
 </div>
 
 </div><!-- /.dm-page -->
@@ -369,17 +324,52 @@
 
 <?= $this->section('scripts') ?>
 <script>
+var csrfName = '<?= csrf_token() ?>';
+var csrfHash = '<?= csrf_hash() ?>';
+
 $(document).ready(function () {
     $('#tablePenyesuaian').DataTable({
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "<?= site_url('transaksi/penyesuaian/ajaxData') ?>",
+            type: "POST",
+            data: function (d) {
+                d[csrfName] = csrfHash;
+            }
         },
-        order: [[2, 'desc']],
+        drawCallback: function (settings) {
+            var response = settings.json;
+            if (response && response[csrfName]) {
+                csrfHash = response[csrfName];
+            }
+        },
+        language: {
+            emptyTable: "Tidak ada data",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered: "(disaring dari _MAX_ total data)",
+            lengthMenu: "Tampilkan _MENU_ data",
+            loadingRecords: "Memuat...",
+            processing: "Memproses...",
+            search: "Cari:",
+            zeroRecords: "Tidak ditemukan data yang sesuai",
+            paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+        },
+        order: [[2, 'desc']], // Default order by Tanggal DESC
         autoWidth: false,
         columnDefs: [
-            { orderable: false, targets: [7] }
+            { orderable: false, targets: [0, 7] },
+            { className: "col-no text-center", targets: [0] },
+            { className: "col-nomor", targets: [1] },
+            { className: "col-tgl", targets: [2] },
+            { className: "col-jenis", targets: [3] },
+            { className: "col-ket", targets: [4] },
+            { className: "col-item text-center", targets: [5] },
+            { className: "col-petugas", targets: [6] },
+            { className: "col-aksi text-center", targets: [7] }
         ],
-        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
     });
 });
 </script>

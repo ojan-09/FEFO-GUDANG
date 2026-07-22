@@ -67,4 +67,3 @@ if (is_file(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php')) {
 }
 
 $routes->cli('test', 'Test::index');
-

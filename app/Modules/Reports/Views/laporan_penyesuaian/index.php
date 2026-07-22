@@ -78,8 +78,7 @@
 
     <!-- Tabel Data -->
     <div class="rpt-card">
-        <div class="table-responsive">
-            <table class="table rpt-table w-100" id="tableLaporan">
+    <table class="table rpt-table w-100" id="tableLaporan" style="width:100%;">
                 <thead>
                     <tr>
                     <th class="text-center" width="50">No</th>
@@ -129,7 +128,7 @@
                 <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
+
 
     </div>
 </div>
@@ -143,7 +142,8 @@ $(document).ready(function() {
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
         },
-        "order": []
+        "order": [],
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
     });
 });
 </script>

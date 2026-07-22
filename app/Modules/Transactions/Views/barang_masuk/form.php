@@ -14,7 +14,25 @@
                 'nama_barang'         => $b['nama_barang'],
                 'kategori'            => $b['kategori'],
                 'jumlah_ctn'          => $b['jumlah_ctn'],
-                'jumlah'              => ((int)$b['bisa_dipecah'] === 1 && $b['jumlah_ctn'] !== null) ? $b['jumlah_ctn'] : $b['jumlah_awal'],
+                'jumlah'              => (function($b) {
+                    $jumlah = (float)$b['jumlah_awal'];
+                    if ((int)$b['bisa_dipecah'] === 1) {
+                        if ($b['jumlah_ctn'] !== null) {
+                            $jumlah = (float)$b['jumlah_ctn'];
+                        } elseif (strtolower($b['satuan'] ?? '') !== 'kg') {
+                            $berat = (float)($b['berat_per_satuan'] ?? 1);
+                            if ($berat > 0) {
+                                if (strtolower($b['satuan_berat'] ?? 'kg') === 'gram') {
+                                    $jumlah = ($b['jumlah_awal'] * 1000) / $berat;
+                                } else {
+                                    $jumlah = $b['jumlah_awal'] / $berat;
+                                }
+                            }
+                        }
+                    }
+                    // Format agar tidak ada desimal berlebih jika angkanya bulat
+                    return (floor($jumlah) == $jumlah) ? (int)$jumlah : $jumlah;
+                })($b),
                 'satuan'              => $b['satuan'],
                 'berat_per_satuan'    => $b['berat_per_satuan'],
                 'satuan_berat'        => $b['satuan_berat'],
@@ -784,12 +802,6 @@
         }
     });
 
-    // FIX #8: Cegah user menutup halaman saat form sudah diisi
-    window.addEventListener('beforeunload', function(e) {
-        if (!isFormSubmitted && document.querySelectorAll('#tbodyItem tr').length > 0) {
-            e.preventDefault();
-        }
-    });
 
     if (oldItems.length > 0) {
         oldItems.forEach(item => tambahBaris(item, false));

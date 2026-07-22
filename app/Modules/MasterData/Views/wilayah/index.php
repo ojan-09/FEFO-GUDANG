@@ -53,8 +53,8 @@
         </div>
 
         <!-- TABLE -->
-        <div class="table-responsive">
-            <table class="wil-table" id="tabelWilayah">
+        <div>
+            <table class="wil-table" id="tabelWilayah" style="width: 100%;">
                 <thead>
                     <tr>
                         <th style="width:60px" class="text-center">No</th>
@@ -64,37 +64,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php $no = 1; foreach ($wilayah as $w) : ?>
-                    <tr>
-                        <td class="text-center wil-cell-no"><?= $no++ ?></td>
-                        <td class="wil-cell-name"><?= esc($w['nama_wilayah']) ?></td>
-                        <td>
-                            <?php if ($w['status'] == 'Aktif') : ?>
-                                <span class="wil-badge wil-badge-aktif">Aktif</span>
-                            <?php else : ?>
-                                <span class="wil-badge wil-badge-nonaktif">Nonaktif</span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="text-center">
-                            <div class="wil-actions">
-                                <a href="<?= site_url('masterdata/wilayah/edit/' . $w['id']) ?>" class="wil-action-btn wil-action-edit" title="Edit">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                                <button type="button" class="wil-action-btn wil-action-delete" title="Hapus" onclick="confirmDelete(<?= $w['id'] ?>)">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
+                    <!-- DataTables will populate this tbody via AJAX -->
                 </tbody>
             </table>
         </div>
 
-        <!-- FOOTER / PAGINATION INFO -->
-        <div class="wil-table-footer">
-            <span class="wil-count" id="wilCount"></span>
-        </div>
     </div>
 
 </div>
@@ -285,44 +259,54 @@
 
 <?= $this->section('scripts') ?>
 <script>
-(function () {
-    const searchInput  = document.getElementById('wilSearch');
-    const statusFilter = document.getElementById('wilStatusFilter');
-    const tbody        = document.querySelector('#tabelWilayah tbody');
-    const countEl      = document.getElementById('wilCount');
+    var csrfName = '<?= csrf_token() ?>';
+    var csrfHash = '<?= csrf_hash() ?>';
 
-    function filterTable() {
-        const q      = searchInput.value.toLowerCase().trim();
-        const status = statusFilter.value;
-        const rows   = tbody.querySelectorAll('tr');
-        let visible  = 0;
-
-        rows.forEach(row => {
-            const name   = row.querySelector('.wil-cell-name')?.textContent.toLowerCase() || '';
-            const badge  = row.querySelector('.wil-badge')?.textContent.trim() || '';
-            const matchQ = !q || name.includes(q);
-            const matchS = !status || badge === status;
-
-            if (matchQ && matchS) {
-                row.classList.remove('wil-row-hidden');
-                visible++;
-            } else {
-                row.classList.add('wil-row-hidden');
+    var table = $('#tabelWilayah').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "<?= site_url('masterdata/wilayah/ajaxData') ?>",
+            type: "POST",
+            data: function (d) {
+                d[csrfName] = csrfHash;
+                d.status    = $('#wilStatusFilter').val();
+                d.search.value = $('#wilSearch').val();
             }
-        });
+        },
+        drawCallback: function (settings) {
+            var response = settings.json;
+            if (response && response[csrfName]) {
+                csrfHash = response[csrfName];
+            }
+        },
+        language: {
+            emptyTable: "Tidak ada data",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered: "(disaring dari _MAX_ total data)",
+            lengthMenu: "Tampilkan _MENU_ data",
+            loadingRecords: "Memuat...",
+            processing: "Memproses...",
+            search: "Cari:",
+            zeroRecords: "Tidak ditemukan data yang sesuai",
+            paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+        },
+        order: [[1, 'asc']], // Default by Nama Wilayah
+        columnDefs: [
+            { orderable: false, targets: [0, 3] },
+            { className: "text-center", targets: [0, 3] }
+        ],
+        dom: 'rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+    });
 
-        const total = rows.length;
-        countEl.textContent = visible === total
-            ? `${total} wilayah`
-            : `${visible} dari ${total} wilayah`;
-    }
+    $('#wilSearch').on('keyup', function () {
+        table.ajax.reload();
+    });
 
-    searchInput.addEventListener('input', filterTable);
-    statusFilter.addEventListener('change', filterTable);
-
-    // Init count
-    filterTable();
-})();
+    $('#wilStatusFilter').on('change', function () {
+        table.ajax.reload();
+    });
 
 function confirmDelete(id) {
     Swal.fire({

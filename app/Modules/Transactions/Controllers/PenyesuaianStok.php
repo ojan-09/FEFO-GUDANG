@@ -25,20 +25,9 @@ class PenyesuaianStok extends BaseController
 
     public function index()
     {
-        $transaksi = $this->penyesuaianModel
-            ->select('penyesuaian_stok.id, penyesuaian_stok.nomor_penyesuaian, penyesuaian_stok.tanggal, penyesuaian_stok.jenis_penyesuaian, penyesuaian_stok.keterangan, users.username, COUNT(dps.id) as total_item')
-            ->join('users', 'users.id = penyesuaian_stok.id_user', 'left')
-            ->join('detail_penyesuaian_stok dps', 'dps.id_penyesuaian = penyesuaian_stok.id', 'left')
-            ->groupBy('penyesuaian_stok.id')
-            ->orderBy('penyesuaian_stok.tanggal', 'DESC')
-            ->orderBy('penyesuaian_stok.id', 'DESC')
-            ->findAll();
-
         $data = [
-            'title'     => 'Riwayat Penyesuaian Stok',
-            'transaksi' => $transaksi
+            'title' => 'Daftar Penyesuaian Stok'
         ];
-
         return view('App\Modules\Transactions\Views\penyesuaian\index', $data);
     }
 
@@ -76,6 +65,57 @@ class PenyesuaianStok extends BaseController
         ]);
     }
 
+    public function ajaxData()
+    {
+        if (!$this->request->isAJAX()) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $postData = $this->request->getPost();
+        $list     = $this->penyesuaianModel->getDatatables($postData);
+        $data     = [];
+        $no       = $postData['start'];
+
+        foreach ($list as $trx) {
+            $no++;
+            $row = [];
+
+            // Badge Jenis Penyesuaian
+            $badgeClass = $trx['jenis_penyesuaian'] == 'Penambahan' ? 'bg-success' : 'bg-danger';
+            $icon = $trx['jenis_penyesuaian'] == 'Penambahan' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+            $badgeJenis = '<span class="badge ' . $badgeClass . ' px-2 py-1"><i class="fa-solid ' . $icon . ' me-1"></i>' . esc($trx['jenis_penyesuaian']) . '</span>';
+
+            $row[] = '<div class="text-center text-secondary">' . $no . '</div>';
+            $row[] = '<span class="badge" style="background:#EEF4FF; color:#2563eb; font-weight:600; padding:5px 10px; font-size:11.5px;">' . esc($trx['nomor_penyesuaian']) . '</span>';
+            $row[] = '<span style="color:#475569;">' . date('d M Y', strtotime($trx['tanggal'])) . '</span>';
+            $row[] = '<div class="text-center">' . $badgeJenis . '</div>';
+            $row[] = '<div class="text-center"><span class="badge" style="background:#FEE2E2; color:#dc2626; font-size:11.5px; font-weight:600;">' . esc($trx['total_item']) . ' Item</span></div>';
+            $row[] = '<span style="color:#475569;">' . esc($trx['username'] ?? 'Sistem') . '</span>';
+            $row[] = '<span style="color:#64748b; font-size:12px;">' . esc($trx['keterangan'] ?: '-') . '</span>';
+            
+            $aksi = '<div class="d-flex justify-content-center gap-1">
+                        <a href="' . site_url('transaksi/penyesuaian/detail/' . $trx['id']) . '" class="btn btn-sm btn-info text-white" title="Lihat Detail" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:none; background:#0ea5e9;">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                        <a href="' . site_url('transaksi/penyesuaian/delete/' . $trx['id']) . '" class="btn btn-sm btn-danger text-white" title="Hapus" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:none; background:#ef4444;" onclick="return confirm(\'Yakin ingin menghapus riwayat penyesuaian ini? Stok batch akan dikembalikan ke kondisi sebelumnya.\')">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                     </div>';
+            $row[] = $aksi;
+            $data[] = $row;
+        }
+
+        $output = [
+            "draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            "recordsTotal"    => $this->penyesuaianModel->countAllData(),
+            "recordsFiltered" => $this->penyesuaianModel->countFiltered($postData),
+            "data"            => $data,
+            csrf_token()      => csrf_hash()
+        ];
+
+        return $this->response->setJSON($output);
+    }
+
     public function store()
     {
         $jenis = $this->request->getPost('jenis_penyesuaian');
@@ -95,7 +135,7 @@ class PenyesuaianStok extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $db->transStart();
+        $db->transBegin();
 
         $nomor = $this->penyesuaianModel->generateNomor();
         
@@ -109,6 +149,10 @@ class PenyesuaianStok extends BaseController
 
         foreach ($items as $item) {
             $barang = $this->barangModel->find($item['id_barang']);
+            if (!$barang) {
+                $db->transRollback();
+                return redirect()->back()->withInput()->with('error', "Barang dengan ID '{$item['id_barang']}' tidak ditemukan.");
+            }
             $jumlah = (float) $item['jumlah'];
 
             // Validasi utuh vs desimal
@@ -156,7 +200,8 @@ class PenyesuaianStok extends BaseController
                         'satuan' => $item['satuan'] ?? $barang['satuan'],
                         'berat_per_satuan' => $barang['berat_per_satuan'],
                         'satuan_berat' => $barang['satuan_berat'],
-                        'nama_barang' => $barang['nama_barang']
+                        'nama_barang' => $barang['nama_barang'],
+                        'bisa_dipecah' => $barang['bisa_dipecah'],
                     ]);
                 }
 
@@ -195,11 +240,11 @@ class PenyesuaianStok extends BaseController
             ]);
         }
 
-        $db->transComplete();
-
         if ($db->transStatus() === false) {
+            $db->transRollback();
             return redirect()->back()->withInput()->with('error', 'Gagal menyimpan transaksi penyesuaian stok.');
         }
+        $db->transCommit();
 
         // Log Activity
         $jenis = ucfirst($this->request->getPost('jenis_penyesuaian') ?: 'Lainnya');
@@ -227,7 +272,7 @@ class PenyesuaianStok extends BaseController
         $builder = $db->table('detail_penyesuaian_stok dps');
         $builder->select('dps.*, barang.nama_barang, barang.bisa_dipecah, batch.nomor_batch, batch.tanggal_kedaluwarsa');
         $builder->join('barang', 'barang.id = dps.id_barang');
-        $builder->join('batch', 'batch.id = dps.id_batch');
+        $builder->join('batch', 'batch.id = dps.id_batch', 'left');
         $builder->where('dps.id_penyesuaian', $id);
         $details = $builder->get()->getResultArray();
 
@@ -247,7 +292,7 @@ class PenyesuaianStok extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $db->transStart();
+        $db->transBegin();
 
         $details = $this->detailPenyesuaianModel->where('id_penyesuaian', $id)->findAll();
         $isKoreksiPositif = ($penyesuaian['jenis_penyesuaian'] === 'Koreksi Positif');
@@ -278,11 +323,11 @@ class PenyesuaianStok extends BaseController
         $this->detailPenyesuaianModel->where('id_penyesuaian', $id)->delete();
         $this->penyesuaianModel->delete($id);
 
-        $db->transComplete();
-
         if ($db->transStatus() === false) {
+            $db->transRollback();
             return redirect()->back()->with('error', 'Gagal menghapus penyesuaian stok.');
         }
+        $db->transCommit();
 
         // Log Activity
         \App\Libraries\ActivityLogger::log(

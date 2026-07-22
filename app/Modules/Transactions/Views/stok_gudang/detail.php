@@ -1,6 +1,7 @@
 <?= $this->extend('layout/main') ?>
 
 <?= $this->section('content') ?>
+<?php helper('format'); ?>
 
 <!-- Topbar -->
 <div class="topbar d-flex justify-content-between align-items-center mb-4">
@@ -24,22 +25,42 @@
                     <th>Donatur</th>
                     <th class="text-center">Tgl Masuk</th>
                     <th class="text-center">Tgl Expired</th>
+                    <th class="text-center">Berat/Satuan</th>
                     <th class="text-center">Jml Awal</th>
                     <th class="text-end">Stok Saat Ini</th>
+                    <th class="text-end">Total Berat</th>
                     <th class="text-center">Status</th>
                 </tr>
             </thead>
             <tbody>
                 <?php $no = 1; foreach ($batches as $batch) : ?>
+                    <?php 
+                        $bisaDipecah = (int)($batch['bisa_dipecah'] ?? 0);
+                        $beratPerSatuan = (float)$batch['berat_per_satuan'];
+                        
+                        $isDesimal = ($bisaDipecah === 1 && floor($batch['stok_saat_ini']) != $batch['stok_saat_ini']);
+                        $decimals = $isDesimal ? 2 : 0;
+                        
+                        if ($bisaDipecah === 1) {
+                            $totalBeratRow = (float)$batch['stok_saat_ini'];
+                            if (strtolower($batch['satuan_berat']) === 'gram') $totalBeratRow *= 1000;
+                        } else {
+                            $totalBeratRow = $batch['stok_saat_ini'] * $beratPerSatuan;
+                        }
+                    ?>
                     <tr>
                         <td class="text-center"><?= $no++ ?></td>
                         <td><span class="badge bg-secondary"><?= esc($batch['nomor_batch']) ?></span></td>
-                        <td><?= esc($batch['nama_donatur']) ?></td>
+                        <td><?= esc($batch['nama_donatur'] ?? '-') ?></td>
                         <td class="text-center"><?= date('d M Y', strtotime($batch['tanggal_masuk'])) ?></td>
                         <td class="text-center text-danger fw-bold"><?= date('d M Y', strtotime($batch['tanggal_kedaluwarsa'])) ?></td>
-                        <td class="text-center"><?= number_format($batch['jumlah_awal'], 0, ',', '.') ?> <?= esc($batch['satuan']) ?></td>
+                        <td class="text-center"><?= $beratPerSatuan > 0 ? $beratPerSatuan . ' ' . esc($batch['satuan_berat']) : '-' ?></td>
+                        <td class="text-center"><?= number_format($batch['jumlah_awal'], $decimals, ',', '.') ?> <?= esc($batch['satuan']) ?></td>
                         <td class="text-end fw-bold" style="font-size: 1.1rem;">
-                            <?= number_format($batch['stok_saat_ini'], 0, ',', '.') ?> <small class="text-muted fw-normal"><?= esc($batch['satuan']) ?></small>
+                            <?= number_format($batch['stok_saat_ini'], $decimals, ',', '.') ?> <small class="text-muted fw-normal"><?= esc($batch['satuan']) ?></small>
+                        </td>
+                        <td class="text-end text-muted">
+                            <?= $totalBeratRow > 0 ? format_berat($totalBeratRow, $batch['satuan_berat']) : '-' ?>
                         </td>
                         <td class="text-center">
                             <?php 
@@ -73,7 +94,16 @@
     $(document).ready(function() {
         $('#tabelBatch').DataTable({
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+                emptyTable: "Tidak ada data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(disaring dari _MAX_ total data)",
+                lengthMenu: "Tampilkan _MENU_ data",
+                loadingRecords: "Memuat...",
+                processing: "Memproses...",
+                search: "Cari:",
+                zeroRecords: "Tidak ditemukan data yang sesuai",
+                paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
             },
             "order": [[4, "asc"]], // Sort by Tgl Expired ASC
             "paging": false,

@@ -73,7 +73,6 @@
             <?php else: ?>
                 <?php foreach ($laporan as $stok): ?>
                     <?php
-                        $beratPerSatuan  = (float) $stok['berat_per_satuan'];
                         $bisaDipecah    = (int) ($stok['bisa_dipecah'] ?? 0);
                         $beratPerSatuan = (float) $stok['berat_per_satuan'];
                         if ($bisaDipecah === 1) {
@@ -106,7 +105,7 @@
                         <td class="text-center"><?= esc($stok['satuan']) ?></td>
                         <td class="text-right"><?= $beratPerSatuan > 0 ? number_format($beratPerSatuan, 2, ',', '.') : '-' ?></td>
                         <td class="text-right"><strong><?= $totalKg > 0 ? number_format($totalKg, 2, ',', '.') : '-' ?></strong></td>
-                        <td class="text-center"><?= !empty($stok['jumlah_ctn']) ? $stok['jumlah_ctn'] : '-' ?></td>
+                        <td class="text-center"><?= !empty($stok['jumlah_ctn']) ? esc($stok['jumlah_ctn']) : '-' ?></td>
                         <td><?= esc($stok['catatan'] ?? '-') ?></td>
                         <td class="text-center">-</td>
                     </tr>

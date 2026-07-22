@@ -22,6 +22,7 @@ $routes->group('manajemen-user', ['namespace' => 'App\Modules\Settings\Controlle
 // Route for Log Aktivitas
 $routes->group('log-aktivitas', ['namespace' => 'App\Modules\Settings\Controllers', 'filter' => 'rbac:Administrator'], function($routes) {
     $routes->get('/', 'LogAktivitas::index');
+    $routes->post('ajaxData', 'LogAktivitas::ajaxData');
 });
 
 // Route for Backup & Restore

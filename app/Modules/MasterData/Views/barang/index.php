@@ -23,8 +23,8 @@
 
 <!-- Tabel Data -->
 <div class="panel-card">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0" id="tabelBarang">
+    <div>
+        <table class="table table-hover mb-0" id="tabelBarang" style="width: 100%;">
             <thead>
                 <tr>
                     <th width="50">No</th>
@@ -39,32 +39,7 @@
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($barang as $i => $b) : ?>
-                        <tr>
-                            <td><?= $i + 1 ?></td>
-                            <td><span class="badge-soft"><?= esc($b['kode_barang']) ?></span></td>
-                            <td><strong><?= esc($b['nama_barang']) ?></strong></td>
-                            <td><?= esc($b['nama_kategori']) ?></td>
-                            <td><?= esc($b['satuan']) ?></td>
-                            <td><?= esc($b['berat_per_satuan']) ?> <?= esc($b['satuan_berat']) ?></td>
-                            <td><?= esc($b['minimum_stok']) ?></td>
-                            <td>
-                                <?php if ($b['bisa_dipecah'] == 1) : ?>
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">Repack</span>
-                                <?php else : ?>
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2">Utuh</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center">
-                                <a href="<?= site_url('masterdata/barang/edit/' . $b['id']) ?>" class="btn btn-sm btn-outline-primary rounded-pill me-1" title="Edit">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                                <a href="<?= site_url('masterdata/barang/delete/' . $b['id']) ?>" class="btn btn-sm btn-outline-danger rounded-pill" title="Hapus" onclick="return confirm('Yakin ingin menghapus barang ini?')">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
-                <?php endforeach; ?>
+                <!-- DataTables will populate this tbody via AJAX -->
             </tbody>
         </table>
     </div>
@@ -74,16 +49,34 @@
 
 <?= $this->section('scripts') ?>
 <script>
+    var csrfName = '<?= csrf_token() ?>';
+    var csrfHash = '<?= csrf_hash() ?>';
+
     $(document).ready(function () {
         $('#tabelBarang').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "<?= site_url('masterdata/barang/ajaxData') ?>",
+                type: "POST",
+                data: function (d) {
+                    d[csrfName] = csrfHash;
+                }
+            },
+            drawCallback: function (settings) {
+                var response = settings.json;
+                if (response && response[csrfName]) {
+                    csrfHash = response[csrfName];
+                }
+            },
             language: {
-                search: "Cari:",
-                lengthMenu: "Tampilkan _MENU_ data",
-                info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
-                paginate: { previous: "Prev", next: "Next" },
-                zeroRecords: "Data tidak ditemukan",
-                emptyTable: "Belum ada data barang"
-            }
+                url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+            },
+            order: [],
+            columnDefs: [
+                { orderable: false, targets: [0, 8] }
+            ],
+            dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>'
         });
     });
 </script>

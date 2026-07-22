@@ -17,8 +17,7 @@ class Donatur extends BaseController
     public function index()
     {
         $data = [
-            'title'   => 'Data Donatur',
-            'donatur' => $this->donaturModel->orderBy('id', 'DESC')->findAll(),
+            'title'   => 'Data Donatur'
         ];
         return view('App\Modules\MasterData\Views\donatur\index', $data);
     }
@@ -99,7 +98,49 @@ class Donatur extends BaseController
         }
 
         $this->donaturModel->delete($id);
-        return redirect()->to('/masterdata/donatur')->with('success', 'Donatur berhasil dihapus.');
+        return redirect()->to('masterdata/donatur')->with('success', 'Data Donatur berhasil dihapus.');
+    }
+
+    /**
+     * AJAX endpoint untuk DataTables server-side
+     */
+    public function ajaxData()
+    {
+        if (!$this->request->isAJAX()) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $postData = $this->request->getPost();
+        $list     = $this->donaturModel->getDatatables($postData);
+        $data     = [];
+        $no       = $postData['start'];
+
+        foreach ($list as $row) {
+            $no++;
+            $rowData = [];
+
+            $rowData[] = '<div class="text-center text-secondary">' . $no . '</div>';
+            $rowData[] = '<span class="fw-semibold" style="color:#0f172a;">' . esc($row['nama_donatur']) . '</span>';
+            $rowData[] = '<span class="badge" style="background:#e0f2fe; color:#0284c7;">' . esc($row['jenis_donatur']) . '</span>';
+            $rowData[] = '<span style="color:#475569;">' . esc($row['kontak']) . '</span>';
+            $rowData[] = '<span style="color:#475569;">' . esc($row['email']) . '</span>';
+            
+            $aksi = '<div class="don-actions">
+                        <a href="' . site_url('masterdata/donatur/edit/' . $row['id']) . '" class="don-action-btn don-action-edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                        <a href="' . site_url('masterdata/donatur/delete/' . $row['id']) . '" class="don-action-btn don-action-delete" title="Hapus" onclick="return confirm(\'Yakin ingin menghapus donatur ini?\')"><i class="fa-solid fa-trash"></i></a>
+                     </div>';
+            $rowData[] = $aksi;
+            $data[] = $rowData;
+        }
+
+        $output = [
+            "draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            "recordsTotal"    => $this->donaturModel->countAllData(),
+            "recordsFiltered" => $this->donaturModel->countFiltered($postData),
+            "data"            => $data,
+            csrf_token()      => csrf_hash()
+        ];
+
+        return $this->response->setJSON($output);
     }
 }
-

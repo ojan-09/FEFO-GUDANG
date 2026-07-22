@@ -283,8 +283,7 @@
 
 <!-- ── Data Card ── -->
 <div class="dm-card">
-    <div class="table-responsive">
-        <table class="table mb-0" id="tabelBarangKeluar">
+    <table class="table mb-0" id="tabelBarangKeluar" style="width: 100%;">
             <thead>
                 <tr>
                     <th class="col-no text-center">No</th>
@@ -298,49 +297,10 @@
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($barangKeluar as $i => $bk) : ?>
-                    <tr>
-                        <td class="col-no text-center text-secondary"><?= $i + 1 ?></td>
-                        <td class="col-notrx">
-                            <span class="badge-notrx"><?= esc($bk['nomor_transaksi']) ?></span>
-                        </td>
-                        <td class="col-tujuan">
-                            <span class="fw-semibold" style="color:#0f172a;"><?= esc($bk['tujuan_penyaluran']) ?></span>
-                        </td>
-                        <td class="col-wilayah" style="color:#475569;">
-                            <?= esc($bk['nama_wilayah'] ?? '-') ?>
-                        </td>
-                        <td class="col-tgl" style="color:#475569;">
-                            <?= date('d M Y', strtotime($bk['tanggal_keluar'])) ?>
-                        </td>
-                        <td class="col-item text-center">
-                            <span class="badge-item"><?= esc($bk['jumlah_item']) ?> Item</span>
-                        </td>
-                        <td class="col-petugas" style="color:#475569;">
-                            <?= esc($bk['petugas']) ?>
-                        </td>
-                        <td class="col-aksi">
-                            <div class="dm-action-group">
-                                <a href="<?= site_url('transaksi/barang-keluar/detail/' . $bk['id']) ?>"
-                                   class="dm-btn-action view" title="Lihat Detail">
-                                    <i class="fa-solid fa-eye"></i>
-                                </a>
-                                <a href="<?= site_url('transaksi/barang-keluar/edit/' . $bk['id']) ?>"
-                                   class="dm-btn-action edit" title="Edit">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                                <a href="<?= site_url('transaksi/barang-keluar/delete/' . $bk['id']) ?>"
-                                   class="dm-btn-action del" title="Hapus"
-                                   onclick="return confirm('Yakin ingin menghapus transaksi ini? Stok batch akan dikembalikan.')">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
+                <!-- DataTables will populate this tbody via AJAX -->
             </tbody>
         </table>
-    </div>
+
 </div>
 
 </div><!-- /.dm-page -->
@@ -349,16 +309,51 @@
 
 <?= $this->section('scripts') ?>
 <script>
+    var csrfName = '<?= csrf_token() ?>';
+    var csrfHash = '<?= csrf_hash() ?>';
+
     $(document).ready(function () {
         $('#tabelBarangKeluar').DataTable({
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "<?= site_url('transaksi/barang-keluar/ajaxData') ?>",
+                type: "POST",
+                data: function (d) {
+                    d[csrfName] = csrfHash;
+                }
             },
-            order: [],
+            drawCallback: function (settings) {
+                var response = settings.json;
+                if (response && response[csrfName]) {
+                    csrfHash = response[csrfName];
+                }
+            },
+            language: {
+                emptyTable: "Tidak ada data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(disaring dari _MAX_ total data)",
+                lengthMenu: "Tampilkan _MENU_ data",
+                loadingRecords: "Memuat...",
+                processing: "Memproses...",
+                search: "Cari:",
+                zeroRecords: "Tidak ditemukan data yang sesuai",
+                paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+            },
+            order: [[1, 'desc']], // Default order on No. Transaksi
             columnDefs: [
-                { orderable: false, targets: [7] }
+                { orderable: false, targets: [0, 7] },
+                { className: "col-no text-center", targets: [0] },
+                { className: "col-notrx", targets: [1] },
+                { className: "col-tujuan", targets: [2] },
+                { className: "col-wilayah", targets: [3] },
+                { className: "col-tgl", targets: [4] },
+                { className: "col-item text-center", targets: [5] },
+                { className: "col-petugas", targets: [6] },
+                { className: "col-aksi text-center", targets: [7] }
             ],
-            dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+            dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
         });
     });
 </script>

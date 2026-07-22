@@ -112,37 +112,6 @@
     color: #94A3B8;
     padding-top: 10px;
 }
-.kat-card .dataTables_wrapper .dataTables_paginate {
-    padding-top: 8px;
-}
-.kat-card .dataTables_wrapper .dataTables_paginate .paginate_button {
-    min-width: 40px; height: 40px;
-    padding: 0 12px;
-    font-size: 13px; font-weight: 500;
-    border-radius: 10px !important;
-    border: 1px solid #E2E8F0 !important;
-    background: #F8FAFC !important;
-    color: #475569 !important;
-    margin: 0 2px;
-    line-height: 38px;
-    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease;
-}
-.kat-card .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-    background: #EFF6FF !important;
-    border-color: #BFDBFE !important;
-    color: #2563EB !important;
-}
-.kat-card .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-.kat-card .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
-    border-color: #2563EB !important;
-    color: #fff !important;
-}
-.kat-card .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
-.kat-card .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
-    opacity: .4; cursor: not-allowed;
-}
-
 /* TABLE */
 #tabelKategori {
     width: 100% !important;
@@ -245,8 +214,8 @@
 
     <!-- CARD -->
     <div class="kat-card">
-        <div class="table-responsive">
-            <table class="table mb-0" id="tabelKategori">
+        <div>
+            <table class="table mb-0" id="tabelKategori" style="width: 100%;">
                 <thead>
                     <tr>
                         <th width="60" class="text-center">No</th>
@@ -256,23 +225,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($kategori as $i => $k) : ?>
-                    <tr>
-                        <td class="text-center" style="color:#94A3B8;font-size:13px"><?= $i + 1 ?></td>
-                        <td><span class="kat-name"><?= esc($k['nama_kategori']) ?></span></td>
-                        <td><span class="kat-date"><?= date('d M Y', strtotime($k['created_at'])) ?></span></td>
-                        <td class="text-center">
-                            <div class="kat-actions">
-                                <a href="<?= site_url('masterdata/kategori/edit/' . $k['id']) ?>" class="kat-action-btn kat-action-edit" title="Edit">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                                <a href="<?= site_url('masterdata/kategori/delete/' . $k['id']) ?>" class="kat-action-btn kat-action-delete" title="Hapus" onclick="return confirm('Yakin ingin menghapus kategori ini?')">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
+                    <!-- DataTables will populate this tbody via AJAX -->
                 </tbody>
             </table>
         </div>
@@ -284,15 +237,44 @@
 
 <?= $this->section('scripts') ?>
 <script>
+    var csrfName = '<?= csrf_token() ?>';
+    var csrfHash = '<?= csrf_hash() ?>';
+
     $(document).ready(function () {
         $('#tabelKategori').DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "<?= site_url('masterdata/kategori/ajaxData') ?>",
+                type: "POST",
+                data: function (d) {
+                    d[csrfName] = csrfHash;
+                }
             },
-            "order": [],
-            "columnDefs": [
-                { "orderable": false, "targets": [3] }
-            ]
+            drawCallback: function (settings) {
+                var response = settings.json;
+                if (response && response[csrfName]) {
+                    csrfHash = response[csrfName];
+                }
+            },
+            language: {
+                emptyTable: "Tidak ada data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(disaring dari _MAX_ total data)",
+                lengthMenu: "Tampilkan _MENU_ data",
+                loadingRecords: "Memuat...",
+                processing: "Memproses...",
+                search: "Cari:",
+                zeroRecords: "Tidak ditemukan data yang sesuai",
+                paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+            },
+            order: [],
+            columnDefs: [
+                { orderable: false, targets: [0, 3] },
+                { className: "text-center", targets: [0, 3] }
+            ],
+            dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>'
         });
     });
 </script>

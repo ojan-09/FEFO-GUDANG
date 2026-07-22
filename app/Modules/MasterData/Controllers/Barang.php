@@ -19,16 +19,8 @@ class Barang extends BaseController
 
     public function index()
     {
-        // Join dengan tabel kategori untuk menampilkan nama_kategori
-        $barang = $this->barangModel
-            ->select('barang.*, kategori.nama_kategori')
-            ->join('kategori', 'kategori.id = barang.id_kategori')
-            ->orderBy('barang.id', 'DESC')
-            ->findAll();
-
         $data = [
-            'title'  => 'Data Barang',
-            'barang' => $barang,
+            'title'  => 'Data Barang'
         ];
         return view('App\Modules\MasterData\Views\barang\index', $data);
     }
@@ -225,7 +217,56 @@ class Barang extends BaseController
         }
 
         $this->barangModel->delete($id);
-        return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil dihapus.');
+        return redirect()->to('/masterdata/barang')->with('success', 'Barang berhasil dihapus.');
+    }
+
+    /**
+     * AJAX endpoint untuk DataTables server-side
+     */
+    public function ajaxData()
+    {
+        if (!$this->request->isAJAX()) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $postData = $this->request->getPost();
+        $list     = $this->barangModel->getDatatables($postData);
+        $data     = [];
+        $no       = $postData['start'];
+
+        foreach ($list as $row) {
+            $no++;
+            $rowData = [];
+
+            $bisaDipecah = $row['bisa_dipecah'] == 1 ? '<span class="badge" style="background:#dcfce7; color:#16a34a;"><i class="fa-solid fa-check me-1"></i>Ya</span>' : '<span class="badge" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-xmark me-1"></i>Tidak</span>';
+            $beratPerSatuan = $row['berat_per_satuan'] > 0 ? rtrim(rtrim(number_format($row['berat_per_satuan'], 2, ',', '.'), '0'), ',') . ' ' . esc($row['satuan_berat']) : '-';
+
+            $rowData[] = '<div class="text-center text-secondary">' . $no . '</div>';
+            $rowData[] = '<span class="fw-bold" style="color:#2563eb;">' . esc($row['kode_barang']) . '</span>';
+            $rowData[] = '<span class="fw-semibold" style="color:#0f172a;">' . esc($row['nama_barang']) . '</span>';
+            $rowData[] = '<span class="badge bg-light text-dark border">' . esc($row['nama_kategori']) . '</span>';
+            $rowData[] = '<span style="color:#475569;">' . esc($row['satuan']) . '</span>';
+            $rowData[] = '<span style="color:#475569;">' . $beratPerSatuan . '</span>';
+            $rowData[] = '<span class="badge" style="background:#fef3c7; color:#d97706;">' . esc($row['minimum_stok']) . ' ' . esc($row['satuan']) . '</span>';
+            $rowData[] = '<div class="text-center">' . $bisaDipecah . '</div>';
+            
+            $aksi = '<div class="d-flex justify-content-center align-items-center gap-1">
+                        <a href="' . site_url('masterdata/barang/edit/' . $row['id_barang']) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                        <a href="' . site_url('masterdata/barang/delete/' . $row['id_barang']) . '" class="btn btn-sm btn-outline-danger" title="Hapus" onclick="return confirm(\'Yakin menghapus barang ini?\')"><i class="fa-solid fa-trash"></i></a>
+                     </div>';
+            $rowData[] = $aksi;
+            $data[] = $rowData;
+        }
+
+        $output = [
+            "draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            "recordsTotal"    => $this->barangModel->countAllData(),
+            "recordsFiltered" => $this->barangModel->countFiltered($postData),
+            "data"            => $data,
+            csrf_token()      => csrf_hash()
+        ];
+
+        return $this->response->setJSON($output);
     }
 
     private function generateKodeBarang(): string

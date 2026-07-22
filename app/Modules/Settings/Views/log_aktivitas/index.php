@@ -1,27 +1,9 @@
 <?php
-    $totalLog    = count($logs);
-    $countLogin  = 0;
-    $countPenyaluran = 0;
-    $countDonasi = 0;
-    $countPenyesuaian = 0;
-
-    foreach ($logs as $l) {
-        $mod = strtolower($l['modul'] ?? '');
-        $act = strtolower($l['aktivitas'] ?? '');
-        
-        if (strpos($mod, 'login') !== false || strpos($mod, 'auth') !== false || strpos($act, 'login') !== false) {
-            $countLogin++;
-        }
-        if (strpos($mod, 'penyaluran') !== false) {
-            $countPenyaluran++;
-        }
-        if (strpos($mod, 'donasi') !== false || strpos($mod, 'barang masuk') !== false) {
-            $countDonasi++;
-        }
-        if (strpos($mod, 'penyesuaian') !== false) {
-            $countPenyesuaian++;
-        }
-    }
+    $totalLog    = $kpi['totalLog'] ?? 0;
+    $countLogin  = $kpi['countLogin'] ?? 0;
+    $countPenyaluran = $kpi['countPenyaluran'] ?? 0;
+    $countDonasi = $kpi['countDonasi'] ?? 0;
+    $countPenyesuaian = $kpi['countPenyesuaian'] ?? 0;
 ?>
 <?= $this->extend('layout/main') ?>
 
@@ -409,73 +391,11 @@
         <table id="dataTable" class="w-100 m-0">
             <thead><tr><th>Log</th></tr></thead>
             <tbody>
-                <?php foreach ($logs as $log): 
-                    $modul = strtolower($log['modul'] ?? '');
-                    
-                    $icon = 'fa-circle-dot'; $colorCls = 'mod-login'; $bgCls = 'bg-login';
-                    if (strpos($modul, 'donasi') !== false || strpos($modul, 'masuk') !== false) {
-                        $icon = 'fa-inbox-in'; $colorCls = 'mod-donasi'; $bgCls = 'bg-donasi';
-                    } elseif (strpos($modul, 'penyaluran') !== false || strpos($modul, 'keluar') !== false) {
-                        $icon = 'fa-box-arrow-right'; $colorCls = 'mod-penyaluran'; $bgCls = 'bg-penyaluran';
-                    } elseif (strpos($modul, 'penyesuaian') !== false) {
-                        $icon = 'fa-scale-balanced'; $colorCls = 'mod-penyesuaian'; $bgCls = 'bg-penyesuaian';
-                    } elseif (strpos($modul, 'user') !== false || strpos($modul, 'profil') !== false) {
-                        $icon = 'fa-users-gear'; $colorCls = 'mod-user'; $bgCls = 'bg-user';
-                    } elseif (strpos($modul, 'auth') !== false || strpos($modul, 'login') !== false) {
-                        $icon = 'fa-shield-halved'; $colorCls = 'mod-login'; $bgCls = 'bg-login';
-                    }
-
-                    $namaUser = $log['nama_user'] ?? 'Sistem';
-                    $initials = strtoupper(substr($namaUser, 0, 1));
-                    
-                    // JSON Data for Drawer
-                    $drawerData = htmlspecialchars(json_encode([
-                        'modul' => $log['modul'],
-                        'aksi' => $log['aktivitas'],
-                        'tanggal' => date('d M Y - H:i', strtotime($log['created_at'])) . ' WIB',
-                        'operator' => $namaUser,
-                        'deskripsi' => $log['deskripsi']
-                    ]), ENT_QUOTES, 'UTF-8');
-                ?>
-                <tr>
-                    <td>
-                        <div class="timeline-card" onclick="openDrawer(this)" data-info="<?= $drawerData ?>">
-                            <div class="tl-time">
-                                <div class="tl-date"><?= date('d M Y', strtotime($log['created_at'])) ?></div>
-                                <div class="tl-hour"><?= date('H:i:s', strtotime($log['created_at'])) ?> WIB</div>
-                            </div>
-                            <div class="tl-content">
-                                <div class="tl-user">
-                                    <div class="tl-avatar"><?= $initials ?></div>
-                                    <div>
-                                        <div class="tl-uname"><?= esc($namaUser) ?></div>
-                                        <div class="tl-urole"><?= esc($log['role'] ?? 'Sistem') ?></div>
-                                    </div>
-                                </div>
-                                <div class="tl-module">
-                                    <i class="fa-solid <?= $icon ?> <?= $colorCls ?> tl-icon"></i>
-                                    <div>
-                                        <div class="tl-mod-name"><?= esc($log['modul']) ?></div>
-                                        <div class="tl-action <?= $bgCls ?>"><?= esc($log['aktivitas']) ?></div>
-                                    </div>
-                                </div>
-                                <div class="tl-desc">
-                                    <?= nl2br(esc($log['deskripsi'])) ?>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+                    <!-- DataTables will populate this tbody via AJAX -->
             </tbody>
         </table>
     </div>
 
-    <!-- Bottom bar (DataTables Dom) -->
-    <div class="wh-dt-bottom">
-        <div id="dtInfo"></div>
-        <div id="dtPaginate"></div>
-    </div>
 </div>
 
 <!-- Drawer Elements -->
@@ -566,18 +486,36 @@ function closeDrawer() {
     document.getElementById('detailDrawer').classList.remove('show');
 }
 
-$(document).ready(function () {
+$(document).ready(function() {
+    var csrfName = '<?= csrf_token() ?>';
+    var csrfHash = '<?= csrf_hash() ?>';
+
     var table = $('#dataTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "<?= site_url('log-aktivitas/ajaxData') ?>",
+            type: "POST",
+            data: function (d) {
+                d[csrfName] = csrfHash;
+                d.tanggal_mulai = '<?= esc($tanggal_mulai) ?>';
+                d.tanggal_selesai = '<?= esc($tanggal_selesai) ?>';
+                d.modul = '<?= esc($filter_modul) ?>';
+                d.aktivitas = '<?= esc($filter_aktivitas) ?>';
+                d.role = '<?= esc($filter_role) ?>';
+            }
+        },
+        drawCallback: function (settings) {
+            var response = settings.json;
+            if (response && response[csrfName]) {
+                csrfHash = response[csrfName];
+            }
+        },
         order: [],
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
         pageLength: 25,
-        dom: '<"d-none"i><"d-none"p>rt', 
-        columnDefs: [{ orderable: false, targets: [0] }],
-        drawCallback: function () {
-            // DataTables creates info and paginate elements. We move them.
-            $('#dtInfo').empty().append($('.dataTables_info'));
-            $('#dtPaginate').empty().append($('.dataTables_paginate'));
-        }
+        dom: 'rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4"ip>', 
+        columnDefs: [{ orderable: false, targets: [0] }]
     });
 
     // Custom Length

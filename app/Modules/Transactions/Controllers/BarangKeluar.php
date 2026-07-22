@@ -34,38 +34,57 @@ class BarangKeluar extends BaseController
      */
     public function index()
     {
-        $barangKeluar = $this->barangKeluarModel
-            ->select('barang_keluar.id, barang_keluar.nomor_transaksi, barang_keluar.tujuan_penyaluran, barang_keluar.tanggal_keluar, wilayah.nama_wilayah, users.username as petugas')
-            ->join('wilayah', 'wilayah.id = barang_keluar.id_wilayah', 'left')
-            ->join('users', 'users.id = barang_keluar.id_user')
-            ->orderBy('barang_keluar.id', 'DESC')
-            ->findAll();
-
-        $bkIds = array_column($barangKeluar, 'id');
-        $detailStats = [];
-
-        if (!empty($bkIds)) {
-            $stats = $this->detailModel
-                ->select('id_barang_keluar, COUNT(id) as total_item')
-                ->whereIn('id_barang_keluar', $bkIds)
-                ->groupBy('id_barang_keluar')
-                ->findAll();
-                
-            foreach ($stats as $stat) {
-                $detailStats[$stat['id_barang_keluar']] = $stat['total_item'];
-            }
-        }
-
-        foreach ($barangKeluar as &$bk) {
-            $bk['jumlah_item'] = $detailStats[$bk['id']] ?? 0;
-        }
-
         $data = [
-            'title'        => 'Transaksi Barang Keluar',
-            'barangKeluar' => $barangKeluar,
-            'detailStats'  => $detailStats
+            'title' => 'Transaksi Penyaluran Barang'
         ];
         return view('App\Modules\Transactions\Views\barang_keluar\index', $data);
+    }
+
+    /**
+     * AJAX endpoint untuk DataTables server-side
+     */
+    public function ajaxData()
+    {
+        if (!$this->request->isAJAX()) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $postData = $this->request->getPost();
+        $list     = $this->barangKeluarModel->getDatatables($postData);
+        $data     = [];
+        $no       = $postData['start'];
+
+        foreach ($list as $bk) {
+            $no++;
+            $row = [];
+
+            $row[] = '<div class="text-center text-secondary">' . $no . '</div>';
+            $row[] = '<span class="badge-notrx">' . esc($bk['nomor_transaksi']) . '</span>';
+            $row[] = '<span class="fw-semibold" style="color:#0f172a;">' . esc($bk['tujuan_penyaluran']) . '</span>';
+            $row[] = '<span style="color:#475569;">' . esc($bk['nama_wilayah'] ?? '-') . '</span>';
+            $row[] = '<span style="color:#475569;">' . date('d M Y', strtotime($bk['tanggal_keluar'])) . '</span>';
+            $row[] = '<div class="text-center"><span class="badge-item">' . esc($bk['jumlah_item']) . ' Item</span></div>';
+            $row[] = '<span style="color:#475569;">' . esc($bk['petugas']) . '</span>';
+            
+            $aksi = '<div class="dm-action-group">
+                        <a href="' . site_url('transaksi/barang-keluar/berita-acara/' . $bk['id']) . '" class="dm-btn-action doc" title="Cetak Berita Acara" target="_blank"><i class="fa-solid fa-file-pdf"></i></a>
+                        <a href="' . site_url('transaksi/barang-keluar/detail/' . $bk['id']) . '" class="dm-btn-action view" title="Lihat Detail"><i class="fa-solid fa-eye"></i></a>
+                        <a href="' . site_url('transaksi/barang-keluar/edit/' . $bk['id']) . '" class="dm-btn-action edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                        <a href="' . site_url('transaksi/barang-keluar/delete/' . $bk['id']) . '" class="dm-btn-action del" title="Hapus" onclick="return confirm(\'Yakin ingin menghapus transaksi penyaluran ini? Stok akan dikembalikan ke batch awal.\')"><i class="fa-solid fa-trash"></i></a>
+                     </div>';
+            $row[] = $aksi;
+            $data[] = $row;
+        }
+
+        $output = [
+            "draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            "recordsTotal"    => $this->barangKeluarModel->countAllData(),
+            "recordsFiltered" => $this->barangKeluarModel->countFiltered($postData),
+            "data"            => $data,
+            csrf_token()      => csrf_hash()
+        ];
+
+        return $this->response->setJSON($output);
     }
 
     /**
@@ -74,7 +93,6 @@ class BarangKeluar extends BaseController
     public function create()
     {
         $db = \Config\Database::connect();
-        $today = date('Y-m-d');
         
         $sql = "
             SELECT 
@@ -102,7 +120,6 @@ class BarangKeluar extends BaseController
                     FROM batch
                     WHERE stok_saat_ini > 0
                       AND status = 'Aktif'
-                      AND status = 'Aktif'
                     GROUP BY id_barang
                 ) b2 ON b1.id_barang = b2.id_barang AND b1.tanggal_kedaluwarsa = b2.min_exp
                 WHERE b1.id = (
@@ -118,7 +135,6 @@ class BarangKeluar extends BaseController
                 SELECT id_barang, SUM(stok_saat_ini) as stok_tersedia
                 FROM batch
                 WHERE stok_saat_ini > 0
-                  AND status = 'Aktif'
                   AND status = 'Aktif'
                 GROUP BY id_barang
             ) stock_summary ON stock_summary.id_barang = barang.id
@@ -254,7 +270,7 @@ class BarangKeluar extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $db->transStart();
+        $db->transBegin();
 
         $nomorTransaksi = $this->generateNomorTransaksi();
 
@@ -275,11 +291,11 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['fefo' => 'Proses FEFO gagal. Stok tidak mencukupi atau terjadi kesalahan saat pemotongan batch.']);
         }
 
-        $db->transComplete();
-
         if ($db->transStatus() === false) {
+            $db->transRollback();
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal menyimpan transaksi. Silakan coba lagi.']);
         }
+        $db->transCommit();
 
         $tujuan = $this->request->getPost('tujuan_penyaluran') ?: '-';
         $totalItem = array_sum(array_column($items, 'jumlah_keluar'));
@@ -306,11 +322,10 @@ class BarangKeluar extends BaseController
     {
         $barangKeluar = $this->barangKeluarModel->find($id);
         if (!$barangKeluar) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-keluar')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
 
         $db = \Config\Database::connect();
-        $today = date('Y-m-d');
         
         $sql = "
             SELECT 
@@ -337,7 +352,6 @@ class BarangKeluar extends BaseController
                     SELECT id_barang, MIN(tanggal_kedaluwarsa) as min_exp
                     FROM batch
                     WHERE (stok_saat_ini > 0 OR id IN (SELECT id_batch FROM detail_barang_keluar WHERE id_barang_keluar = ?))
-                      AND status = 'Aktif'
                       AND status = 'Aktif'
                     GROUP BY id_barang
                 ) b2 ON b1.id_barang = b2.id_barang AND b1.tanggal_kedaluwarsa = b2.min_exp
@@ -405,6 +419,7 @@ class BarangKeluar extends BaseController
                 $bisaDipecah = $brgInfo ? (int)$brgInfo['bisa_dipecah'] : 0;
                 $semuaBarang[] = [
                     'id'                  => $idBrg,
+                    'satuan_kemasan'      => ($bisaDipecah === 1) ? 'Karung' : $det['satuan'],
                     'bisa_dipecah'        => $bisaDipecah,
                     'tanggal_kedaluwarsa' => date('Y-m-d'),
                     'nama_barang'         => $det['nama_barang'],
@@ -434,7 +449,7 @@ class BarangKeluar extends BaseController
     {
         $barangKeluar = $this->barangKeluarModel->find($id);
         if (!$barangKeluar) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-keluar')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
 
         $rules = [
@@ -495,9 +510,15 @@ class BarangKeluar extends BaseController
         $items = array_values($consolidated);
 
         $db = \Config\Database::connect();
-        $db->transStart();
+        $db->transBegin();
 
         $this->fefo->rollbackBarangKeluar($id);
+
+        $expiredBatches = $this->fefo->hasExpiredBatch($items);
+        if (!empty($expiredBatches) && $this->request->getPost('force_expired') !== 'true') {
+            $db->transRollback();
+            return redirect()->back()->withInput()->with('errors', ['expired' => 'Terdapat barang yang sudah melewati tanggal kedaluwarsa. Mohon gunakan tombol yang benar pada peringatan.']);
+        }
 
         $kebutuhan = [];
         foreach ($items as $item) {
@@ -530,19 +551,24 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['fefo' => 'Proses FEFO gagal. Stok tidak mencukupi atau terjadi kesalahan pemotongan batch.']);
         }
 
-        $db->transComplete();
-
         if ($db->transStatus() === false) {
+            $db->transRollback();
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
         }
+        $db->transCommit();
 
         $tujuan = $this->request->getPost('tujuan_penyaluran') ?: '-';
         $totalItem = array_sum(array_column($items, 'jumlah_keluar'));
 
+        $logMsg = "Mengubah Penyaluran\nNo. {$barangKeluar['nomor_transaksi']}\nTujuan : {$tujuan}\nTotal Item : {$totalItem}";
+        if (!empty($expiredBatches)) {
+            $logMsg = "Edit Penyaluran menggunakan batch expired\nNo. {$barangKeluar['nomor_transaksi']}\nTujuan : {$tujuan}\nJumlah Batch Expired : " . count($expiredBatches);
+        }
+
         \App\Libraries\ActivityLogger::log(
             'Edit Penyaluran',
             'Penyaluran Barang',
-            "Mengubah Penyaluran\nNo. {$barangKeluar['nomor_transaksi']}\nTujuan : {$tujuan}\nTotal Item : {$totalItem}"
+            $logMsg
         );
 
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi Barang Keluar berhasil diperbarui. Stok batch telah dihitung ulang menggunakan metode FEFO.');
@@ -560,7 +586,7 @@ class BarangKeluar extends BaseController
             ->find($id);
 
         if (!$barangKeluar) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-keluar')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
 
         // FIX: tambahkan batch.bisa_dipecah agar view bisa membedakan
@@ -592,7 +618,7 @@ class BarangKeluar extends BaseController
 
         $barangKeluar = $this->barangKeluarModel->find($id);
         if (!$barangKeluar) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-keluar')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
 
         $db = \Config\Database::connect();
@@ -657,7 +683,7 @@ class BarangKeluar extends BaseController
             ->find($id);
 
         if (!$barangKeluar) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-keluar')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
 
         // FIX: sama seperti detail(), tambahkan batch.bisa_dipecah

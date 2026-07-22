@@ -2,10 +2,6 @@
 
 <?= $this->section('content') ?>
 
-<?php
-    helper('format');
-    $totalBatchAktif = count($stokGudang);
-?>
 
 <style>
 /* ═══════════════════════════════════════════════
@@ -152,54 +148,7 @@
 .dataTables_wrapper .dataTables_filter {
     margin-bottom: 12px;
 }
-.dataTables_wrapper .dataTables_length label,
-.dataTables_wrapper .dataTables_filter label {
-    font-size: 13px;
-    color: #374151;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-}
-.dataTables_wrapper .dataTables_length select {
-    height: 36px;
-    font-size: 13px;
-    padding: 0 28px 0 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
-    color: #111827;
-    outline: none;
-    appearance: auto;
-}
-.dataTables_wrapper .dataTables_filter input {
-    height: 36px;
-    width: 220px;
-    font-size: 13px;
-    padding: 0 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
-    color: #111827;
-    outline: none;
-    transition: border-color .15s;
-}
-.dataTables_wrapper .dataTables_filter input:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99,102,241,.12);
-}
-.dataTables_wrapper .dataTables_info {
-    font-size: 12px;
-    color: #6b7280;
-    padding-top: 10px;
-}
-.dataTables_wrapper .dataTables_paginate { margin-top: 10px; }
-.dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0 !important; border: none !important; background: transparent !important; margin: 0 1px !important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button .page-link { height: 32px !important; min-width: 32px; padding: 0 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; font-size: 12.5px; font-weight: 500; color: #334155 !important; background: #fff !important; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
-.dataTables_wrapper .dataTables_paginate .paginate_button.current .page-link,
-.dataTables_wrapper .dataTables_paginate .paginate_button.active .page-link { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link { background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link { opacity: .45; cursor: default; }
+
 
 /* ═══════════════════════════════════════════════
    TABLE
@@ -363,24 +312,23 @@
 
 <!-- ── Filter Panel ── -->
 <div class="dm-filter-card">
-    <form action="" method="GET" class="row g-2 align-items-end">
+    <form id="formFilterStok" class="row g-2 align-items-end">
         <div class="col-md-3">
             <label for="filterSearch" class="form-label">Nama Barang</label>
             <input type="text" id="filterSearch" name="search" class="form-control"
-                   placeholder="Cari barang..." value="<?= esc($filters['search']) ?>">
+                   placeholder="Cari barang...">
         </div>
         <div class="col-md-3">
             <label for="filterDonatur" class="form-label">Donatur / Asal Barang</label>
             <input type="text" id="filterDonatur" name="donatur" class="form-control"
-                   placeholder="Cari donatur..." value="<?= esc($filters['donatur']) ?>">
+                   placeholder="Cari donatur...">
         </div>
         <div class="col-md-2">
             <label for="filterKategori" class="form-label">Kategori</label>
             <select id="filterKategori" name="kategori" class="form-select">
                 <option value="">-- Semua --</option>
                 <?php foreach ($kategori as $k): ?>
-                    <option value="<?= esc($k['nama_kategori']) ?>"
-                        <?= ($filters['kategori'] == $k['nama_kategori']) ? 'selected' : '' ?>>
+                    <option value="<?= esc($k['nama_kategori']) ?>">
                         <?= esc($k['nama_kategori']) ?>
                     </option>
                 <?php endforeach; ?>
@@ -390,9 +338,9 @@
             <label for="filterStatus" class="form-label">Status</label>
             <select id="filterStatus" name="status" class="form-select">
                 <option value="">-- Semua --</option>
-                <option value="Aman"           <?= ($filters['status'] == 'Aman')           ? 'selected' : '' ?>>Aman</option>
-                <option value="Hampir Expired" <?= ($filters['status'] == 'Hampir Expired') ? 'selected' : '' ?>>Hampir Expired</option>
-                <option value="Expired"        <?= ($filters['status'] == 'Expired')        ? 'selected' : '' ?>>Expired</option>
+                <option value="Aman">Aman</option>
+                <option value="Hampir Expired">Hampir Expired</option>
+                <option value="Expired">Expired</option>
             </select>
         </div>
         <div class="col-md-2">
@@ -400,9 +348,7 @@
                 <button type="submit" class="dm-btn-filter flex-fill">
                     <i class="fa-solid fa-filter"></i> Terapkan
                 </button>
-                <?php if (!empty($filters['kategori']) || !empty($filters['status']) || !empty($filters['search']) || !empty($filters['donatur'])): ?>
-                    <a href="<?= site_url('transaksi/stok-gudang') ?>" class="dm-btn-reset">Reset</a>
-                <?php endif; ?>
+                <button type="button" id="btnResetFilter" class="dm-btn-reset">Reset</button>
             </div>
         </div>
     </form>
@@ -410,8 +356,7 @@
 
 <!-- ── Data Card ── -->
 <div class="dm-card">
-    <div class="table-responsive">
-        <table class="table mb-0" id="tabelStokGudang">
+    <table class="table mb-0" id="tabelStokGudang" style="width:100%;">
             <thead>
                 <tr>
                     <th class="text-center" style="width:40px;">No</th>
@@ -429,102 +374,9 @@
                 </tr>
             </thead>
             <tbody>
-                <?php $no = 1; foreach ($stokGudang as $stok) : ?>
-                    <?php
-                        $bisaDipecah    = (int) $stok['bisa_dipecah'];
-                        $beratPerSatuan = (float) $stok['berat_per_satuan'];
-
-                        if ($bisaDipecah === 1) {
-                            $totalBerat  = (float) $stok['stok_saat_ini'];
-                            $kemasanAwal = !empty($stok['jumlah_ctn']) ? number_format($stok['jumlah_ctn'], 0, ',', '.') : '-';
-                            $stokSaatIni = number_format($stok['stok_saat_ini'], 2, ',', '.');
-                            $satuanStok  = 'Kg';
-                        } else {
-                            $beratKg = $stok['stok_saat_ini'] * $beratPerSatuan;
-                            if (strtolower($stok['satuan_berat']) === 'gram') $beratKg /= 1000;
-                            $totalBerat  = $beratKg;
-                            $kemasanAwal = !empty($stok['jumlah_ctn']) ? number_format($stok['jumlah_ctn'], 0, ',', '.') : '-';
-                            $stokSaatIni = number_format($stok['stok_saat_ini'], 0, ',', '.');
-                            $satuanStok  = esc($stok['satuan']);
-                        }
-
-                        $pctStok  = null;
-                        $pctClass = 'green';
-                        if (!empty($stok['jumlah_ctn']) && $beratPerSatuan > 0) {
-                            $beratAwalKg = $stok['jumlah_ctn'] * $beratPerSatuan;
-                            if (strtolower($stok['satuan_berat']) === 'gram') $beratAwalKg /= 1000;
-                            if ($beratAwalKg > 0) {
-                                $pctStok = max(0, min(100, ($totalBerat / $beratAwalKg) * 100));
-                                if ($pctStok < 30) $pctClass = 'red';
-                                elseif ($pctStok < 70) $pctClass = 'amber';
-                            }
-                        }
-
-                        $expiredHtml = '-';
-                        if ($stok['tanggal_kedaluwarsa']) {
-                            $tglFormatted = date('d M Y', strtotime($stok['tanggal_kedaluwarsa']));
-                            $diffDays     = floor((strtotime($stok['tanggal_kedaluwarsa']) - strtotime(date('Y-m-d'))) / 86400);
-                            if ($diffDays < 0)       $expiredHtml = '<span class="wh-expired-over">Expired</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
-                            elseif ($diffDays === 0) $expiredHtml = '<span class="wh-expired-soon">Hari Ini</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
-                            elseif ($diffDays === 1) $expiredHtml = '<span class="wh-expired-soon">Besok</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
-                            elseif ($diffDays <= 7)  $expiredHtml = '<span class="wh-expired-soon">' . $diffDays . ' Hari Lagi</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
-                            else                     $expiredHtml = '<span class="wh-expired-ok">' . $tglFormatted . '</span>';
-                        }
-
-                        $badgeClass = 'default'; $badgeIcon = 'fa-circle';
-                        if ($stok['status'] == 'Aman')               { $badgeClass = 'aman';    $badgeIcon = 'fa-circle-check'; }
-                        elseif ($stok['status'] == 'Hampir Expired') { $badgeClass = 'hampir';  $badgeIcon = 'fa-triangle-exclamation'; }
-                        elseif ($stok['status'] == 'Expired')        { $badgeClass = 'expired'; $badgeIcon = 'fa-ban'; }
-                    ?>
-                    <tr>
-                        <td class="text-center text-secondary"><?= $no++ ?></td>
-                        <td class="text-center">
-                            <span class="wh-badge <?= $badgeClass ?>">
-                                <i class="fa-solid <?= $badgeIcon ?>"></i><?= esc($stok['status']) ?>
-                            </span>
-                        </td>
-                        <td style="color:#475569;"><?= esc($stok['donatur'] ?? '-') ?></td>
-                        <td style="color:#475569;"><?= esc($stok['kategori']) ?></td>
-                        <td class="text-center"><?= $expiredHtml ?></td>
-                        <td><span class="fw-semibold" style="color:#0f172a;"><?= esc($stok['nama_barang']) ?></span></td>
-                        <td class="text-center" style="color:#475569;"><?= esc($stok['satuan']) ?></td>
-                        <td class="text-end" style="color:#475569;">
-                            <?= $beratPerSatuan > 0 ? number_format($beratPerSatuan, 2, ',', '.') . ' ' . esc($stok['satuan_berat']) : '-' ?>
-                        </td>
-                        <td class="text-center" style="color:#475569;"><?= $kemasanAwal ?></td>
-                        <td>
-                            <div class="wh-stock-wrap">
-                                <div class="wh-stock-value"><?= $stokSaatIni ?> <?= $satuanStok ?></div>
-                                <div style="font-size:11px;color:#6b7280;"><?= $totalBerat > 0 ? format_berat($totalBerat, 'Kg') : '-' ?></div>
-                                <?php if ($pctStok !== null): ?>
-                                    <div class="wh-progress <?= $pctClass ?>">
-                                        <span style="width:<?= round($pctStok) ?>%;"></span>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </td>
-                        <td><small style="color:#6b7280;"><?= esc($stok['catatan'] ?? '-') ?></small></td>
-                        <td class="text-center">
-                            <div class="dm-action-group">
-                                <a href="<?= site_url('transaksi/stok-gudang/detail/' . $stok['id_barang']) ?>"
-                                   class="dm-btn-action view" title="Lihat Detail">
-                                    <i class="fa-solid fa-list"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
+                <!-- DataTables will populate this tbody via AJAX -->
             </tbody>
-        </table>
-
-        <?php if (empty($stokGudang)): ?>
-            <div class="dm-empty">
-                <i class="fa-solid fa-box-open"></i>
-                <p>Belum ada stok tersedia.</p>
-                <small>Tambahkan barang untuk mulai mengelola inventaris gudang.</small>
-            </div>
-        <?php endif; ?>
-    </div>
+    </table>
 </div>
 
 </div><!-- /.dm-page -->
@@ -533,17 +385,64 @@
 
 <?= $this->section('scripts') ?>
 <script>
+var csrfName = '<?= csrf_token() ?>';
+var csrfHash = '<?= csrf_hash() ?>';
+
 $(document).ready(function () {
-    $('#tabelStokGudang').DataTable({
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
+    var table = $('#tabelStokGudang').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "<?= site_url('transaksi/stok-gudang/ajaxData') ?>",
+            type: "POST",
+            data: function (d) {
+                d[csrfName] = csrfHash;
+                d.kategori  = $('#filterKategori').val();
+                d.status    = $('#filterStatus').val();
+                d.donatur   = $('#filterDonatur').val();
+                // Override default search with our own custom search input
+                d.search.value = $('#filterSearch').val();
+            }
         },
-        order: [],
+        drawCallback: function (settings) {
+            var response = settings.json;
+            if (response && response[csrfName]) {
+                csrfHash = response[csrfName];
+            }
+        },
+        language: {
+            emptyTable: "Tidak ada data",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered: "(disaring dari _MAX_ total data)",
+            lengthMenu: "Tampilkan _MENU_ data",
+            loadingRecords: "Memuat...",
+            processing: "Memproses...",
+            search: "Cari:",
+            zeroRecords: "Tidak ditemukan data yang sesuai",
+            paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+        },
+        order: [[4, 'asc']], // Default order Kedaluwarsa ASC
         autoWidth: false,
         columnDefs: [
-            { orderable: false, targets: [11] }
+            { orderable: false, targets: [0, 11] },
+            { className: "text-center", targets: [0, 1, 4, 6, 8, 11] },
+            { className: "text-end", targets: [7] }
         ],
-        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"lf>rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+        // Hide default DataTables search box since we use custom one
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"l><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+    });
+
+    // Handle Custom Filters Form Submission
+    $('#formFilterStok').on('submit', function(e) {
+        e.preventDefault();
+        table.ajax.reload();
+    });
+
+    // Reset Filters
+    $('#btnResetFilter').on('click', function() {
+        $('#formFilterStok')[0].reset();
+        table.ajax.reload();
     });
 });
 </script>

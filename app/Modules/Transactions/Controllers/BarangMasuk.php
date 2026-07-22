@@ -24,33 +24,8 @@ class BarangMasuk extends BaseController
      */
     public function index()
     {
-        $barangMasuk = $this->barangMasukModel
-            ->select('barang_masuk.id, barang_masuk.nomor_transaksi, barang_masuk.tanggal_masuk, donatur.nama_donatur, users.username as petugas')
-            ->join('donatur', 'donatur.id = barang_masuk.id_donatur')
-            ->join('users', 'users.id = barang_masuk.id_user')
-            ->orderBy('barang_masuk.id', 'DESC')
-            ->findAll();
-
-        $bmIds = array_column($barangMasuk, 'id');
-        $batchStats = [];
-        if (!empty($bmIds)) {
-            $stats = $this->batchModel
-                ->select('id_barang_masuk, COUNT(id) as total_item, SUM(IF(stok_saat_ini < jumlah_awal, 1, 0)) as total_terpakai')
-                ->whereIn('id_barang_masuk', $bmIds)
-                ->groupBy('id_barang_masuk')
-                ->findAll();
-            foreach ($stats as $stat) {
-                $batchStats[$stat['id_barang_masuk']] = $stat;
-            }
-        }
-        foreach ($barangMasuk as &$bm) {
-            $stat = $batchStats[$bm['id']] ?? ['total_item' => 0, 'total_terpakai' => 0];
-            $bm['jumlah_item'] = $stat['total_item'];
-            $bm['is_used'] = ($stat['total_terpakai'] > 0);
-        }
         $data = [
-            'title'       => 'Transaksi Donasi Masuk',
-            'barangMasuk' => $barangMasuk,
+            'title' => 'Transaksi Donasi Masuk',
         ];
         return view('App\Modules\Transactions\Views\barang_masuk\index', $data);
     }
@@ -171,7 +146,16 @@ class BarangMasuk extends BaseController
         }
         $namaBarangUnik      = array_unique(array_column($cleanItems, 'nama_barang'));
         $namaBarangUnikLower = array_map('strtolower', $namaBarangUnik);
-        $barangList = $barangModel->select('id, nama_barang, bisa_dipecah, satuan')->whereIn('LOWER(nama_barang)', $namaBarangUnikLower)->findAll();
+        $barangList = [];
+        if (!empty($namaBarangUnikLower)) {
+            $escapedNames = array_map(function($val) use ($db) {
+                return $db->escape($val);
+            }, $namaBarangUnikLower);
+            $namesString = implode(',', $escapedNames);
+            $barangList = $barangModel->select('id, nama_barang, bisa_dipecah, satuan')
+                ->where("LOWER(nama_barang) IN ($namesString)")
+                ->findAll();
+        }
         $barangMap = [];
         foreach ($barangList as $b) {
             $key = strtolower($b['nama_barang']) . '_' . (int)$b['bisa_dipecah'];
@@ -230,11 +214,11 @@ class BarangMasuk extends BaseController
                 }
                 $jumlahAwal  = $totalKg;
                 $stokSaatIni = $totalKg;
-                $jumlahCtn   = $item['jumlah_ctn'] !== '' ? (int)$item['jumlah_ctn'] : null;
+                $jumlahCtn   = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
             } else {
                 $jumlahAwal  = $item['jumlah'];
                 $stokSaatIni = $item['jumlah'];
-                $jumlahCtn   = $item['jumlah_ctn'] !== '' ? (int)$item['jumlah_ctn'] : null;
+                $jumlahCtn   = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
             }
             $batchInsertData[] = [
                 'id_barang_masuk'     => $idBarangMasuk,
@@ -248,7 +232,7 @@ class BarangMasuk extends BaseController
                 'stok_saat_ini'       => $stokSaatIni,
                 'jumlah_ctn'          => $jumlahCtn,
                 // FIX: simpan 'Repack' bukan 'Kg'
-                'satuan'              => ($bisaDipecah === 1) ? 'Repack' : $item['satuan'],
+                'satuan'              => $item['satuan'],
                 'berat_per_satuan'    => $item['berat_per_satuan'],
                 'satuan_berat'        => $item['satuan_berat'],
                 'status'              => 'Aktif',
@@ -282,14 +266,14 @@ class BarangMasuk extends BaseController
     {
         $barangMasuk = $this->barangMasukModel->find($id);
         if (!$barangMasuk) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
         $batchTerpakai = $this->batchModel
             ->where('id_barang_masuk', $id)
             ->where('stok_saat_ini < jumlah_awal')
             ->countAllResults();
         if ($batchTerpakai > 0) {
-            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak dapat diubah karena sebagian atau seluruh barang dari donasi ini sudah digunakan pada proses Penyaluran Barang.');
+            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak dapat diubah karena sebagian atau seluruh stok dari donasi ini sudah digunakan pada proses Penyaluran Barang atau Penyesuaian Stok.');
         }
         $batches = $this->batchModel
             ->select('batch.*, COALESCE(batch.nama_barang, barang.nama_barang) AS nama_barang, COALESCE(batch.satuan, barang.satuan) AS satuan, COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) AS berat_per_satuan, COALESCE(batch.satuan_berat, barang.satuan_berat) AS satuan_berat')
@@ -315,14 +299,14 @@ class BarangMasuk extends BaseController
     {
         $barangMasuk = $this->barangMasukModel->find($id);
         if (!$barangMasuk) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
         $batchTerpakai = $this->batchModel
             ->where('id_barang_masuk', $id)
             ->where('stok_saat_ini < jumlah_awal')
             ->countAllResults();
         if ($batchTerpakai > 0) {
-            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak dapat diubah karena sebagian atau seluruh barang dari donasi ini sudah digunakan pada proses Penyaluran Barang.');
+            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak dapat diubah karena sebagian atau seluruh stok dari donasi ini sudah digunakan pada proses Penyaluran Barang atau Penyesuaian Stok.');
         }
         $rules = [
             'tanggal_masuk' => 'required|valid_date',
@@ -386,7 +370,7 @@ class BarangMasuk extends BaseController
             if ($tanggalKedaluwarsa <= $tanggalMasuk) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Tanggal Kedaluwarsa harus lebih besar dari Tanggal Masuk."]);
             }
-            if ((int) ($item['bisa_dipecah'] ?? 0) === 1 && strtolower($satuan) !== 'karung') {
+            if ((int) ($item['bisa_dipecah'] ?? 0) === 1 && !in_array(strtolower($satuan), ['karung', 'repack'])) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Repack (Bisa Dipecah) hanya berlaku untuk kemasan Karung."]);
             }
             $idBatch = trim($item['id'] ?? '');
@@ -404,7 +388,7 @@ class BarangMasuk extends BaseController
             ];
         }
         $db = \Config\Database::connect();
-        $db->transStart();
+        $db->transBegin();
         $this->barangMasukModel->update($id, [
             'id_donatur'    => $this->request->getPost('id_donatur'),
             'tanggal_masuk' => $tanggalMasuk,
@@ -423,7 +407,7 @@ class BarangMasuk extends BaseController
             $eb = $existingBatchMap[$dbId];
             if ($eb['stok_saat_ini'] < $eb['jumlah_awal']) {
                 $db->transRollback();
-                return redirect()->back()->withInput()->with('errors', ['items' => "Barang '{$eb['nama_barang']}' tidak dapat dihapus karena stoknya sudah digunakan pada proses Penyaluran."]);
+                return redirect()->back()->withInput()->with('errors', ['items' => "Barang '{$eb['nama_barang']}' tidak dapat dihapus karena stoknya sudah digunakan pada proses Penyaluran atau Penyesuaian Stok."]);
             }
             $this->batchModel->delete($dbId);
         }
@@ -434,7 +418,16 @@ class BarangMasuk extends BaseController
         }
         $namaBarangUnik      = array_unique(array_column($cleanItems, 'nama_barang'));
         $namaBarangUnikLower = array_map('strtolower', $namaBarangUnik);
-        $barangList = $barangModel->select('id, nama_barang, bisa_dipecah, satuan')->whereIn('LOWER(nama_barang)', $namaBarangUnikLower)->findAll();
+        $barangList = [];
+        if (!empty($namaBarangUnikLower)) {
+            $escapedNames = array_map(function($val) use ($db) {
+                return $db->escape($val);
+            }, $namaBarangUnikLower);
+            $namesString = implode(',', $escapedNames);
+            $barangList = $barangModel->select('id, nama_barang, bisa_dipecah, satuan')
+                ->where("LOWER(nama_barang) IN ($namesString)")
+                ->findAll();
+        }
         $barangMap  = [];
         foreach ($barangList as $b) {
             $key = strtolower($b['nama_barang']) . '_' . (int)$b['bisa_dipecah'];
@@ -494,10 +487,10 @@ class BarangMasuk extends BaseController
                         } else {
                             $newQty = ($satuanB === 'gram') ? (($qty * $berat) / 1000) : ($qty * $berat);
                         }
-                        $jumlahCtn = $item['jumlah_ctn'] !== '' ? (int)$item['jumlah_ctn'] : null;
+                        $jumlahCtn = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                     } else {
                         $newQty    = $item['jumlah'];
-                        $jumlahCtn = $item['jumlah_ctn'] !== '' ? (int)$item['jumlah_ctn'] : null;
+                        $jumlahCtn = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                     }
                     $this->batchModel->update($eb['id'], [
                         'id_barang'           => $idBarang,
@@ -508,7 +501,7 @@ class BarangMasuk extends BaseController
                         'jumlah_awal'         => $newQty,
                         'stok_saat_ini'       => $newQty,
                         'jumlah_ctn'          => $jumlahCtn,
-                        'satuan'              => ($bisaDipecah === 1) ? 'Repack' : $item['satuan'],
+                        'satuan'              => $item['satuan'],
                         'berat_per_satuan'    => $item['berat_per_satuan'],
                         'satuan_berat'        => $item['satuan_berat'],
                         'bisa_dipecah'        => $bisaDipecah,
@@ -523,10 +516,10 @@ class BarangMasuk extends BaseController
                         } else {
                             $submittedQty = ($satuanB === 'gram') ? (($qty * $berat) / 1000) : ($qty * $berat);
                         }
-                        $jumlahCtn = $item['jumlah_ctn'] !== '' ? (int)$item['jumlah_ctn'] : null;
+                        $jumlahCtn = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                     } else {
                         $submittedQty = $item['jumlah'];
-                        $jumlahCtn    = $item['jumlah_ctn'] !== '' ? (int)$item['jumlah_ctn'] : null;
+                        $jumlahCtn    = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                     }
                     $delta    = $submittedQty - $eb['jumlah_awal'];
                     $stokBaru = $eb['stok_saat_ini'] + $delta;
@@ -542,7 +535,7 @@ class BarangMasuk extends BaseController
                         'jumlah_awal'         => $submittedQty,
                         'stok_saat_ini'       => $stokBaru,
                         'jumlah_ctn'          => $jumlahCtn,
-                        'satuan'              => ($bisaDipecah === 1) ? 'Repack' : $item['satuan'],
+                        'satuan'              => $item['satuan'],
                         'berat_per_satuan'    => $item['berat_per_satuan'],
                         'satuan_berat'        => $item['satuan_berat'],
                         'bisa_dipecah'        => $bisaDipecah,
@@ -560,10 +553,10 @@ class BarangMasuk extends BaseController
                     } else {
                         $newQty = ($satuanB === 'gram') ? (($qty * $berat) / 1000) : ($qty * $berat);
                     }
-                    $jumlahCtn = $item['jumlah_ctn'] !== '' ? (int)$item['jumlah_ctn'] : null;
+                    $jumlahCtn = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                 } else {
                     $newQty    = $item['jumlah'];
-                    $jumlahCtn = $item['jumlah_ctn'] !== '' ? (int)$item['jumlah_ctn'] : null;
+                    $jumlahCtn = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                 }
                 $this->batchModel->insert([
                     'id_barang_masuk'     => $id,
@@ -576,7 +569,7 @@ class BarangMasuk extends BaseController
                     'jumlah_awal'         => $newQty,
                     'stok_saat_ini'       => $newQty,
                     'jumlah_ctn'          => $jumlahCtn,
-                    'satuan'              => ($bisaDipecah === 1) ? 'Repack' : $item['satuan'],
+                    'satuan'              => $item['satuan'],
                     'berat_per_satuan'    => $item['berat_per_satuan'],
                     'satuan_berat'        => $item['satuan_berat'],
                     'status'              => 'Aktif',
@@ -584,10 +577,11 @@ class BarangMasuk extends BaseController
                 ]);
             }
         }
-        $db->transComplete();
         if ($db->transStatus() === false) {
+            $db->transRollback();
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
         }
+        $db->transCommit();
         $id_donatur = $this->request->getPost('id_donatur');
         $donaturModel = new DonaturModel();
         $donatur = $donaturModel->find($id_donatur);
@@ -612,7 +606,7 @@ class BarangMasuk extends BaseController
             ->join('users', 'users.id = barang_masuk.id_user')
             ->find($id);
         if (!$barangMasuk) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
         $batches = $this->batchModel
             ->select('batch.*, COALESCE(batch.nama_barang, barang.nama_barang) AS nama_barang, COALESCE(batch.satuan, barang.satuan) AS satuan, COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) AS berat_per_satuan, COALESCE(batch.satuan_berat, barang.satuan_berat) AS satuan_berat')
@@ -621,8 +615,8 @@ class BarangMasuk extends BaseController
             ->findAll();
 
         foreach ($batches as &$b) {
-            if ((int)($b['bisa_dipecah'] ?? 0) === 1 && strtolower($b['satuan']) === 'kg') {
-                $b['satuan'] = 'Repack';
+            if ((int)($b['bisa_dipecah'] ?? 0) === 1) {
+                $b['satuan'] = $b['satuan'] . ' (Repack)';
             }
         }
         unset($b);
@@ -644,14 +638,14 @@ class BarangMasuk extends BaseController
         }
         $barangMasuk = $this->barangMasukModel->find($id);
         if (!$barangMasuk) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Transaksi tidak ditemukan.');
+            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
         $batchTerpakai = $this->batchModel
             ->where('id_barang_masuk', $id)
             ->where('stok_saat_ini < jumlah_awal')
             ->countAllResults();
         if ($batchTerpakai > 0) {
-            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi Donasi Masuk tidak dapat dihapus karena sebagian atau seluruh stoknya sudah digunakan pada transaksi Barang Keluar.');
+            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi Donasi Masuk tidak dapat dihapus karena sebagian atau seluruh stoknya sudah digunakan pada transaksi Barang Keluar atau Penyesuaian Stok.');
         }
         $db = \Config\Database::connect();
         $logData = [
@@ -669,7 +663,7 @@ class BarangMasuk extends BaseController
         $logData['affected_batch'] = $affectedBatch;
         $logData['affected_bm']    = $affectedBm;
         $logData['trans_status']   = $db->transStatus();
-        $logData['batch_sesudah']  = $db->query("SELECT * FROM batch WHERE id_barang_masuk = {$id}")->getResultArray();
+        $logData['batch_sesudah']  = $db->query("SELECT * FROM batch WHERE id_barang_masuk = ?", [$id])->getResultArray();
         $compiledQuery = $db->table('batch')
             ->select('batch.id, batch.id_barang, batch.stok_saat_ini, barang.nama_barang')
             ->join('barang', 'barang.id = batch.id_barang')
@@ -678,13 +672,14 @@ class BarangMasuk extends BaseController
         $monitoringData = $db->query($compiledQuery)->getResultArray();
         $logData['monitoring_sesudah'] = $monitoringData;
         file_put_contents(WRITEPATH . 'logs/delete_ui_log.json', json_encode($logData, JSON_PRETTY_PRINT));
-        if ($db->transStatus() !== false) {
-            \App\Libraries\ActivityLogger::log(
-                'Hapus Donasi',
-                'Donasi Masuk',
-                "Menghapus Donasi Masuk\nNo. {$barangMasuk['nomor_transaksi']}"
-            );
+        if ($db->transStatus() === false) {
+            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Gagal menghapus transaksi. Silakan coba lagi.');
         }
+        \App\Libraries\ActivityLogger::log(
+            'Hapus Donasi',
+            'Donasi Masuk',
+            "Menghapus Donasi Masuk\nNo. {$barangMasuk['nomor_transaksi']}"
+        );
         return redirect()->to('/transaksi/barang-masuk')->with('success', 'Transaksi berhasil dihapus.');
     }
     /**
@@ -737,4 +732,69 @@ class BarangMasuk extends BaseController
         }
         return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
+
+    /**
+     * AJAX endpoint untuk DataTables server-side
+     */
+    public function ajaxData()
+    {
+        if (!$this->request->isAJAX()) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $postData = $this->request->getPost();
+        $list     = $this->barangMasukModel->getDatatables($postData);
+        $data     = [];
+        $no       = $postData['start'];
+
+        foreach ($list as $bm) {
+            $no++;
+            $row = [];
+
+            // 0: No
+            $row[] = '<div class="text-center text-secondary">' . $no . '</div>';
+            
+            // 1: Nomor Transaksi
+            $row[] = '<span class="badge-notrx">' . esc($bm['nomor_transaksi']) . '</span>';
+            
+            // 2: Donatur
+            $row[] = '<span class="fw-semibold" style="color:#0f172a;">' . esc($bm['nama_donatur']) . '</span>';
+            
+            // 3: Item
+            $row[] = '<div class="text-center"><span class="badge-item">' . esc($bm['jumlah_item']) . ' Item</span></div>';
+            
+            // 4: Tanggal
+            $row[] = '<span style="color:#475569;">' . date('d M Y', strtotime($bm['tanggal_masuk'])) . '</span>';
+            
+            // 5: Petugas
+            $row[] = '<span style="color:#475569;">' . esc($bm['petugas']) . '</span>';
+            
+            // 6: Aksi
+            $aksi = '<div class="dm-action-group">
+                        <a href="' . site_url('transaksi/barang-masuk/detail/' . $bm['id']) . '" class="dm-btn-action view" title="Lihat Detail"><i class="fa-solid fa-eye"></i></a>';
+            
+            if ($bm['is_used']) {
+                $aksi .= '<button type="button" class="dm-btn-action lock" disabled title="Sudah Digunakan"><i class="fa-solid fa-lock"></i></button>';
+            } else {
+                $aksi .= '<a href="' . site_url('transaksi/barang-masuk/edit/' . $bm['id']) . '" class="dm-btn-action edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                          <a href="' . site_url('transaksi/barang-masuk/delete/' . $bm['id']) . '" class="dm-btn-action del" title="Hapus" onclick="return confirm(\'Yakin ingin menghapus transaksi ini beserta semua batch-nya?\')"><i class="fa-solid fa-trash"></i></a>';
+            }
+            $aksi .= '</div>';
+            
+            $row[] = $aksi;
+            $data[] = $row;
+        }
+
+        $output = [
+            "draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            "recordsTotal"    => $this->barangMasukModel->countAllData(),
+            "recordsFiltered" => $this->barangMasukModel->countFiltered($postData),
+            "data"            => $data,
+            csrf_token()      => csrf_hash() // Include new CSRF token for next request
+        ];
+
+        return $this->response->setJSON($output);
+    }
+    
 }
+
