@@ -29,7 +29,7 @@
         padding: 20px 24px 40px 24px;
     }
 
-    /* Header */
+    /* ── Header ── */
     .wh-header {
         background: var(--wh-card);
         border: 1px solid var(--wh-border);
@@ -56,7 +56,7 @@
         font-size: 0.9rem; font-weight: 600; color: var(--wh-text); text-align: right;
     }
 
-    /* Filter */
+    /* ── Filter ── */
     .wh-filter-card {
         background: var(--wh-card); border: 1px solid var(--wh-border);
         border-radius: 16px; padding: 20px; margin-bottom: 16px;
@@ -74,11 +74,14 @@
         border-color: var(--wh-primary);
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
+
+    /* ── Buttons ── */
     .wh-btn-primary {
         background: var(--wh-primary); border: 1px solid var(--wh-primary); color: #fff;
         height: 44px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
         padding: 0 18px; display: inline-flex; align-items: center; gap: 6px;
-        transition: transform 120ms ease, background 120ms ease; text-decoration: none;
+        transition: transform 120ms ease, background 120ms ease;
+        text-decoration: none; cursor: pointer;
     }
     .wh-btn-primary:hover { background: #1D4ED8; color: #fff; }
     .wh-btn-primary:active { transform: scale(0.98); }
@@ -109,7 +112,7 @@
         border-radius: 12px; padding: 16px; margin-top: 4px;
     }
 
-    /* Toolbar */
+    /* ── Toolbar ── */
     .wh-toolbar {
         display: flex; justify-content: space-between; align-items: center;
         flex-wrap: wrap; gap: 12px; margin-bottom: 14px;
@@ -125,7 +128,7 @@
     .wh-tb-btn:hover { background: var(--wh-dark-soft); color: var(--wh-text); }
     .wh-tb-btn:active { transform: scale(0.98); }
 
-    /* Table */
+    /* ── Table ── */
     .wh-table-card {
         background: var(--wh-card); border: 1px solid var(--wh-border);
         border-radius: 16px; padding: 8px 8px 4px 8px; overflow: hidden;
@@ -148,7 +151,7 @@
     #tabelLaporanDonasi tbody tr { transition: background 120ms ease; }
     #tabelLaporanDonasi tbody tr:hover { background: #F3F4F6; }
 
-    /* Summary Cards */
+    /* ── Summary Cards ── */
     .wh-summary-grid {
         display: grid; grid-template-columns: repeat(3, 1fr);
         gap: 16px; margin-top: 20px;
@@ -178,7 +181,7 @@
         font-size: 0.78rem; color: var(--wh-text-soft); font-weight: 500; margin-top: 2px;
     }
 
-    /* DataTables overrides */
+    /* ── DataTables overrides ── */
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter,
     .dataTables_wrapper .dataTables_info,
@@ -206,10 +209,19 @@
         background: var(--wh-dark-soft) !important; color: var(--wh-text) !important;
     }
 
+    /* ── Mobile ── */
     @media (max-width: 768px) {
-        .wh-summary-grid { grid-template-columns: 1fr; }
-        .wh-header { flex-direction: column; align-items: flex-start; }
+        .wh-page { padding: 12px 12px 40px 12px; }
+        .wh-header { flex-direction: column; align-items: flex-start; padding: 20px; }
+        .wh-header h1 { font-size: 1.1rem; }
         .wh-header .wh-updated .val { text-align: left; }
+        .wh-toolbar { flex-direction: column; align-items: flex-start; }
+        .wh-summary-grid { grid-template-columns: 1fr; }
+        .filter-actions { flex-direction: column; width: 100%; }
+        .filter-actions > button,
+        .filter-actions > a { width: 100%; justify-content: center; }
+        .filter-export { margin-left: 0 !important; width: 100%; flex-direction: column; }
+        .filter-export > a { width: 100%; justify-content: center; }
     }
 </style>
 
@@ -230,7 +242,7 @@
     <!-- Filter Panel -->
     <div class="wh-filter-card">
         <form action="" method="GET" class="row g-3 align-items-end">
-            <div class="col-md-2">
+            <div class="col-6 col-md-2">
                 <label for="filterBulan" class="form-label">Bulan</label>
                 <select id="filterBulan" name="bulan" class="form-select">
                     <?php foreach ($bulanList as $num => $name): ?>
@@ -238,7 +250,7 @@
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-6 col-md-2">
                 <label for="filterTahun" class="form-label">Tahun</label>
                 <select id="filterTahun" name="tahun" class="form-select">
                     <?php foreach ($tahunList as $tahun): ?>
@@ -246,55 +258,76 @@
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-6 col-md-2">
                 <label for="filterDonatur" class="form-label">Donatur</label>
-                <input type="text" id="filterDonatur" name="donatur" class="form-control" placeholder="Cari donatur..." value="<?= esc($filters['donatur']) ?>">
+                <input type="text" id="filterDonatur" name="donatur" class="form-control"
+                       placeholder="Cari donatur..." value="<?= esc($filters['donatur']) ?>">
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-md-3">
                 <label for="filterSearch" class="form-label">Nama Barang</label>
-                <input type="text" id="filterSearch" name="search" class="form-control" placeholder="Cari nama barang..." value="<?= esc($filters['search']) ?>">
+                <input type="text" id="filterSearch" name="search" class="form-control"
+                       placeholder="Cari nama barang..." value="<?= esc($filters['search']) ?>">
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-md-3">
                 <label for="filterKategori" class="form-label">Kategori</label>
                 <select id="filterKategori" name="kategori" class="form-select">
                     <option value="">-- Semua --</option>
                     <?php foreach ($kategori as $k): ?>
-                        <option value="<?= esc($k['nama_kategori']) ?>" <?= ($filters['kategori'] == $k['nama_kategori']) ? 'selected' : '' ?>><?= esc($k['nama_kategori']) ?></option>
+                        <option value="<?= esc($k['nama_kategori']) ?>"
+                            <?= ($filters['kategori'] == $k['nama_kategori']) ? 'selected' : '' ?>>
+                            <?= esc($k['nama_kategori']) ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
             <!-- Filter Lanjutan -->
             <div class="col-12">
-                <button class="wh-advanced-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters"
-                    aria-expanded="<?= ($filters['use_custom_date']) ? 'true' : 'false' ?>">
+                <button class="wh-advanced-toggle" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#advancedFilters"
+                        aria-expanded="<?= ($filters['use_custom_date']) ? 'true' : 'false' ?>">
                     <i class="fa-solid fa-sliders"></i> Mode Custom (Filter Rentang Tanggal)
                 </button>
             </div>
             <div class="collapse <?= ($filters['use_custom_date']) ? 'show' : '' ?> col-12" id="advancedFilters">
                 <div class="wh-advanced-box">
-                    <p class="mb-3" style="font-size:0.8rem; color:var(--wh-text-soft);"><i class="fa-solid fa-circle-info me-1"></i> Jika tanggal awal dan akhir diisi, filter bulan dan tahun di atas akan diabaikan.</p>
+                    <p class="mb-3" style="font-size:0.8rem; color:var(--wh-text-soft);">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Jika tanggal awal dan akhir diisi, filter bulan dan tahun di atas akan diabaikan.
+                    </p>
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-6 col-md-3">
                             <label for="filterStartDate" class="form-label">Tanggal Awal</label>
-                            <input type="date" id="filterStartDate" name="start_date" class="form-control" value="<?= esc($filters['start_date']) ?>">
+                            <input type="date" id="filterStartDate" name="start_date" class="form-control"
+                                   value="<?= esc($filters['start_date']) ?>">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-md-3">
                             <label for="filterEndDate" class="form-label">Tanggal Akhir</label>
-                            <input type="date" id="filterEndDate" name="end_date" class="form-control" value="<?= esc($filters['end_date']) ?>">
+                            <input type="date" id="filterEndDate" name="end_date" class="form-control"
+                                   value="<?= esc($filters['end_date']) ?>">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12 d-flex gap-2 flex-wrap">
-                <button type="submit" class="wh-btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Terapkan Filter</button>
+            <div class="col-12 d-flex gap-2 flex-wrap filter-actions">
+                <button type="submit" class="wh-btn-primary">
+                    <i class="fa-solid fa-magnifying-glass"></i> Terapkan Filter
+                </button>
                 <?php if (!empty($filters['donatur']) || !empty($filters['search']) || !empty($filters['kategori']) || $filters['use_custom_date'] || $filters['bulan'] != date('m') || $filters['tahun'] != date('Y')): ?>
-                    <a href="<?= site_url('laporan/donasi') ?>" class="wh-btn-outline"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</a>
+                    <a href="<?= site_url('laporan/donasi') ?>" class="wh-btn-outline">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                    </a>
                 <?php endif; ?>
-                <div style="margin-left: auto; display: flex; gap: 8px;">
-                    <a href="<?= site_url('laporan/donasi/pdf') ?>?<?= http_build_query($filters) ?>" target="_blank" class="wh-tb-btn btn-export-loading" data-loading-text="Membuat PDF..."><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
-                    <a href="<?= site_url('laporan/donasi/excel') ?>?<?= http_build_query($filters) ?>" target="_blank" class="wh-btn-success btn-export-loading" data-loading-text="Membuat Excel..."><i class="fa-solid fa-file-excel"></i> Export Excel</a>
+                <div class="filter-export" style="margin-left: auto; display: flex; gap: 8px;">
+                    <a href="<?= site_url('laporan/donasi/pdf') ?>?<?= http_build_query($filters) ?>"
+                       target="_blank" class="wh-tb-btn btn-export-loading" data-loading-text="Membuat PDF...">
+                        <i class="fa-solid fa-file-pdf"></i> Export PDF
+                    </a>
+                    <a href="<?= site_url('laporan/donasi/excel') ?>?<?= http_build_query($filters) ?>"
+                       target="_blank" class="wh-btn-success btn-export-loading" data-loading-text="Membuat Excel...">
+                        <i class="fa-solid fa-file-excel"></i> Export Excel
+                    </a>
                 </div>
             </div>
         </form>
@@ -310,95 +343,107 @@
 
     <!-- Table -->
     <div class="wh-table-card">
-    <table class="table table-hover align-middle mb-0" id="tabelLaporanDonasi" style="width:100%;">
-                <thead>
+        <table class="table table-hover align-middle mb-0" id="tabelLaporanDonasi" style="width:100%;">
+            <thead>
+                <tr>
+                    <th width="30" class="text-center">No</th>
+                    <th class="text-center">Tanggal Masuk</th>
+                    <th class="text-center">Nomor Donasi</th>
+                    <th style="min-width:150px;">Donatur</th>
+                    <th style="min-width:150px;">Nama Barang</th>
+                    <th>Kategori</th>
+                    <th class="text-center">Jumlah</th>
+                    <th class="text-center">Satuan</th>
+                    <th class="text-center">CTN</th>
+                    <th class="text-end">Berat Bersih</th>
+                    <th class="text-end">Total Berat</th>
+                    <th class="text-center">Tgl Kedaluwarsa</th>
+                    <th style="min-width:150px;">Keterangan</th>
+                    <th>Petugas</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($laporan)): ?>
                     <tr>
-                        <th width="30" class="text-center">No</th>
-                        <th class="text-center">Tanggal Masuk</th>
-                        <th class="text-center">Nomor Donasi</th>
-                        <th style="min-width: 150px;">Donatur</th>
-                        <th style="min-width: 150px;">Nama Barang</th>
-                        <th>Kategori</th>
-                        <th class="text-center">Jumlah</th>
-                        <th class="text-center">Satuan</th>
-                        <th class="text-center">CTN</th>
-                        <th class="text-end">Berat Bersih</th>
-                        <th class="text-end">Total Berat</th>
-                        <th class="text-center">Tgl Kedaluwarsa</th>
-                        <th style="min-width: 150px;">Keterangan</th>
-                        <th>Petugas</th>
+                        <td colspan="14" style="text-align:center; padding: 60px 20px;">
+                            <i class="fa-solid fa-box-open" style="font-size: 2.5rem; color: var(--wh-border);"></i>
+                            <p style="margin-top: 14px; color: var(--wh-text); font-weight: 600;">Data tidak ditemukan.</p>
+                            <p style="color: var(--wh-text-soft); font-size: 0.85rem;">Coba ubah filter pencarian Anda.</p>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($laporan)): ?>
-                        <tr>
-                            <td colspan="14" style="text-align:center; padding: 60px 20px;">
-                                <i class="fa-solid fa-box-open" style="font-size: 2.5rem; color: var(--wh-border);"></i>
-                                <p style="margin-top: 14px; color: var(--wh-text); font-weight: 600;">Data tidak ditemukan.</p>
-                                <p style="color: var(--wh-text-soft); font-size: 0.85rem;">Coba ubah filter pencarian Anda.</p>
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php $no = 1; foreach ($laporan as $item) : ?>
-                            <?php
-                                $bisaDipecah    = (int) ($item['bisa_dipecah'] ?? 0);
-                                $beratPerSatuan = (float) $item['berat_per_satuan'];
-                                if ($bisaDipecah === 1) {
-                                    $totalBeratRow = (float) $item['jumlah'];
-                                    if (strtolower($item['satuan_berat']) === 'gram') {
-                                        $totalBeratRow *= 1000;
-                                    }
-                                } else {
-                                    $totalBeratRow  = $item['jumlah'] * $beratPerSatuan;
+                <?php else: ?>
+                    <?php $no = 1; foreach ($laporan as $item) : ?>
+                        <?php
+                            $bisaDipecah    = (int) ($item['bisa_dipecah'] ?? 0);
+                            $beratPerSatuan = (float) $item['berat_per_satuan'];
+                            if ($bisaDipecah === 1) {
+                                $totalBeratRow = (float) $item['jumlah'];
+                                if (strtolower($item['satuan_berat']) === 'gram') {
+                                    $totalBeratRow *= 1000;
                                 }
-                            ?>
-                            <tr>
-                                <td class="text-center"><?= $no++ ?></td>
-                                <td class="text-center" style="white-space:nowrap;">
-                                    <?= $item['tanggal_masuk'] ? date('d/m/Y', strtotime($item['tanggal_masuk'])) : '-' ?>
-                                </td>
-                                <td class="text-center" style="font-weight:500; white-space:nowrap;"><?= esc($item['nomor_transaksi']) ?></td>
-                                <td><?= esc($item['nama_donatur'] ?? '-') ?></td>
-                                <td><strong><?= esc($item['nama_barang']) ?></strong></td>
-                                <td><?= esc($item['kategori_batch']) ?></td>
-                                <td class="text-center" style="font-weight:700;"><?= number_format($item['jumlah'], 0, ',', '.') ?></td>
-                                <td class="text-center"><?= esc($item['satuan']) ?></td>
-                                <td class="text-center"><?= !empty($item['jumlah_ctn']) ? $item['jumlah_ctn'] : '-' ?></td>
-                                <td class="text-end"><?= $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-' ?></td>
-                                <td class="text-end" style="font-weight:500;"><?= $totalBeratRow > 0 ? format_berat($totalBeratRow, $item['satuan_berat']) : '-' ?></td>
-                                <td class="text-center" style="white-space:nowrap;">
-                                    <?= $item['tanggal_kedaluwarsa'] ? date('d/m/Y', strtotime($item['tanggal_kedaluwarsa'])) : '-' ?>
-                                </td>
-                                <td class="text-muted"><small><?= esc($item['keterangan'] ?? '-') ?></small></td>
-                                <td><?= esc($item['petugas'] ?? '-') ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                            } else {
+                                $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+                            }
+                        ?>
+                        <tr>
+                            <td class="text-center"><?= $no++ ?></td>
+                            <td class="text-center" style="white-space:nowrap;">
+                                <?= $item['tanggal_masuk'] ? date('d/m/Y', strtotime($item['tanggal_masuk'])) : '-' ?>
+                            </td>
+                            <td class="text-center" style="font-weight:500; white-space:nowrap;">
+                                <?= esc($item['nomor_transaksi']) ?>
+                            </td>
+                            <td><?= esc($item['nama_donatur'] ?? '-') ?></td>
+                            <td><strong><?= esc($item['nama_barang']) ?></strong></td>
+                            <td><?= esc($item['kategori_batch']) ?></td>
+                            <td class="text-center" style="font-weight:700;">
+                                <?= number_format($item['jumlah'], 0, ',', '.') ?>
+                            </td>
+                            <td class="text-center"><?= esc($item['satuan']) ?></td>
+                            <td class="text-center">
+                                <?= !empty($item['jumlah_ctn']) ? $item['jumlah_ctn'] : '-' ?>
+                            </td>
+                            <td class="text-end">
+                                <?= $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-' ?>
+                            </td>
+                            <td class="text-end" style="font-weight:500;">
+                                <?= $totalBeratRow > 0 ? format_berat($totalBeratRow, $item['satuan_berat']) : '-' ?>
+                            </td>
+                            <td class="text-center" style="white-space:nowrap;">
+                                <?= $item['tanggal_kedaluwarsa'] ? date('d/m/Y', strtotime($item['tanggal_kedaluwarsa'])) : '-' ?>
+                            </td>
+                            <td style="color:var(--wh-text-soft);">
+                                <small><?= esc($item['keterangan'] ?? '-') ?></small>
+                            </td>
+                            <td><?= esc($item['petugas'] ?? '-') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
 
-
-    <!-- Summary Cards -->
-    <div class="wh-summary-grid">
-        <div class="wh-summary-card">
-            <div class="wh-kpi-icon blue"><i class="fa-solid fa-hand-holding-heart"></i></div>
-            <div>
-                <div class="s-value"><?= number_format($summary['total_transaksi'], 0, ',', '.') ?></div>
-                <div class="s-label">Total Transaksi</div>
+        <!-- Summary Cards -->
+        <div class="wh-summary-grid">
+            <div class="wh-summary-card">
+                <div class="wh-kpi-icon blue"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                <div>
+                    <div class="s-value"><?= number_format($summary['total_transaksi'], 0, ',', '.') ?></div>
+                    <div class="s-label">Total Transaksi</div>
+                </div>
             </div>
-        </div>
-        <div class="wh-summary-card">
-            <div class="wh-kpi-icon green"><i class="fa-solid fa-boxes-stacked"></i></div>
-            <div>
-                <div class="s-value"><?= number_format($summary['total_barang'], 0, ',', '.') ?></div>
-                <div class="s-label">Total Barang</div>
+            <div class="wh-summary-card">
+                <div class="wh-kpi-icon green"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <div>
+                    <div class="s-value"><?= number_format($summary['total_barang'], 0, ',', '.') ?></div>
+                    <div class="s-label">Total Barang</div>
+                </div>
             </div>
-        </div>
-        <div class="wh-summary-card">
-            <div class="wh-kpi-icon teal"><i class="fa-solid fa-weight-hanging"></i></div>
-            <div>
-                <div class="s-value"><?= format_berat($summary['total_berat'], 'Kg') ?></div>
-                <div class="s-label">Total Berat</div>
+            <div class="wh-summary-card">
+                <div class="wh-kpi-icon teal"><i class="fa-solid fa-weight-hanging"></i></div>
+                <div>
+                    <div class="s-value"><?= format_berat($summary['total_berat'], 'Kg') ?></div>
+                    <div class="s-label">Total Berat</div>
+                </div>
             </div>
         </div>
     </div>
@@ -409,16 +454,13 @@
 
 <?= $this->section('scripts') ?>
 <script>
-$(document).ready(function() {
+$(document).ready(function () {
     $('#tabelLaporanDonasi').DataTable({
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
-        },
-        "order": [],
-        "columnDefs": [
-            { "orderable": false, "targets": [0] }
-        ],
+        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+        order: [],
+        columnDefs: [{ orderable: false, targets: [0] }],
         dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+        responsive: true,
     });
 });
 </script>

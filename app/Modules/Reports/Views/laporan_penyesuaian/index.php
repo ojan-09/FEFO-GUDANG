@@ -5,144 +5,348 @@
 <?php helper('format'); ?>
 
 <style>
-/* Styling based on other report pages */
-.rpt-page { font-size: 13px; max-width: 1500px; margin: 0 auto; padding: 14px 16px 30px; }
-.rpt-header { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; }
-.rpt-header h1 { font-size: 20px; font-weight: 700; margin: 0; color: #1e293b; }
-.rpt-header h1 i { color: #2563eb; margin-right: 8px; }
-.rpt-filter { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-.rpt-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-.rpt-table th { background: #f8fafc; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 14px; border-bottom: 2px solid #e2e8f0; border-top: 1px solid #e2e8f0; }
-.rpt-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
-.badge-jenis { font-size: 11.5px; padding: 4px 10px; border-radius: 6px; font-weight: 600; display: inline-block; white-space: nowrap; }
-.badge-jenis.rusak { background: #fee2e2; color: #dc2626; }
-.badge-jenis.hilang { background: #ffedd5; color: #ea580c; }
-.badge-jenis.kedaluwarsa { background: #f3f4f6; color: #4b5563; }
-.badge-jenis.positif { background: #dcfce7; color: #16a34a; }
-.badge-jenis.negatif { background: #fef08a; color: #a16207; }
-.badge-jenis.opname { background: #dbeafe; color: #2563eb; }
+    :root {
+        --wh-bg: #F8FAFC;
+        --wh-card: #FFFFFF;
+        --wh-border: #E5E7EB;
+        --wh-primary: #2563EB;
+        --wh-primary-soft: #EFF6FF;
+        --wh-success: #22C55E;
+        --wh-success-soft: #ECFDF3;
+        --wh-warning: #F59E0B;
+        --wh-warning-soft: #FFFBEB;
+        --wh-danger: #EF4444;
+        --wh-danger-soft: #FEF2F2;
+        --wh-dark-soft: #F3F4F6;
+        --wh-dark: #374151;
+        --wh-text: #111827;
+        --wh-text-soft: #6B7280;
+    }
 
-/* ── PAGINATION ── */
-.dataTables_wrapper .dataTables_paginate { margin-top: 10px; }
-.dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0 !important; border: none !important; background: transparent !important; margin: 0 1px !important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button .page-link { height: 32px !important; min-width: 32px; padding: 0 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; font-size: 12.5px; font-weight: 500; color: #334155 !important; background: #fff !important; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
-.dataTables_wrapper .dataTables_paginate .paginate_button.current .page-link, .dataTables_wrapper .dataTables_paginate .paginate_button.active .page-link { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link { background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link { opacity: .45; cursor: default; }
-.dataTables_wrapper .dataTables_info { font-size: 12px; color: #64748b; padding-top: 8px; }
-.dataTables_wrapper .row:last-child { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+    .wh-page {
+        background: var(--wh-bg);
+        margin: -1.5rem -1.5rem 0 -1.5rem;
+        padding: 20px 24px 40px 24px;
+    }
 
-/* ── RESPONSIVE MOBILE ── */
-@media (max-width: 768px) {
-    .rpt-page { padding: 4px; }
-    .rpt-header { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .rpt-filter form .col-md-6 { flex-direction: column; width: 100%; margin-top: 12px; }
-    .rpt-filter form .btn { width: 100%; justify-content: center; }
-    .dataTables_wrapper .row:last-child { flex-direction: column; gap: 10px; }
-    .dataTables_wrapper .dataTables_paginate { margin-top: 0; align-self: center; }
-}
+    /* ── Header ── */
+    .wh-header {
+        background: var(--wh-card);
+        border: 1px solid var(--wh-border);
+        border-radius: 18px;
+        padding: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    .wh-header h1 {
+        font-size: 1.35rem; font-weight: 700; color: var(--wh-text);
+        margin: 0 0 4px 0; display: flex; align-items: center; gap: 10px;
+    }
+    .wh-header h1 i { color: var(--wh-primary); }
+    .wh-header p { margin: 0; font-size: 0.85rem; color: var(--wh-text-soft); }
+    .wh-header .wh-updated .lbl {
+        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+        color: var(--wh-text-soft); font-weight: 600;
+    }
+    .wh-header .wh-updated .val {
+        font-size: 0.9rem; font-weight: 600; color: var(--wh-text); text-align: right;
+    }
+
+    /* ── Filter Card ── */
+    .wh-filter-card {
+        background: var(--wh-card);
+        border: 1px solid var(--wh-border);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+    .wh-filter-card .form-label {
+        font-size: 0.78rem; font-weight: 600; color: var(--wh-text); margin-bottom: 6px;
+    }
+    .wh-filter-card .form-control,
+    .wh-filter-card .form-select {
+        height: 44px; border-radius: 10px; border: 1px solid var(--wh-border);
+        font-size: 0.85rem; padding: 0.5rem 0.75rem;
+    }
+    .wh-filter-card .form-control:focus,
+    .wh-filter-card .form-select:focus {
+        border-color: var(--wh-primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    /* ── Buttons ── */
+    .wh-btn-primary {
+        background: var(--wh-primary); border: 1px solid var(--wh-primary); color: #fff;
+        height: 44px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+        padding: 0 18px; display: inline-flex; align-items: center; gap: 6px;
+        transition: transform 120ms ease, background 120ms ease; text-decoration: none;
+        cursor: pointer;
+    }
+    .wh-btn-primary:hover { background: #1D4ED8; color: #fff; }
+    .wh-btn-primary:active { transform: scale(0.98); }
+
+    .wh-btn-outline {
+        background: #fff; border: 1px solid var(--wh-border); color: var(--wh-text);
+        height: 44px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+        padding: 0 18px; display: inline-flex; align-items: center; gap: 6px;
+        transition: transform 120ms ease, background 120ms ease; text-decoration: none;
+    }
+    .wh-btn-outline:hover { background: var(--wh-dark-soft); color: var(--wh-text); }
+    .wh-btn-outline:active { transform: scale(0.98); }
+
+    .wh-btn-success {
+        background: #16A34A; border: 1px solid #16A34A; color: #fff;
+        height: 44px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+        padding: 0 18px; display: inline-flex; align-items: center; gap: 6px;
+        transition: transform 120ms ease, background 120ms ease; text-decoration: none;
+    }
+    .wh-btn-success:hover { background: #15803D; color: #fff; }
+    .wh-btn-success:active { transform: scale(0.98); }
+
+    .wh-tb-btn {
+        height: 40px; border-radius: 10px; border: 1px solid var(--wh-border);
+        background: #fff; color: var(--wh-text); font-size: 0.82rem; font-weight: 600;
+        padding: 0 14px; display: inline-flex; align-items: center; gap: 6px;
+        transition: transform 120ms ease, background 120ms ease; text-decoration: none;
+    }
+    .wh-tb-btn:hover { background: var(--wh-dark-soft); color: var(--wh-text); }
+    .wh-tb-btn:active { transform: scale(0.98); }
+
+    /* ── Toolbar ── */
+    .wh-toolbar {
+        display: flex; justify-content: space-between; align-items: center;
+        flex-wrap: wrap; gap: 12px; margin-bottom: 14px;
+    }
+    .wh-toolbar-count .num { font-size: 1.1rem; font-weight: 700; color: var(--wh-text); }
+    .wh-toolbar-count .lbl { font-size: 0.8rem; color: var(--wh-text-soft); margin-left: 6px; }
+
+    /* ── Table Card ── */
+    .wh-table-card {
+        background: var(--wh-card);
+        border: 1px solid var(--wh-border);
+        border-radius: 16px;
+        padding: 8px 8px 4px 8px;
+        overflow: hidden;
+    }
+    #tableLaporan { border-collapse: separate; border-spacing: 0; }
+    #tableLaporan thead th {
+        background: var(--wh-bg); color: var(--wh-text-soft);
+        font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.04em; padding: 12px 14px;
+        border-bottom: 1px solid var(--wh-border); border-top: none; white-space: nowrap;
+    }
+    #tableLaporan tbody td {
+        font-size: 0.82rem; padding: 0 14px; height: 56px;
+        vertical-align: middle; border-bottom: 1px solid var(--wh-border);
+        border-top: none; color: var(--wh-text);
+    }
+    #tableLaporan, #tableLaporan th, #tableLaporan td {
+        border-left: none; border-right: none;
+    }
+    #tableLaporan tbody tr { transition: background 120ms ease; }
+    #tableLaporan tbody tr:hover { background: #F3F4F6; }
+
+    /* ── Badge Jenis ── */
+    .badge-jenis {
+        font-size: 0.72rem; padding: 4px 10px; border-radius: 6px;
+        font-weight: 600; display: inline-block; white-space: nowrap;
+    }
+    .badge-jenis.rusak       { background: var(--wh-danger-soft);  color: #DC2626; }
+    .badge-jenis.hilang      { background: var(--wh-warning-soft); color: #B45309; }
+    .badge-jenis.kedaluwarsa { background: var(--wh-dark-soft);    color: var(--wh-dark); }
+    .badge-jenis.positif     { background: var(--wh-success-soft); color: #15803D; }
+    .badge-jenis.negatif     { background: #FEF9C3;                color: #A16207; }
+    .badge-jenis.opname      { background: var(--wh-primary-soft); color: var(--wh-primary); }
+
+    /* ── DataTables overrides ── */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        font-size: 0.82rem; color: var(--wh-text-soft); padding: 10px 6px;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        border-radius: 10px; border: 1px solid var(--wh-border);
+        padding: 0.4rem 0.65rem; font-size: 0.82rem;
+    }
+    .dataTables_wrapper .dataTables_length select {
+        border-radius: 10px; border: 1px solid var(--wh-border);
+        font-size: 0.82rem; padding: 0.3rem 1.75rem 0.3rem 0.6rem;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 8px !important; padding: 0.35rem 0.7rem !important;
+        margin-left: 2px; border: 1px solid transparent !important;
+        background: transparent !important; color: var(--wh-text) !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: var(--wh-primary) !important; color: #fff !important;
+        border-color: var(--wh-primary) !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current) {
+        background: var(--wh-dark-soft) !important; color: var(--wh-text) !important;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+        .wh-page { padding: 12px 12px 40px 12px; }
+        .wh-header { flex-direction: column; align-items: flex-start; padding: 20px; }
+        .wh-header h1 { font-size: 1.1rem; }
+        .wh-header .wh-updated .val { text-align: left; }
+        .wh-filter-card .filter-actions {
+            flex-direction: column; width: 100%;
+        }
+        .wh-filter-card .filter-actions a,
+        .wh-filter-card .filter-actions button {
+            width: 100%; justify-content: center;
+        }
+        .wh-toolbar { flex-direction: column; align-items: flex-start; }
+    }
 </style>
 
-<div class="rpt-page">
-    <div class="rpt-header">
+<div class="wh-page">
+
+    <!-- Header -->
+    <div class="wh-header">
         <div>
-            <h1><i class="fa-solid fa-scale-balanced"></i> Laporan Penyesuaian Stok Gudang</h1>
-            <p class="text-muted mb-0 mt-1">Daftar transaksi penyesuaian (Barang Rusak, Hilang, dll) berdasarkan periode tanggal.</p>
+            <h1><i class="fa-solid fa-scale-balanced"></i> Laporan Penyesuaian Stok</h1>
+            <p>Daftar transaksi penyesuaian (Barang Rusak, Hilang, dll) berdasarkan periode tanggal.</p>
+        </div>
+        <div class="wh-updated">
+            <div class="lbl">Update Terakhir</div>
+            <div class="val"><?= date('d F Y') ?><br><?= date('H:i') ?> WIB</div>
         </div>
     </div>
 
-    <!-- Filter -->
-    <div class="rpt-filter">
-        <form action="" method="GET" class="row align-items-end g-3">
-            <div class="col-md-3">
-                <label class="form-label fw-bold" style="font-size: 12px;">Tanggal Mulai</label>
+    <!-- Filter Panel -->
+    <div class="wh-filter-card">
+        <form action="" method="GET" class="row g-3 align-items-end">
+            <div class="col-6 col-md-3">
+                <label class="form-label">Tanggal Mulai</label>
                 <input type="date" name="start_date" class="form-control" value="<?= esc($start_date) ?>">
             </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold" style="font-size: 12px;">Tanggal Akhir</label>
+            <div class="col-6 col-md-3">
+                <label class="form-label">Tanggal Akhir</label>
                 <input type="date" name="end_date" class="form-control" value="<?= esc($end_date) ?>">
             </div>
-            <div class="col-md-6 d-flex gap-2 justify-content-end">
-                <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
-                    <i class="fa-solid fa-filter"></i> Filter Data
-                </button>
-                <a href="<?= site_url('laporan/penyesuaian/export_pdf') ?>?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-danger d-inline-flex align-items-center gap-2 btn-export-loading" data-loading-text="Membuat PDF..." target="_blank">
-                    <i class="fa-regular fa-file-pdf"></i> Cetak PDF
-                </a>
-                <a href="<?= site_url('laporan/penyesuaian/export_excel') ?>?start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-success d-inline-flex align-items-center gap-2 btn-export-loading" data-loading-text="Membuat Excel...">
-                    <i class="fa-regular fa-file-excel"></i> Export Excel
-                </a>
+            <div class="col-12 col-md-6">
+                <div class="d-flex gap-2 flex-wrap filter-actions">
+                    <button type="submit" class="wh-btn-primary">
+                        <i class="fa-solid fa-magnifying-glass"></i> Terapkan Filter
+                    </button>
+                    <a href="<?= site_url('laporan/penyesuaian/export_pdf') ?>?start_date=<?= esc($start_date) ?>&end_date=<?= esc($end_date) ?>"
+                       target="_blank" class="wh-tb-btn btn-export-loading" data-loading-text="Membuat PDF...">
+                        <i class="fa-solid fa-file-pdf"></i> Export PDF
+                    </a>
+                    <a href="<?= site_url('laporan/penyesuaian/export_excel') ?>?start_date=<?= esc($start_date) ?>&end_date=<?= esc($end_date) ?>"
+                       class="wh-btn-success btn-export-loading" data-loading-text="Membuat Excel...">
+                        <i class="fa-solid fa-file-excel"></i> Export Excel
+                    </a>
+                </div>
             </div>
         </form>
     </div>
 
-    <!-- Tabel Data -->
-    <div class="rpt-card">
-    <table class="table rpt-table w-100" id="tableLaporan" style="width:100%;">
-                <thead>
-                    <tr>
-                    <th class="text-center" width="50">No</th>
+    <!-- Toolbar -->
+    <div class="wh-toolbar">
+        <div class="wh-toolbar-count">
+            <span class="num"><?= number_format(count($laporan), 0, ',', '.') ?></span>
+            <span class="lbl">Total Transaksi Penyesuaian</span>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="wh-table-card">
+        <table class="table align-middle mb-0" id="tableLaporan" style="width:100%;">
+            <thead>
+                <tr>
+                    <th class="text-center" width="40">No</th>
                     <th>Tanggal</th>
                     <th>No. Transaksi</th>
                     <th>Jenis Penyesuaian</th>
-                    <th>Barang</th>
+                    <th style="min-width:150px;">Barang</th>
                     <th>Batch</th>
                     <th class="text-end">Jumlah</th>
-                    <th>Keterangan</th>
+                    <th style="min-width:160px;">Keterangan</th>
                 </tr>
             </thead>
             <tbody>
-                <?php $no = 1; foreach ($laporan as $row) : 
-                    $badgeClass = 'kedaluwarsa';
-                    switch ($row['jenis_penyesuaian']) {
-                        case 'Barang Rusak': $badgeClass = 'rusak'; break;
-                        case 'Barang Hilang': $badgeClass = 'hilang'; break;
-                        case 'Koreksi Positif': $badgeClass = 'positif'; break;
-                        case 'Koreksi Negatif': $badgeClass = 'negatif'; break;
-                        case 'Hasil Stock Opname': $badgeClass = 'opname'; break;
-                    }
-                    $isPlus = ($row['jenis_penyesuaian'] === 'Koreksi Positif');
-                    $sign = $isPlus ? '+' : '-';
-                    $colorClass = $isPlus ? 'text-success' : 'text-danger';
-                ?>
-                <tr>
-                    <td class="text-center"><?= $no++ ?></td>
-                    <td><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
-                    <td class="fw-bold text-primary"><?= esc($row['nomor_penyesuaian']) ?></td>
-                    <td><span class="badge-jenis <?= $badgeClass ?>"><?= esc($row['jenis_penyesuaian']) ?></span></td>
-                    <td class="fw-bold"><?= esc($row['nama_barang']) ?></td>
-                    <td>
-                        <div><span class="badge bg-light text-dark border"><?= esc($row['nomor_batch']) ?></span></div>
-                        <small class="text-muted">Exp: <?= $row['tanggal_kedaluwarsa'] ? date('d/m/y', strtotime($row['tanggal_kedaluwarsa'])) : '-' ?></small>
-                    </td>
-                    <td class="text-end fw-bold <?= $colorClass ?>">
-                        <?= $sign ?><?= (isset($row['bisa_dipecah']) && $row['bisa_dipecah'] == 1) ? $row['jumlah'] : number_format($row['jumlah'], 0, ',', '.') ?> <small class="text-muted fw-normal"><?= esc($row['satuan']) ?></small>
-                    </td>
-                    <td>
-                        <div style="max-width: 200px; font-size: 11.5px;" class="text-truncate" title="<?= esc($row['ket_umum'] . ' - ' . $row['keterangan']) ?>">
-                            <?= esc($row['ket_umum']) ?><br>
-                            <small class="fst-italic text-muted"><?= esc($row['keterangan']) ?></small>
-                        </div>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-
-
+                <?php if (empty($laporan)): ?>
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding: 60px 20px;">
+                            <i class="fa-solid fa-scale-balanced" style="font-size: 2.5rem; color: var(--wh-border);"></i>
+                            <p style="margin-top: 14px; color: var(--wh-text); font-weight: 600;">Data tidak ditemukan.</p>
+                            <p style="color: var(--wh-text-soft); font-size: 0.85rem;">Coba ubah rentang tanggal filter.</p>
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php $no = 1; foreach ($laporan as $row):
+                        $badgeClass = 'kedaluwarsa';
+                        switch ($row['jenis_penyesuaian']) {
+                            case 'Barang Rusak':      $badgeClass = 'rusak';    break;
+                            case 'Barang Hilang':     $badgeClass = 'hilang';   break;
+                            case 'Koreksi Positif':   $badgeClass = 'positif';  break;
+                            case 'Koreksi Negatif':   $badgeClass = 'negatif';  break;
+                            case 'Hasil Stock Opname':$badgeClass = 'opname';   break;
+                        }
+                        $isPlus = ($row['jenis_penyesuaian'] === 'Koreksi Positif');
+                        $sign   = $isPlus ? '+' : '-';
+                        $jumlahFormatted = (isset($row['bisa_dipecah']) && $row['bisa_dipecah'] == 1)
+                            ? $row['jumlah']
+                            : number_format($row['jumlah'], 0, ',', '.');
+                    ?>
+                    <tr>
+                        <td class="text-center"><?= $no++ ?></td>
+                        <td style="white-space:nowrap;"><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
+                        <td style="font-weight:600; color:var(--wh-primary); white-space:nowrap;">
+                            <?= esc($row['nomor_penyesuaian']) ?>
+                        </td>
+                        <td>
+                            <span class="badge-jenis <?= $badgeClass ?>"><?= esc($row['jenis_penyesuaian']) ?></span>
+                        </td>
+                        <td><strong><?= esc($row['nama_barang']) ?></strong></td>
+                        <td>
+                            <span style="background:var(--wh-dark-soft); border:1px solid var(--wh-border); border-radius:6px; padding:2px 8px; font-size:0.75rem; font-weight:600;">
+                                <?= esc($row['nomor_batch']) ?>
+                            </span><br>
+                            <small style="color:var(--wh-text-soft); font-size:0.72rem;">
+                                Exp: <?= $row['tanggal_kedaluwarsa'] ? date('d/m/y', strtotime($row['tanggal_kedaluwarsa'])) : '-' ?>
+                            </small>
+                        </td>
+                        <td class="text-end" style="font-weight:700; color:<?= $isPlus ? '#15803D' : '#DC2626' ?>;">
+                            <?= $sign ?><?= $jumlahFormatted ?>
+                            <small style="color:var(--wh-text-soft); font-weight:400;"><?= esc($row['satuan']) ?></small>
+                        </td>
+                        <td>
+                            <div style="max-width:200px; font-size:0.8rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                                 title="<?= esc($row['ket_umum'] . ' - ' . $row['keterangan']) ?>">
+                                <?= esc($row['ket_umum']) ?>
+                            </div>
+                            <small style="color:var(--wh-text-soft); font-style:italic; font-size:0.75rem;">
+                                <?= esc($row['keterangan']) ?>
+                            </small>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
+
 </div>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-$(document).ready(function() {
+$(document).ready(function () {
     $('#tableLaporan').DataTable({
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
-        },
-        "order": [],
+        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+        order: [],
+        columnDefs: [{ orderable: false, targets: [0] }],
         dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
     });
 });
