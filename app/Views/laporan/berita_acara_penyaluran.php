@@ -135,11 +135,11 @@
 
     <!-- Logo / Kop Surat -->
     <?php
-        $logoPath = FCPATH . 'assets/img/logo_foi.png';
+        $logoPath = FCPATH . 'assets/img/LogoFOI.webp';
         $logoSrc = '';
         if (file_exists($logoPath) && is_readable($logoPath)) {
             $logoData = base64_encode(file_get_contents($logoPath));
-            $logoSrc = 'data:image/png;base64,' . $logoData;
+            $logoSrc = 'data:image/webp;base64,' . $logoData;
         }
     ?>
     <div class="header">

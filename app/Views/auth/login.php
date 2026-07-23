@@ -245,7 +245,7 @@
     <div class="login-card">
 
         <div class="card-header-custom">
-            <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo Foodbank of Indonesia" width="72" style="height:auto; object-fit:contain;">
+            <img src="<?= base_url('assets/img/LogoFOI.webp') ?>" alt="Logo Foodbank of Indonesia" width="72" style="height:auto; object-fit:contain;">
             <div class="card-title">Selamat Datang</div>
             <div class="card-sub">Masuk ke akun Anda untuk mengakses sistem Warehouse Management Foodbank Indonesia.</div>
         </div>
