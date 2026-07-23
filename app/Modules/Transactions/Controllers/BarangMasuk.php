@@ -114,6 +114,13 @@ class BarangMasuk extends BaseController
             if ((int) ($item['bisa_dipecah'] ?? 0) === 1 && !in_array(strtolower($satuan), ['karung', 'repack'])) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Repack (Bisa Dipecah) hanya berlaku untuk kemasan Karung."]);
             }
+            $rawNilai = isset($item['nilai_satuan']) ? $item['nilai_satuan'] : '0';
+            $rawNilai = str_replace(['Rp', ' ', '.'], '', $rawNilai);
+            $rawNilai = str_replace(',', '.', $rawNilai);
+            $nilaiSatuan = (float)$rawNilai;
+            if ($nilaiSatuan < 0) {
+                return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Nilai Satuan tidak boleh negatif."]);
+            }
             $cleanItems[] = [
                 'nama_barang'         => $namaBarang,
                 'kategori'            => $kategori,
@@ -123,6 +130,7 @@ class BarangMasuk extends BaseController
                 'berat_per_satuan'    => $beratPerSatuan,
                 'satuan_berat'        => $satuanBerat,
                 'tanggal_kedaluwarsa' => $tanggalKedaluwarsa,
+                'nilai_satuan'        => $nilaiSatuan,
                 'bisa_dipecah'        => (int) ($item['bisa_dipecah'] ?? 0),
             ];
         }
@@ -235,6 +243,7 @@ class BarangMasuk extends BaseController
                 'satuan'              => $item['satuan'],
                 'berat_per_satuan'    => $item['berat_per_satuan'],
                 'satuan_berat'        => $item['satuan_berat'],
+                'nilai_satuan'        => $item['nilai_satuan'],
                 'status'              => 'Aktif',
                 'bisa_dipecah'        => $bisaDipecah,
             ];
@@ -373,6 +382,13 @@ class BarangMasuk extends BaseController
             if ((int) ($item['bisa_dipecah'] ?? 0) === 1 && !in_array(strtolower($satuan), ['karung', 'repack'])) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Repack (Bisa Dipecah) hanya berlaku untuk kemasan Karung."]);
             }
+            $rawNilai = isset($item['nilai_satuan']) ? $item['nilai_satuan'] : '0';
+            $rawNilai = str_replace(['Rp', ' ', '.'], '', $rawNilai);
+            $rawNilai = str_replace(',', '.', $rawNilai);
+            $nilaiSatuan = (float)$rawNilai;
+            if ($nilaiSatuan < 0) {
+                return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Nilai Satuan tidak boleh negatif."]);
+            }
             $idBatch = trim($item['id'] ?? '');
             $cleanItems[] = [
                 'id'                  => $idBatch === '' ? null : (int) $idBatch,
@@ -384,6 +400,7 @@ class BarangMasuk extends BaseController
                 'berat_per_satuan'    => $beratPerSatuan,
                 'satuan_berat'        => $satuanBerat,
                 'tanggal_kedaluwarsa' => $tanggalKedaluwarsa,
+                'nilai_satuan'        => $nilaiSatuan,
                 'bisa_dipecah'        => (int) ($item['bisa_dipecah'] ?? 0),
             ];
         }
@@ -504,6 +521,7 @@ class BarangMasuk extends BaseController
                         'satuan'              => $item['satuan'],
                         'berat_per_satuan'    => $item['berat_per_satuan'],
                         'satuan_berat'        => $item['satuan_berat'],
+                        'nilai_satuan'        => $item['nilai_satuan'],
                         'bisa_dipecah'        => $bisaDipecah,
                     ]);
                 } else {
@@ -538,6 +556,7 @@ class BarangMasuk extends BaseController
                         'satuan'              => $item['satuan'],
                         'berat_per_satuan'    => $item['berat_per_satuan'],
                         'satuan_berat'        => $item['satuan_berat'],
+                        'nilai_satuan'        => $item['nilai_satuan'],
                         'bisa_dipecah'        => $bisaDipecah,
                     ]);
                 }
@@ -572,6 +591,7 @@ class BarangMasuk extends BaseController
                     'satuan'              => $item['satuan'],
                     'berat_per_satuan'    => $item['berat_per_satuan'],
                     'satuan_berat'        => $item['satuan_berat'],
+                    'nilai_satuan'        => $item['nilai_satuan'],
                     'status'              => 'Aktif',
                     'bisa_dipecah'        => $bisaDipecah,
                 ]);

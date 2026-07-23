@@ -17,15 +17,16 @@ class DeleteDummySeeder extends Seeder
         $db->transStart();
         
         // Delete Barang Keluar
+        $db->table('barang_keluar')->like('nomor_transaksi', 'BK-DUMMY-')->delete();
         $db->table('barang_keluar')->like('nomor_transaksi', 'TRX-OUT-')->delete();
-        $db->table('barang_keluar')->like('nomor_transaksi', 'BK-EX-')->delete();
         
         // Delete Penyesuaian
+        $db->table('penyesuaian_stok')->like('nomor_penyesuaian', 'ADJ-DUMMY-')->delete();
         $db->table('penyesuaian_stok')->like('nomor_penyesuaian', 'ADJ-')->delete();
         
         // Delete Barang Masuk
+        $db->table('barang_masuk')->like('nomor_transaksi', 'BM-DUMMY-')->delete();
         $db->table('barang_masuk')->like('nomor_transaksi', 'TRX-IN-')->delete();
-        $db->table('barang_masuk')->like('nomor_transaksi', 'BM-EX-')->delete();
         
         // Delete Barang (yang otomatis delete batch karena cascade)
         $db->table('barang')->like('nama_barang', 'Barang Dummy')->delete();

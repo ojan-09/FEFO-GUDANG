@@ -120,26 +120,28 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th width="3%">No</th>
-                <th width="8%">Tgl Masuk</th>
-                <th width="10%">Nomor Donasi</th>
-                <th width="12%">Donatur</th>
-                <th width="15%">Nama Barang</th>
-                <th width="8%">Kategori</th>
-                <th width="6%">Jumlah</th>
-                <th width="6%">Satuan</th>
-                <th width="5%">CTN</th>
-                <th width="7%">Berat Bersih</th>
-                <th width="7%">Total Berat</th>
-                <th width="8%">Kadaluarsa</th>
-                <th width="6%">Petugas</th>
+                <th width="2%">No</th>
+                <th width="7%">Tgl Masuk</th>
+                <th width="9%">Nomor Donasi</th>
+                <th width="10%">Donatur</th>
+                <th width="12%">Nama Barang</th>
+                <th width="7%">Kategori</th>
+                <th width="5%">Jumlah</th>
+                <th width="5%">Satuan</th>
+                <th width="4%">CTN</th>
+                <th width="5%">Berat Bersih</th>
+                <th width="5%">Total Berat</th>
+                <th width="7%">Kadaluarsa</th>
+                <th width="8%">Nilai Satuan</th>
+                <th width="9%">Total Nilai</th>
+                <th width="5%">Petugas</th>
             </tr>
         </thead>
         <tbody>
             <?php helper('format'); ?>
             <?php if (empty($laporan)): ?>
                 <tr>
-                    <td colspan="13" class="text-center">Data tidak ditemukan.</td>
+                    <td colspan="15" class="text-center">Data tidak ditemukan.</td>
                 </tr>
             <?php else: ?>
                 <?php $no = 1; foreach ($laporan as $item): ?>
@@ -168,6 +170,8 @@
                         <td class="text-right"><?= $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-' ?></td>
                         <td class="text-right"><?= $totalBeratRow > 0 ? format_berat($totalBeratRow, $item['satuan_berat']) : '-' ?></td>
                         <td class="text-center"><?= $item['tanggal_kedaluwarsa'] ? date('d/m/Y', strtotime($item['tanggal_kedaluwarsa'])) : '-' ?></td>
+                        <td class="text-right"><?= 'Rp ' . number_format($item['nilai_satuan'] ?? 0, 0, ',', '.') ?></td>
+                        <td class="text-right"><?= 'Rp ' . number_format($item['total_nilai'] ?? 0, 0, ',', '.') ?></td>
                         <td class="text-center"><?= esc($item['petugas'] ?? '-') ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -187,6 +191,10 @@
         <tr>
             <td class="font-bold">Total Berat</td>
             <td>: <?= format_berat($summary['total_berat'], 'Kg') ?></td>
+        </tr>
+        <tr>
+            <td class="font-bold">Total Nilai Donasi Masuk</td>
+            <td>: Rp <?= number_format($summary['total_nilai_donasi'], 0, ',', '.') ?></td>
         </tr>
     </table>
 

@@ -425,6 +425,7 @@
 <?= $this->section('scripts') ?>
 <script>
 $(document).ready(function () {
+    <?php if (!empty($laporan)): ?>
     $('#tabelPenyaluran').DataTable({
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
         order: [],
@@ -435,6 +436,9 @@ $(document).ready(function () {
             $('#tabelPenyaluran').closest('.wh-table-card').addClass('loaded');
         }
     });
+    <?php else: ?>
+    $('#tabelPenyaluran').closest('.wh-table-card').addClass('loaded');
+    <?php endif; ?>
 });
 </script>
 <?= $this->endSection() ?>

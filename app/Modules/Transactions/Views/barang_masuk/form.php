@@ -37,6 +37,7 @@
                 'berat_per_satuan'    => $b['berat_per_satuan'],
                 'satuan_berat'        => $b['satuan_berat'],
                 'tanggal_kedaluwarsa' => $b['tanggal_kedaluwarsa'],
+                'nilai_satuan'        => $b['nilai_satuan'],
                 'bisa_dipecah'        => $b['bisa_dipecah'],
             ];
         }
@@ -231,6 +232,7 @@
 #tabelItem .tc-berat   { width: 92px;  }
 #tabelItem .tc-sberat  { width: 100px; }
 #tabelItem .tc-exp     { width: 155px; }
+#tabelItem .tc-nilai   { width: 155px; }
 #tabelItem .tc-aksi    { width: 52px;  text-align: center; }
 
 /* inputs inside table */
@@ -432,6 +434,7 @@
                             <th class="tc-berat">BERAT/SAT. <span class="text-danger">*</span></th>
                             <th class="tc-sberat">SAT. BERAT <span class="text-danger">*</span></th>
                             <th class="tc-exp">EXPIRED <span class="text-danger">*</span></th>
+                            <th class="tc-nilai">NILAI SATUAN</th>
                             <th class="tc-aksi">AKSI</th>
                         </tr>
                     </thead>
@@ -590,6 +593,61 @@
         });
     }
 
+    function formatInputRupiah(input) {
+        let value = input.value.replace(/[^,\d]/g, '');
+        let split = value.split(',');
+        let sisa = split[0].length % 3;
+        let rupiah = split[0].substr(0, sisa);
+        let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+        
+        if (ribuan) {
+            let separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
+        }
+        
+        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+        input.value = rupiah;
+        
+        calculateEstimasiTotal(input.closest('tr'));
+    }
+
+    function formatRupiahString(valueStr) {
+        if (!valueStr) return '';
+        let num = parseFloat(valueStr);
+        if (isNaN(num) || num === 0) return '';
+        let value = Math.round(num).toString();
+        let sisa = value.length % 3;
+        let rupiah = value.substr(0, sisa);
+        let ribuan = value.substr(sisa).match(/\d{3}/gi);
+        if (ribuan) {
+            let separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
+        }
+        return rupiah;
+    }
+
+    function calculateEstimasiTotal(row) {
+        const inputJumlah = row.querySelector('.input-jumlah');
+        const inputNilai = row.querySelector('.input-nilai');
+        const preview = row.querySelector('.preview-estimasi');
+        if (!inputJumlah || !inputNilai || !preview) return;
+        
+        let qty = parseFloat(inputJumlah.value) || 0;
+        
+        // Remove dots before parsing to float
+        let rawNilai = inputNilai.value.replace(/\./g, '').replace(/,/g, '.');
+        let nilai = parseFloat(rawNilai) || 0;
+        
+        if (qty <= 0 || nilai <= 0) {
+            preview.textContent = '—';
+            return;
+        }
+        
+        const total = qty * nilai;
+        const formatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(total);
+        preview.textContent = formatted;
+    }
+
     function tambahBaris(item = {}, shouldFocus = true) {
         rowCount++;
         const placeholder = namaBarangPlaceholders[(rowCount-1) % namaBarangPlaceholders.length];
@@ -652,6 +710,17 @@
                 <input type="date" class="dm-input input-expired" name="items[${tmpIdx}][tanggal_kedaluwarsa]"
                     required>
             </td>
+            <td class="tc-nilai">
+                <input type="text" class="dm-input input-nilai" name="items[${tmpIdx}][nilai_satuan]"
+                    placeholder="Rp 0" oninput="formatInputRupiah(this)">
+                <div style="margin-top: 6px;">
+                    <div style="font-size:12px; color:#6c757d; display:flex; align-items:center; line-height: 1;">
+                        Estimasi Nilai Donasi
+                        <i class="fa-solid fa-circle-info ms-1" style="cursor:help; font-size:11px;" title="Estimasi ini hanya untuk informasi. Nilai akhir dihitung kembali saat laporan PDF/Excel dibuat."></i>
+                    </div>
+                    <div style="font-size:15px; font-weight:700; color:#198754; margin-top:3px; line-height: 1;" class="preview-estimasi">—</div>
+                </div>
+            </td>
             <td class="tc-aksi">
                 <button type="button" class="btn btn-outline-danger btn-hapus-row" data-row="row-${tmpIdx}">
                     <i class="fa-solid fa-xmark" style="pointer-events:none;"></i>
@@ -668,7 +737,11 @@
         newRow.querySelector('.input-jumlah').value        = item.jumlah             ?? '';
         newRow.querySelector('.input-berat').value         = item.berat_per_satuan   ?? '';
         newRow.querySelector('.input-expired').value       = item.tanggal_kedaluwarsa ?? '';
+        newRow.querySelector('.input-nilai').value         = formatRupiahString(item.nilai_satuan);
         newRow.querySelector('[name$="[id]"]').value       = item.id                 ?? '';
+        
+        // Calculate preview
+        calculateEstimasiTotal(newRow);
 
         const chk = newRow.querySelector('.chk-repack');
         if (chk) chk.checked = String(item.bisa_dipecah ?? '0') === '1';
@@ -715,6 +788,10 @@
         if (e.target.classList.contains('input-jumlah') || e.target.classList.contains('input-berat')) {
             const row = e.target.closest('tr');
             if (row) updateRepackPreview(row);
+        }
+        if (e.target.classList.contains('input-jumlah') || e.target.classList.contains('input-nilai')) {
+            const row = e.target.closest('tr');
+            if (row) calculateEstimasiTotal(row);
         }
         if (e.target.dataset.touched === 'true' || isFormSubmitted) validateField(e.target);
     });

@@ -32,6 +32,7 @@ class LaporanDonasi extends BaseController
             barang_masuk.nomor_transaksi,
             barang_masuk.tanggal_masuk,
             barang_masuk.keterangan,
+            batch.nilai_satuan,
             donatur.nama_donatur,
             users.username as petugas
         ');
@@ -88,9 +89,10 @@ class LaporanDonasi extends BaseController
         $totalTransaksi = 0;
         $totalBarang = 0;
         $totalBerat = 0;
+        $totalNilaiDonasi = 0;
         $transaksiUnik = [];
 
-        foreach ($data as $row) {
+        foreach ($data as $key => $row) {
             if (!in_array($row['nomor_transaksi'], $transaksiUnik)) {
                 $transaksiUnik[] = $row['nomor_transaksi'];
                 $totalTransaksi++;
@@ -105,6 +107,12 @@ class LaporanDonasi extends BaseController
                 $weightInKg = (strtolower($row['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
             }
             $totalBerat += $weightInKg;
+            
+            // Perhitungan nilai donasi
+            $nilaiSatuan = (float)($row['nilai_satuan'] ?? 0);
+            $totalNilaiBaris = (float)$row['jumlah'] * $nilaiSatuan;
+            $data[$key]['total_nilai'] = $totalNilaiBaris; // save for view
+            $totalNilaiDonasi += $totalNilaiBaris;
         }
 
         return [
@@ -112,7 +120,8 @@ class LaporanDonasi extends BaseController
             'summary' => [
                 'total_transaksi' => $totalTransaksi,
                 'total_barang' => $totalBarang,
-                'total_berat' => $totalBerat
+                'total_berat' => $totalBerat,
+                'total_nilai_donasi' => $totalNilaiDonasi
             ],
             'filters' => [
                 'bulan' => $bulanFilter,
@@ -163,6 +172,10 @@ class LaporanDonasi extends BaseController
 
     public function pdf()
     {
+        if (!in_groups('Administrator')) {
+            return redirect()->back()->with('error', 'Akses ditolak. Hanya Administrator yang dapat mengunduh laporan ini.');
+        }
+
         $result = $this->_getFilteredData();
         $data = [
             'title' => 'LAPORAN DONASI MASUK',
@@ -185,6 +198,10 @@ class LaporanDonasi extends BaseController
 
     public function excel()
     {
+        if (!in_groups('Administrator')) {
+            return redirect()->back()->with('error', 'Akses ditolak. Hanya Administrator yang dapat mengunduh laporan ini.');
+        }
+
         helper('format');
         $result = $this->_getFilteredData();
         $laporan = $result['data'];
@@ -208,12 +225,12 @@ class LaporanDonasi extends BaseController
         
         // Baris 1: Header
         $sheet->setCellValue('A1', 'FOODBANK OF INDONESIA');
-        $sheet->mergeCells('A1:N1');
+        $sheet->mergeCells('A1:P1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         
         $sheet->setCellValue('A2', 'LAPORAN DONASI MASUK');
-        $sheet->mergeCells('A2:N2');
+        $sheet->mergeCells('A2:P2');
         $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         
@@ -232,7 +249,9 @@ class LaporanDonasi extends BaseController
             'K3' => 'Total Berat',
             'L3' => 'Tanggal Kedaluwarsa',
             'M3' => 'Keterangan',
-            'N3' => 'Petugas'
+            'N3' => 'Nilai Satuan',
+            'O3' => 'Total Nilai',
+            'P3' => 'Petugas'
         ];
         
         foreach ($headers as $cell => $text) {
@@ -243,13 +262,13 @@ class LaporanDonasi extends BaseController
                                                    ->setWrapText(true);
         }
         
-        $sheet->getStyle('A3:N3')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle('A3:P3')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
         
         // Freeze panes
         $sheet->freezePane('A4');
         
         // Auto filter
-        $sheet->setAutoFilter('A3:N3');
+        $sheet->setAutoFilter('A3:P3');
 
         $row = 4;
         $no = 1;
@@ -280,7 +299,13 @@ class LaporanDonasi extends BaseController
             $sheet->setCellValue('K' . $row, $totalBeratRow > 0 ? format_berat($totalBeratRow, $item['satuan_berat']) : '-');
             $sheet->setCellValue('L' . $row, $item['tanggal_kedaluwarsa'] ? date('d-M-Y', strtotime($item['tanggal_kedaluwarsa'])) : '-');
             $sheet->setCellValue('M' . $row, $item['keterangan'] ?? '-');
-            $sheet->setCellValue('N' . $row, $item['petugas'] ?? '-');
+            
+            $sheet->setCellValue('N' . $row, $item['nilai_satuan'] ?? 0);
+            $sheet->getStyle('N' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0');
+            $sheet->setCellValue('O' . $row, $item['total_nilai'] ?? 0);
+            $sheet->getStyle('O' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0');
+            
+            $sheet->setCellValue('P' . $row, $item['petugas'] ?? '-');
 
             // Alignment
             $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -292,15 +317,17 @@ class LaporanDonasi extends BaseController
             $sheet->getStyle("J{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet->getStyle("K{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet->getStyle("L{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("N{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("N{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("O{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("P{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-            $sheet->getStyle("A{$row}:N{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $sheet->getStyle("A{$row}:P{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
             
             $row++;
         }
 
         // Auto Width for all columns
-        foreach (range('A', 'N') as $col) {
+        foreach (range('A', 'P') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
         
@@ -320,6 +347,12 @@ class LaporanDonasi extends BaseController
         
         $sheet->setCellValue("B{$row}", "Total Berat");
         $sheet->setCellValue("C{$row}", $summary['total_berat']);
+        $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
+        $row++;
+        
+        $sheet->setCellValue("B{$row}", "Total Nilai Donasi Masuk");
+        $sheet->setCellValue("C{$row}", $summary['total_nilai_donasi']);
+        $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('"Rp "#,##0');
         $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
 
         $writer = new Xlsx($spreadsheet);

@@ -15,7 +15,8 @@ class BatchModel extends Model
     protected $allowedFields    = [
         'id_barang_masuk', 'id_barang', 'nomor_batch', 'nama_barang', 'kategori',
         'tanggal_masuk', 'tanggal_kedaluwarsa', 'jumlah_awal', 'stok_saat_ini',
-        'jumlah_ctn', 'satuan', 'berat_per_satuan', 'satuan_berat', 'status', 'bisa_dipecah'
+        'jumlah_ctn', 'satuan', 'berat_per_satuan', 'satuan_berat', 'status', 'bisa_dipecah',
+        'nilai_satuan'
     ];
 
     protected $useTimestamps = true;

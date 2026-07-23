@@ -31,6 +31,8 @@ class LaporanPenyaluran extends BaseController
             COALESCE(batch.berat_per_satuan, barang.berat_per_satuan) as berat_per_satuan,
             COALESCE(batch.satuan_berat, barang.satuan_berat) as satuan_berat,
             COALESCE(batch.bisa_dipecah, barang.bisa_dipecah) as bisa_dipecah,
+            batch.nomor_batch,
+            batch.nilai_satuan,
             users.username as petugas
         ');
         $builder->join('barang_keluar', 'barang_keluar.id = detail_barang_keluar.id_barang_keluar');
@@ -78,9 +80,10 @@ class LaporanPenyaluran extends BaseController
         $totalBarangUtuhPerSatuan = []; // ['Pcs' => 120, 'Dus' => 30, 'Botol' => 50, ...]
         $totalBarangRepack = 0;
         $totalBerat = 0;
+        $totalNilaiDonasi = 0;
         $transaksiUnik = [];
 
-        foreach ($data as $row) {
+        foreach ($data as $key => $row) {
             if (!in_array($row['nomor_transaksi'], $transaksiUnik)) {
                 $transaksiUnik[] = $row['nomor_transaksi'];
                 $totalPenyaluran++;
@@ -100,6 +103,12 @@ class LaporanPenyaluran extends BaseController
                 }
             }
             $totalBerat += $totalBeratRow;
+            
+            // Perhitungan nilai penyaluran
+            $nilaiSatuan = (float)($row['nilai_satuan'] ?? 0);
+            $totalNilaiBaris = (float)$row['jumlah'] * $nilaiSatuan;
+            $data[$key]['total_nilai'] = $totalNilaiBaris; // save for view
+            $totalNilaiDonasi += $totalNilaiBaris;
         }
 
         return [
@@ -108,7 +117,8 @@ class LaporanPenyaluran extends BaseController
                 'total_penyaluran' => $totalPenyaluran,
                 'total_barang_utuh_per_satuan' => $totalBarangUtuhPerSatuan,
                 'total_barang_repack' => $totalBarangRepack,
-                'total_berat' => $totalBerat
+                'total_berat' => $totalBerat,
+                'total_nilai_donasi' => $totalNilaiDonasi
             ],
             'filters' => [
                 'start_date' => $startDateFilter,
@@ -137,6 +147,10 @@ class LaporanPenyaluran extends BaseController
 
     public function pdf()
     {
+        if (!in_groups('Administrator')) {
+            return redirect()->back()->with('error', 'Akses ditolak. Hanya Administrator yang dapat mengunduh laporan ini.');
+        }
+
         $result = $this->_getFilteredData();
         $data = [
             'title' => 'LAPORAN PENYALURAN BARANG',
@@ -159,6 +173,10 @@ class LaporanPenyaluran extends BaseController
 
     public function excel()
     {
+        if (!in_groups('Administrator')) {
+            return redirect()->back()->with('error', 'Akses ditolak. Hanya Administrator yang dapat mengunduh laporan ini.');
+        }
+
         $result = $this->_getFilteredData();
         $laporan = $result['data'];
         $summary = $result['summary'];
@@ -184,12 +202,12 @@ class LaporanPenyaluran extends BaseController
         
         // Baris 1: Header
         $sheet->setCellValue('A1', 'FOODBANK OF INDONESIA');
-        $sheet->mergeCells('A1:L1');
+        $sheet->mergeCells('A1:O1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         
         $sheet->setCellValue('A2', 'LAPORAN PENYALURAN BARANG');
-        $sheet->mergeCells('A2:L2');
+        $sheet->mergeCells('A2:O2');
         $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         
@@ -201,12 +219,15 @@ class LaporanPenyaluran extends BaseController
             'D3' => 'Wilayah Tujuan',
             'E3' => 'Program Penyaluran',
             'F3' => 'Nama Barang',
-            'G3' => 'Jumlah',
-            'H3' => 'Satuan',
-            'I3' => 'Berat per Satuan',
-            'J3' => 'Total Berat',
-            'K3' => 'Keterangan',
-            'L3' => 'Petugas'
+            'G3' => 'Batch',
+            'H3' => 'Jumlah',
+            'I3' => 'Satuan',
+            'J3' => 'Berat per Satuan',
+            'K3' => 'Total Berat',
+            'L3' => 'Keterangan',
+            'M3' => 'Nilai Satuan',
+            'N3' => 'Total Nilai',
+            'O3' => 'Petugas'
         ];
         
         foreach ($headers as $cell => $text) {
@@ -217,13 +238,13 @@ class LaporanPenyaluran extends BaseController
                                                    ->setWrapText(true);
         }
         
-        $sheet->getStyle('A3:L3')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle('A3:O3')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
         
         // Freeze panes
         $sheet->freezePane('A4');
         
         // Auto filter
-        $sheet->setAutoFilter('A3:L3');
+        $sheet->setAutoFilter('A3:O3');
 
         $row = 4;
         $no = 1;
@@ -250,35 +271,45 @@ class LaporanPenyaluran extends BaseController
             $sheet->setCellValue('D' . $row, $item['nama_wilayah'] ?? '-');
             $sheet->setCellValue('E' . $row, $item['program'] ?? '-');
             $sheet->setCellValue('F' . $row, $item['nama_barang']);
-            $sheet->setCellValue('G' . $row, $jumlahStok);
+            $sheet->setCellValue('G' . $row, $item['nomor_batch']);
+            $sheet->setCellValue('H' . $row, $jumlahStok);
             if ($bisaDipecah === 1) {
-                $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheet->getStyle('H' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
             } else {
-                $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+                $sheet->getStyle('H' . $row)->getNumberFormat()->setFormatCode('#,##0');
             }
-            $sheet->setCellValue('H' . $row, $satuanStok);
-            $sheet->setCellValue('I' . $row, $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-');
-            $sheet->setCellValue('J' . $row, $totalKg > 0 ? format_berat($totalKg, 'Kg') : '-');
-            $sheet->setCellValue('K' . $row, $item['keterangan'] ?? '-');
-            $sheet->setCellValue('L' . $row, $item['petugas'] ?? '-');
+            $sheet->setCellValue('I' . $row, $satuanStok);
+            $sheet->setCellValue('J' . $row, $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-');
+            $sheet->setCellValue('K' . $row, $totalKg > 0 ? format_berat($totalKg, 'Kg') : '-');
+            $sheet->setCellValue('L' . $row, $item['keterangan'] ?? '-');
+            
+            $sheet->setCellValue('M' . $row, $item['nilai_satuan'] ?? 0);
+            $sheet->getStyle('M' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0');
+            $sheet->setCellValue('N' . $row, $item['total_nilai'] ?? 0);
+            $sheet->getStyle('N' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0');
+            
+            $sheet->setCellValue('O' . $row, $item['petugas'] ?? '-');
 
             // Alignment
             $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("B{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("C{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("G{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-            $sheet->getStyle("H{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("G{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("H{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("J{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-            $sheet->getStyle("L{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("K{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("M{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("N{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("O{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-            $sheet->getStyle("A{$row}:L{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $sheet->getStyle("A{$row}:O{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
             
             $row++;
         }
 
         // Auto Width for all columns
-        foreach (range('A', 'L') as $col) {
+        foreach (range('A', 'O') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
         
@@ -306,6 +337,12 @@ class LaporanPenyaluran extends BaseController
         
         $sheet->setCellValue("B{$row}", "Total Berat");
         $sheet->setCellValue("C{$row}", format_berat($summary['total_berat'], 'Kg'));
+        $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
+        $row++;
+        
+        $sheet->setCellValue("B{$row}", "Total Nilai Donasi Keluar");
+        $sheet->setCellValue("C{$row}", $summary['total_nilai_donasi']);
+        $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('"Rp "#,##0');
         $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
 
         $writer = new Xlsx($spreadsheet);

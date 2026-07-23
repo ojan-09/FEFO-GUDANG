@@ -398,7 +398,7 @@
     <!-- ── HEADER ─────────────────────────────────────────── -->
     <div class="wb-header">
         <div class="wb-header-left">
-            <h1>Dashboard Gudang</h1>
+            <h1>Dashboard</h1>
             <p>Foodbank of Indonesia — Sistem Manajemen Stok Donasi</p>
             <div class="wb-user-chip mt-1">
                 <i class="bi bi-person-circle"></i>
