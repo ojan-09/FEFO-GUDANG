@@ -263,10 +263,7 @@ $(document).ready(function () {
         window.showOverlay(loadingText);
     });
 
-    // =========================================================
-    // 7. Overlay helpers
-    // Mendukung pesan dinamis: window.showOverlay('Menyimpan data...')
-    // =========================================================
+    let overlayTimeoutTimer = null;
     window.showOverlay = function (message) {
         let msg = message || 'Memproses...';
 
@@ -289,9 +286,16 @@ $(document).ready(function () {
             $('#overlay-message').text(msg);
             $('#global-overlay').fadeIn(200);
         }
+
+        // Safety fallback: Otomatis sembunyikan overlay setelah 5 detik agar tidak macet/stuck
+        if (overlayTimeoutTimer) clearTimeout(overlayTimeoutTimer);
+        overlayTimeoutTimer = setTimeout(function () {
+            window.hideOverlay();
+        }, 5000);
     };
 
     window.hideOverlay = function () {
+        if (overlayTimeoutTimer) clearTimeout(overlayTimeoutTimer);
         $('#global-overlay').fadeOut(200);
     };
 

@@ -68,14 +68,19 @@
         font-size: 0.78rem; font-weight: 600; color: var(--wh-text); margin-bottom: 6px;
     }
     .wh-filter-card .form-control,
-    .wh-filter-card .form-select {
-        height: 44px; border-radius: 10px; border: 1px solid var(--wh-border);
-        font-size: 0.85rem; padding: 0.5rem 0.75rem;
+    .wh-filter-card .form-select,
+    .wh-filter-card .select2-container--bootstrap-5 .select2-selection {
+        height: 44px !important; border-radius: 10px !important; border: 1px solid var(--wh-border) !important;
+        font-size: 0.85rem !important; padding: 0.45rem 0.75rem !important;
+    }
+    .wh-filter-card .select2-container--bootstrap-5 .select2-selection__rendered {
+        line-height: 28px !important; color: var(--wh-text) !important; padding-left: 0 !important;
     }
     .wh-filter-card .form-control:focus,
-    .wh-filter-card .form-select:focus {
-        border-color: var(--wh-primary);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    .wh-filter-card .form-select:focus,
+    .wh-filter-card .select2-container--bootstrap-5.select2-container--focus .select2-selection {
+        border-color: var(--wh-primary) !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
     }
 
     /* ── Buttons ── */
@@ -322,7 +327,7 @@
     <!-- Toolbar -->
     <div class="wh-toolbar">
         <div class="wh-toolbar-count">
-            <span class="num"><?= number_format(count($laporan), 0, ',', '.') ?></span>
+            <span class="num">0</span>
             <span class="lbl">Total Data Stok</span>
         </div>
     </div>
@@ -347,78 +352,11 @@
                     <th class="text-end">Berat / Satuan</th>
                     <th class="text-end">Total Berat</th>
                     <th class="text-center">Jumlah CTN</th>
-                    <th style="min-width:150px;">Catatan</th>
+                    <th style="min-width:200px;">Catatan</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($laporan)): ?>
-                    <tr>
-                        <td colspan="12" style="text-align:center; padding: 60px 20px;">
-                            <i class="fa-solid fa-box-open" style="font-size: 2.5rem; color: var(--wh-border);"></i>
-                            <p style="margin-top: 14px; color: var(--wh-text); font-weight: 600;">Data tidak ditemukan.</p>
-                            <p style="color: var(--wh-text-soft); font-size: 0.85rem;">Coba ubah filter pencarian Anda.</p>
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php $no = 1; foreach ($laporan as $stok) : ?>
-                        <?php
-                            $bisaDipecah    = (int) ($stok['bisa_dipecah'] ?? 0);
-                            $beratPerSatuan = (float) $stok['berat_per_satuan'];
-                            if ($bisaDipecah === 1) {
-                                $totalBeratRow = (float) $stok['stok_saat_ini'];
-                                if (strtolower($stok['satuan_berat']) === 'gram') {
-                                    $totalBeratRow *= 1000;
-                                }
-                            } else {
-                                $totalBeratRow = $stok['stok_saat_ini'] * $beratPerSatuan;
-                            }
-
-                            $badgeClass = 'default'; $badgeIcon = 'fa-circle';
-                            if ($stok['status'] == 'Aman')            { $badgeClass = 'aman';    $badgeIcon = 'fa-circle-check'; }
-                            elseif ($stok['status'] == 'Hampir Expired') { $badgeClass = 'hampir';  $badgeIcon = 'fa-triangle-exclamation'; }
-                            elseif ($stok['status'] == 'Expired')     { $badgeClass = 'expired'; $badgeIcon = 'fa-ban'; }
-
-                            $expiredHtml = '-';
-                            if ($stok['tanggal_kedaluwarsa']) {
-                                $tglFormatted = date('d M Y', strtotime($stok['tanggal_kedaluwarsa']));
-                                $diffDays = floor((strtotime($stok['tanggal_kedaluwarsa']) - strtotime(date('Y-m-d'))) / 86400);
-                                if ($diffDays < 0)       $expiredHtml = '<span class="wh-expired-over">Expired</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
-                                elseif ($diffDays === 0) $expiredHtml = '<span class="wh-expired-soon">Hari Ini</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
-                                elseif ($diffDays === 1) $expiredHtml = '<span class="wh-expired-soon">Besok</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
-                                elseif ($diffDays <= 7)  $expiredHtml = '<span class="wh-expired-soon">' . $diffDays . ' Hari Lagi</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
-                                else                     $expiredHtml = '<span class="wh-expired-ok">' . $tglFormatted . '</span>';
-                            }
-                        ?>
-                        <tr>
-                            <td class="text-center"><?= $no++ ?></td>
-                            <td class="text-center">
-                                <span class="wh-badge <?= $badgeClass ?>">
-                                    <i class="fa-solid <?= $badgeIcon ?>"></i><?= esc($stok['status']) ?>
-                                </span>
-                            </td>
-                            <td><?= esc($stok['donatur'] ?? '-') ?></td>
-                            <td><?= esc($stok['kategori']) ?></td>
-                            <td class="text-center"><?= $expiredHtml ?></td>
-                            <td><strong><?= esc($stok['nama_barang']) ?></strong></td>
-                            <td class="text-center" style="font-weight:700;">
-                                <?= number_format($stok['stok_saat_ini'], 0, ',', '.') ?>
-                            </td>
-                            <td class="text-center"><?= esc($stok['satuan']) ?></td>
-                            <td class="text-end">
-                                <?= $beratPerSatuan > 0 ? $beratPerSatuan . ' ' . esc($stok['satuan_berat']) : '-' ?>
-                            </td>
-                            <td class="text-end" style="font-weight:500;">
-                                <?= $totalBeratRow > 0 ? format_berat($totalBeratRow, $stok['satuan_berat']) : '-' ?>
-                            </td>
-                            <td class="text-center">
-                                <?= !empty($stok['jumlah_ctn']) ? esc($stok['jumlah_ctn']) : '-' ?>
-                            </td>
-                            <td style="color:var(--wh-text-soft);">
-                                <small><?= esc($stok['catatan'] ?? '-') ?></small>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                <!-- DataTables akan mengisi data ini secara otomatis via AJAX -->
             </tbody>
         </table>
     </div>
@@ -429,21 +367,70 @@
 
 <?= $this->section('scripts') ?>
 <script>
+let csrfTokenName = '<?= csrf_token() ?>';
+let csrfHash = '<?= csrf_hash() ?>';
+
 $(document).ready(function () {
-    <?php if (!empty($laporan)): ?>
-    $('#tabelLaporanStok').DataTable({
+    var table = $('#tabelLaporanStok').DataTable({
+        processing: true,
+        serverSide: true,
+        stateSave: true,
+        ajax: {
+            url: "<?= site_url('laporan/stok/ajaxData') ?>",
+            type: "POST",
+            data: function (d) {
+                d[csrfTokenName] = csrfHash;
+                d.kategori = $('#filterKategori').val();
+                d.status = $('#filterStatus').val();
+                d.donatur = $('#filterDonatur').val();
+                d.search_custom = $('#filterSearch').val();
+                d.start_date = $('#filterStartDate').val();
+                d.end_date = $('#filterEndDate').val();
+            },
+            dataSrc: function (json) {
+                if (json.csrf_hash) {
+                    csrfHash = json.csrf_hash;
+                }
+                $('.wh-toolbar-count .num').text(new Intl.NumberFormat('id-ID').format(json.recordsFiltered || 0));
+                return json.data || [];
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTables AJAX error:', error, thrown);
+            }
+        },
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
         order: [],
-        columnDefs: [{ orderable: false, targets: [0] }],
-        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+        columnDefs: [
+            { orderable: false, targets: [0, 1, 2, 3, 5, 7, 8, 9, 10, 11] }, // Allow sorting on kedaluwarsa(4) and jumlah stok(6)
+            { className: "text-center", targets: [0, 1, 4, 6, 7, 10] },
+            { className: "text-end", targets: [8, 9] }
+        ],
+        dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"l><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
         responsive: true,
-        initComplete: function() {
+        drawCallback: function() {
             $('#tabelLaporanStok').closest('.wh-table-card').addClass('loaded');
         }
     });
-    <?php else: ?>
-    $('#tabelLaporanStok').closest('.wh-table-card').addClass('loaded');
-    <?php endif; ?>
+
+    $('form').on('submit', function(e) {
+        e.preventDefault();
+        $('#tabelLaporanStok').closest('.wh-table-card').removeClass('loaded');
+        table.ajax.reload();
+    });
+
+    // Option: Reset button to clear form and reload
+    $('.wh-btn-outline').on('click', function(e) {
+        e.preventDefault();
+        $('form')[0].reset();
+        $('#filterSearch').val('');
+        $('#filterDonatur').val('');
+        $('#filterKategori').val('');
+        $('#filterStatus').val('');
+        $('#filterStartDate').val('');
+        $('#filterEndDate').val('');
+        $('#tabelLaporanStok').closest('.wh-table-card').removeClass('loaded');
+        table.ajax.reload();
+    });
 });
 </script>
 <?= $this->endSection() ?>

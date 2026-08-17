@@ -50,6 +50,7 @@ class Donatur extends BaseController
             'alamat'        => $this->request->getPost('alamat'),
         ]);
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('/masterdata/donatur')->with('success', 'Donatur berhasil ditambahkan.');
     }
 
@@ -87,6 +88,7 @@ class Donatur extends BaseController
             'alamat'        => $this->request->getPost('alamat'),
         ]);
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('/masterdata/donatur')->with('success', 'Donatur berhasil diperbarui.');
     }
 
@@ -94,11 +96,30 @@ class Donatur extends BaseController
     {
         $donatur = $this->donaturModel->find($id);
         if (!$donatur) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => false, 'message' => 'Donatur tidak ditemukan.']);
+            }
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Donatur tidak ditemukan.');
         }
 
+        $db = \Config\Database::connect();
+        $isUsed = $db->table('barang_masuk')->where('id_donatur', $id)->countAllResults();
+        if ($isUsed > 0) {
+            $msg = "Donatur '" . esc($donatur['nama_donatur']) . "' tidak dapat dihapus karena masih tercatat dalam " . $isUsed . " transaksi Donasi Masuk.";
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => false, 'message' => $msg]);
+            }
+            return redirect()->to(site_url('masterdata/donatur'))->with('error', $msg);
+        }
+
         $this->donaturModel->delete($id);
-        return redirect()->to('masterdata/donatur')->with('success', 'Data Donatur berhasil dihapus.');
+        helper('format'); clear_dashboard_cache();
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => true, 'message' => 'Data Donatur berhasil dihapus.']);
+        }
+
+        return redirect()->to(site_url('masterdata/donatur'))->with('success', 'Data Donatur berhasil dihapus.');
     }
 
     /**
@@ -127,7 +148,7 @@ class Donatur extends BaseController
             
             $aksi = '<div class="don-actions">
                         <a href="' . site_url('masterdata/donatur/edit/' . $row['id']) . '" class="don-action-btn don-action-edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
-                        <a href="' . site_url('masterdata/donatur/delete/' . $row['id']) . '" class="don-action-btn don-action-delete" title="Hapus" onclick="return confirm(\'Yakin ingin menghapus donatur ini?\')"><i class="fa-solid fa-trash"></i></a>
+                        <button type="button" class="don-action-btn don-action-delete" title="Hapus" onclick="confirmDeleteDonatur(' . $row['id'] . ')"><i class="fa-solid fa-trash"></i></button>
                      </div>';
             $rowData[] = $aksi;
             $data[] = $rowData;

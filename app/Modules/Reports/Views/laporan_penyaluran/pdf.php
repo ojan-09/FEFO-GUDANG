@@ -149,7 +149,7 @@
                             $jumlahStok = number_format($item['jumlah'], 2, ',', '.');
                         } else {
                             $totalKg = $item['jumlah'] * $beratPerSatuan;
-                            if (strtolower($item['satuan_berat']) === 'gram') {
+                            if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                                 $totalKg = $totalKg / 1000;
                             }
                             $satuanStok = esc($item['satuan']);

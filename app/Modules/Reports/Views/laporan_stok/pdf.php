@@ -77,13 +77,13 @@
                         $beratPerSatuan = (float) $stok['berat_per_satuan'];
                         if ($bisaDipecah === 1) {
                             $totalBeratRow = (float) $stok['stok_saat_ini'];
-                            if (strtolower($stok['satuan_berat']) === 'gram') {
+                            if (in_array(strtolower(trim($stok['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                                 $totalBeratRow *= 1000;
                             }
                         } else {
                             $totalBeratRow  = $stok['stok_saat_ini'] * $beratPerSatuan;
                         }
-                        $totalKg    = (strtolower($stok['satuan_berat']) === 'gram') ? $totalBeratRow / 1000 : $totalBeratRow;
+                        $totalKg    = (in_array(strtolower(trim($stok['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) ? $totalBeratRow / 1000 : $totalBeratRow;
                         $totalStok += $stok['stok_saat_ini'];
                         $totalBeratSeluruh += $totalKg;
 

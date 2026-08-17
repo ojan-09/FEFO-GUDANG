@@ -20,7 +20,8 @@ class Barang extends BaseController
     public function index()
     {
         $data = [
-            'title'  => 'Data Barang'
+            'title'         => 'Data Barang',
+            'active_barang' => $this->barangModel->where('status', 'active')->orderBy('nama_barang', 'ASC')->findAll(),
         ];
         return view('App\Modules\MasterData\Views\barang\index', $data);
     }
@@ -40,9 +41,9 @@ class Barang extends BaseController
         $rules = [
             'id_kategori'      => 'required|integer',
             'nama_barang'      => 'required|min_length[3]|max_length[100]|is_unique[barang.nama_barang]',
-            'satuan'           => 'required|in_list[Karung,Dus,Box,Pack,Pcs,Botol,Kaleng,Sak,Tray,Pouch]',
+            'satuan'           => 'required|in_list[Karung,Dus,Box,Kotak,Pack,Pcs,Botol,Kaleng,Tray,Pouch,Sachet,Renceng,Kantong,Repack,Kg,PCS,KOTAK,pcs,kotak]',
             'berat_per_satuan' => 'required|decimal|greater_than[0]',
-            'satuan_berat'     => 'required|in_list[Gram,Kg]',
+            'satuan_berat'     => 'required|in_list[Gram,Kg,ml,Liter]',
             'minimum_stok'     => 'required|integer|greater_than_equal_to[0]',
             'bisa_dipecah'     => 'required|in_list[0,1]',
         ];
@@ -111,6 +112,9 @@ class Barang extends BaseController
             'bisa_dipecah'     => $bisaDipecah,
         ]);
 
+        helper('format');
+        clear_dashboard_cache();
+
         return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil ditambahkan.');
     }
 
@@ -134,9 +138,9 @@ class Barang extends BaseController
         $rules = [
             'id_kategori'      => 'required|integer',
             'nama_barang'      => "required|min_length[3]|max_length[100]|is_unique[barang.nama_barang,id,{$id}]",
-            'satuan'           => 'required|in_list[Karung,Dus,Box,Pack,Pcs,Botol,Kaleng,Sak,Tray,Pouch]',
+            'satuan'           => 'required|in_list[Karung,Dus,Box,Kotak,Pack,Pcs,Botol,Kaleng,Tray,Pouch,Sachet,Renceng,Kantong,Repack,Kg,PCS,KOTAK,pcs,kotak]',
             'berat_per_satuan' => 'required|decimal|greater_than[0]',
-            'satuan_berat'     => 'required|in_list[Gram,Kg]',
+            'satuan_berat'     => 'required|in_list[Gram,Kg,ml,Liter]',
             'minimum_stok'     => 'required|integer|greater_than_equal_to[0]',
             'bisa_dipecah'     => 'required|in_list[0,1]',
         ];
@@ -206,6 +210,9 @@ class Barang extends BaseController
             'bisa_dipecah'     => $bisaDipecah,
         ]);
 
+        helper('format');
+        clear_dashboard_cache();
+
         return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil diperbarui.');
     }
 
@@ -213,11 +220,30 @@ class Barang extends BaseController
     {
         $barang = $this->barangModel->find($id);
         if (!$barang) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => false, 'message' => 'Barang tidak ditemukan.']);
+            }
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Barang tidak ditemukan.');
         }
 
+        $db = \Config\Database::connect();
+        $isUsedBatch = $db->table('batch')->where('id_barang', $id)->countAllResults();
+        if ($isUsedBatch > 0) {
+            $msg = "Barang '" . esc($barang['nama_barang']) . "' tidak dapat dihapus karena sudah memiliki data Batch Stok.";
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => false, 'message' => $msg]);
+            }
+            return redirect()->to(site_url('masterdata/barang'))->with('error', $msg);
+        }
+
         $this->barangModel->delete($id);
-        return redirect()->to('/masterdata/barang')->with('success', 'Barang berhasil dihapus.');
+        helper('format'); clear_dashboard_cache();
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => true, 'message' => 'Barang berhasil dihapus.']);
+        }
+
+        return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil dihapus.');
     }
 
     /**
@@ -241,9 +267,15 @@ class Barang extends BaseController
             $bisaDipecah = $row['bisa_dipecah'] == 1 ? '<span class="badge" style="background:#dcfce7; color:#16a34a;"><i class="fa-solid fa-check me-1"></i>Ya</span>' : '<span class="badge" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-xmark me-1"></i>Tidak</span>';
             $beratPerSatuan = $row['berat_per_satuan'] > 0 ? rtrim(rtrim(number_format($row['berat_per_satuan'], 2, ',', '.'), '0'), ',') . ' ' . esc($row['satuan_berat']) : '-';
 
+            $nama_barang_html = esc($row['nama_barang']);
+            if (isset($row['status']) && $row['status'] === 'merged') {
+                $targetName = !empty($row['target_nama_barang']) ? esc($row['target_nama_barang']) : 'Unknown';
+                $nama_barang_html .= ' <span class="badge bg-secondary ms-1" style="font-size: 0.75em;"><i class="fa-solid fa-code-merge me-1"></i>Merged &rarr; ' . $targetName . '</span>';
+            }
+
             $rowData[] = '<div class="text-center text-secondary">' . $no . '</div>';
             $rowData[] = '<span class="fw-bold" style="color:#2563eb;">' . esc($row['kode_barang']) . '</span>';
-            $rowData[] = '<span class="fw-semibold" style="color:#0f172a;">' . esc($row['nama_barang']) . '</span>';
+            $rowData[] = '<span class="fw-semibold" style="color:#0f172a;">' . $nama_barang_html . '</span>';
             $rowData[] = '<span class="badge bg-light text-dark border">' . esc($row['nama_kategori']) . '</span>';
             $rowData[] = '<span style="color:#475569;">' . esc($row['satuan']) . '</span>';
             $rowData[] = '<span style="color:#475569;">' . $beratPerSatuan . '</span>';
@@ -252,7 +284,7 @@ class Barang extends BaseController
             
             $aksi = '<div class="d-flex justify-content-center align-items-center gap-1">
                         <a href="' . site_url('masterdata/barang/edit/' . $row['id_barang']) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
-                        <a href="' . site_url('masterdata/barang/delete/' . $row['id_barang']) . '" class="btn btn-sm btn-outline-danger" title="Hapus" onclick="return confirm(\'Yakin menghapus barang ini?\')"><i class="fa-solid fa-trash"></i></a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" onclick="confirmDeleteBarang(' . $row['id_barang'] . ')"><i class="fa-solid fa-trash"></i></button>
                      </div>';
             $rowData[] = $aksi;
             $data[] = $rowData;
@@ -279,5 +311,91 @@ class Barang extends BaseController
         $lastNumber = $row ? (int)$row['max_num'] : 0;
         $newNumber = $lastNumber + 1;
         return 'BRG-' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+    }
+
+    public function merge()
+    {
+        if (!in_groups('Administrator')) {
+            return redirect()->to('/masterdata/barang')->with('error', 'Akses ditolak. Hanya Administrator yang dapat menggabungkan barang.');
+        }
+
+        $id_target = $this->request->getPost('id_target');
+        $id_sumber = $this->request->getPost('id_sumber'); 
+
+        if (empty($id_target) || empty($id_sumber)) {
+            return redirect()->to('/masterdata/barang')->with('error', 'Barang target dan sumber harus dipilih.');
+        }
+
+        if (!is_array($id_sumber)) {
+            $id_sumber = [$id_sumber];
+        }
+
+        if (in_array($id_target, $id_sumber)) {
+            return redirect()->to('/masterdata/barang')->with('error', 'Barang target tidak boleh sama dengan barang sumber.');
+        }
+
+        $db = \Config\Database::connect();
+        
+        $target = $this->barangModel->find($id_target);
+        if (!$target || $target['status'] !== 'active') {
+            return redirect()->to('/masterdata/barang')->with('error', 'Barang target tidak valid atau sudah digabungkan.');
+        }
+
+        $sumberList = $this->barangModel->whereIn('id', $id_sumber)->findAll();
+        if (count($sumberList) !== count($id_sumber)) {
+            return redirect()->to('/masterdata/barang')->with('error', 'Beberapa barang sumber tidak ditemukan.');
+        }
+
+        $namaSumber = [];
+        foreach ($sumberList as $s) {
+            if ($s['status'] !== 'active') {
+                return redirect()->to('/masterdata/barang')->with('error', "Barang {$s['nama_barang']} sudah berstatus merged.");
+            }
+            $namaSumber[] = $s['nama_barang'];
+        }
+
+        $db->transStart();
+
+        // Update each source item
+        foreach ($id_sumber as $id) {
+            $this->barangModel->update($id, [
+                'status' => 'merged',
+                'merged_to' => $id_target
+            ]);
+        }
+
+        // Reassign batch id_barang
+        $db->table('batch')
+           ->whereIn('id_barang', $id_sumber)
+           ->update(['id_barang' => $id_target]);
+
+        // Insert into activity logs
+        $user_id = user_id();
+        $namaSumberStr = implode(', ', $namaSumber);
+        $deskripsi = "Menggabungkan Master Barang\nBarang Target:\n{$target['nama_barang']} (ID: {$id_target})\nBarang Sumber:\n{$namaSumberStr}";
+        
+        $db->table('activity_logs')->insert([
+            'id_user'    => $user_id,
+            'aksi'       => 'Merge Barang',
+            'modul'      => 'Master Data Barang',
+            'deskripsi'  => $deskripsi,
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->to('/masterdata/barang')->with('error', 'Terjadi kesalahan saat menggabungkan barang.');
+        }
+
+        // Clear dashboard caches to immediately reflect changes
+        cache()->delete('dashboard_total_jenis_barang');
+        cache()->delete('dashboard_total_batch');
+        cache()->delete('dashboard_total_berat');
+        cache()->delete('dashboard_top_barang');
+        cache()->delete('dashboard_kategori');
+
+        helper('format'); clear_dashboard_cache();
+        return redirect()->to('/masterdata/barang')->with('success', 'Barang berhasil digabungkan. Batch, stok, dan histori transaksi telah dialihkan ke barang target.');
     }
 }

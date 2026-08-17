@@ -9,6 +9,8 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class LaporanExpired extends BaseController
 {
@@ -129,7 +131,7 @@ class LaporanExpired extends BaseController
                     $weightInKg = (float) $row['jumlah'];
                 } else {
                     $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
-                    $weightInKg = (strtolower($row['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+                    $weightInKg = (in_array(strtolower(trim($row['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) ? ($totalBeratRow / 1000) : $totalBeratRow;
                 }
                 $totalBerat += $weightInKg;
                 
@@ -162,19 +164,124 @@ class LaporanExpired extends BaseController
     public function index()
     {
         $db = \Config\Database::connect();
-        $result = $this->_getFilteredData();
-        
+        $filters = [
+            'status'   => $this->request->getGet('status') ?: 'Semua',
+            'donatur'  => $this->request->getGet('donatur'),
+            'search'   => $this->request->getGet('search'),
+            'kategori' => $this->request->getGet('kategori')
+        ];
+
         $kategoriList = $db->table('kategori')->select('nama_kategori')->orderBy('nama_kategori', 'ASC')->get()->getResultArray();
 
         $data = [
-            'title'      => 'Laporan Barang Expired',
-            'laporan'    => $result['data'],
-            'summary'    => $result['summary'],
-            'filters'    => $result['filters'],
-            'kategori'   => $kategoriList
+            'title'    => 'Laporan Barang Expired',
+            'filters'  => $filters,
+            'kategori' => $kategoriList
         ];
         
         return view('App\Modules\Reports\Views\laporan_expired\index', $data);
+    }
+
+    public function ajaxData()
+    {
+        try {
+            $postData = $this->request->getPost();
+            $model = new \App\Modules\Reports\Models\LaporanExpiredModel();
+
+            $list = $model->getDatatables($postData);
+            $data = [];
+            $no = (int)($postData['start'] ?? 0);
+
+            helper('format');
+            $todayStr = date('Y-m-d');
+            $todayTime = strtotime($todayStr);
+
+            foreach ($list as $item) {
+                $no++;
+                $bisaDipecah = (int)($item['bisa_dipecah'] ?? 0);
+                $beratPerSatuan = (float)$item['berat_per_satuan'];
+
+                if ($bisaDipecah === 1) {
+                    $weightInKg = (float)$item['jumlah'];
+                    if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
+                        $weightInKg /= 1000;
+                    }
+                    $jumlahStokText = number_format($item['jumlah'], 2, ',', '.');
+                    $satuanText     = 'Kg';
+                    $beratBersihText = '-';
+                } else {
+                    $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+                    $weightInKg = (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) ? ($totalBeratRow / 1000) : $totalBeratRow;
+                    $jumlahStokText = number_format($item['jumlah'], 0, ',', '.');
+                    $satuanText     = esc($item['satuan']);
+                    $beratBersihText = $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-';
+                }
+
+                $sisaHari = null;
+                $statusBadge = '<span class="badge bg-secondary">Tidak Diketahui</span>';
+
+                if ($item['tanggal_kedaluwarsa']) {
+                    $expTime = strtotime($item['tanggal_kedaluwarsa']);
+                    $sisaHari = floor(($expTime - $todayTime) / (60 * 60 * 24));
+                    
+                    if ($sisaHari < 0) {
+                        $statusBadge = '<span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Expired (' . abs($sisaHari) . ' hr lalu)</span>';
+                    } elseif ($sisaHari <= 30) {
+                        $statusBadge = '<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Hampir Expired (' . $sisaHari . ' hr)</span>';
+                    } else {
+                        $statusBadge = '<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Aman (' . $sisaHari . ' hr lagi)</span>';
+                    }
+                }
+
+                $tglExp = $item['tanggal_kedaluwarsa'] ? date('d/m/Y', strtotime($item['tanggal_kedaluwarsa'])) : '-';
+                $totalBeratText = $weightInKg > 0 ? format_berat($weightInKg, 'Kg') : '-';
+
+                $data[] = [
+                    'no'                  => $no,
+                    'tanggal_kedaluwarsa' => $tglExp,
+                    'status_badge'        => $statusBadge,
+                    'nama_barang'         => '<strong>' . esc($item['nama_barang']) . '</strong>',
+                    'kategori'            => '<span class="badge bg-light text-dark">' . esc($item['kategori_batch'] ?? '-') . '</span>',
+                    'donatur'             => esc($item['nama_donatur'] ?? '-'),
+                    'stok'                => $jumlahStokText,
+                    'satuan'              => $satuanText,
+                    'jumlah_ctn'          => number_format($item['jumlah_ctn'] ?? 0, 0, ',', '.'),
+                    'berat_bersih'        => $beratBersihText,
+                    'total_berat'         => $totalBeratText,
+                    'keterangan'          => '<small>' . esc($item['keterangan'] ?? '-') . '</small>'
+                ];
+            }
+
+            $summary = $model->getSummaryData($postData);
+
+            $output = [
+                'draw'            => intval($postData['draw'] ?? 0),
+                'recordsTotal'    => $model->countAllData($postData),
+                'recordsFiltered' => $model->countFiltered($postData),
+                'data'            => $data,
+                'summary'         => $summary,
+                'csrf_hash'       => csrf_hash()
+            ];
+
+            return $this->response->setJSON($output);
+        } catch (\Throwable $e) {
+            log_message('error', 'LaporanExpired::ajaxData error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'draw'            => intval($this->request->getPost('draw') ?? 0),
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+                'summary'         => [
+                    'total_batch'          => 0,
+                    'total_barang'         => 0,
+                    'total_berat'          => 0,
+                    'total_expired'        => 0,
+                    'total_hampir_expired' => 0
+                ],
+                'error'           => 'Terjadi kesalahan saat memuat data.',
+                'csrf_hash'       => csrf_hash()
+            ]);
+        }
     }
 
     public function pdf()
@@ -196,7 +303,7 @@ class LaporanExpired extends BaseController
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
-        $dompdf->stream("Laporan_Barang_Expired_" . date('Ymd_His') . ".pdf", ["Attachment" => true]);
+        $dompdf->stream("Laporan_Barang_Expired_" . date('Ymd_His') . ".pdf", ["Attachment" => false]);
     }
 
     public function excel()
@@ -274,7 +381,7 @@ class LaporanExpired extends BaseController
             $beratPerSatuan = (float) $item['berat_per_satuan'];
             if ($bisaDipecah === 1) {
                 $totalBeratRow = (float) $item['jumlah'];
-                if (strtolower($item['satuan_berat']) === 'gram') {
+                if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                     $totalBeratRow *= 1000;
                 }
             } else {
@@ -303,6 +410,7 @@ class LaporanExpired extends BaseController
             $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("B{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("C{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("H{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet->getStyle("I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("J{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -310,7 +418,20 @@ class LaporanExpired extends BaseController
             $sheet->getStyle("L{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
             $sheet->getStyle("A{$row}:M{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-            
+
+            if (isset($item['sisa_hari']) && $item['sisa_hari'] !== null) {
+                if ($item['sisa_hari'] < 0) {
+                    $sheet->getStyle("A{$row}:M{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8D7DA');
+                    $sheet->getStyle("B{$row}")->getFont()->setColor(new Color('FF842029'))->setBold(true);
+                } elseif ($item['sisa_hari'] <= 30) {
+                    $sheet->getStyle("A{$row}:M{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFFF3CD');
+                    $sheet->getStyle("B{$row}")->getFont()->setColor(new Color('FF664D03'))->setBold(true);
+                } else {
+                    $sheet->getStyle("A{$row}:M{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFD1E7DD');
+                    $sheet->getStyle("B{$row}")->getFont()->setColor(new Color('FF0F5132'));
+                }
+            }
+
             $row++;
         }
 
@@ -318,11 +439,10 @@ class LaporanExpired extends BaseController
         foreach (range('A', 'M') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
-        
+
         // Blank row before summary
         $row++;
         
-        // Summary
         $sheet->setCellValue("B{$row}", "Total Batch");
         $sheet->setCellValue("C{$row}", $summary['total_batch']);
         $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
@@ -334,7 +454,7 @@ class LaporanExpired extends BaseController
         $row++;
         
         $sheet->setCellValue("B{$row}", "Total Berat");
-        $sheet->setCellValue("C{$row}", $summary['total_berat']);
+        $sheet->setCellValue("C{$row}", format_berat($summary['total_berat'], 'Kg'));
         $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
         $row++;
 
@@ -358,5 +478,3 @@ class LaporanExpired extends BaseController
         exit;
     }
 }
-
-

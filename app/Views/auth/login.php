@@ -250,7 +250,11 @@
             <div class="card-sub">Masuk ke akun Anda untuk mengakses sistem Warehouse Management Foodbank Indonesia.</div>
         </div>
 
-        <?= view('Myth\Auth\Views\_message_block') ?>
+        <?php if (session()->has('message')) : ?>
+            <div class="alert alert-success rounded-3 mb-3" style="font-size:13px;">
+                <?= session('message') ?>
+            </div>
+        <?php endif ?>
 
         <?php if (session()->getFlashdata('error')): ?>
             <div class="alert-custom">
@@ -258,6 +262,17 @@
                 <?= session()->getFlashdata('error') ?>
             </div>
         <?php endif; ?>
+
+        <?php if (session()->has('errors') && is_array(session('errors'))) : ?>
+            <div class="alert-custom">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <div class="mb-0">
+                    <?php foreach (session('errors') as $error) : ?>
+                        <div><?= esc($error) ?></div>
+                    <?php endforeach ?>
+                </div>
+            </div>
+        <?php endif ?>
 
         <form action="<?= url_to('login') ?>" method="post" id="loginForm">
             <?= csrf_field() ?>

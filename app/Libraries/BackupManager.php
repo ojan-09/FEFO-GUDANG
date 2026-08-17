@@ -118,7 +118,29 @@ class BackupManager
         $sha256 = hash_file('sha256', $filepath);
         file_put_contents($this->backupPath . str_replace('.sql', '.sha256', $filename), $sha256);
 
+        // 4. Kompresi ZIP jika extension tersedia
+        $this->createZip($filepath);
+
         return $filename;
+    }
+
+    public function createZip(string $filepath): ?string
+    {
+        if (!extension_loaded('zip')) return null;
+
+        $zipPath = str_replace('.sql', '.zip', $filepath);
+        $zip = new \ZipArchive();
+
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            $zip->addFile($filepath, basename($filepath));
+            $shaFile = str_replace('.sql', '.sha256', $filepath);
+            if (file_exists($shaFile)) {
+                $zip->addFile($shaFile, basename($shaFile));
+            }
+            $zip->close();
+            return basename($zipPath);
+        }
+        return null;
     }
 
     public function getBackupFiles(): array
@@ -140,8 +162,36 @@ class BackupManager
         }
 
         usort($files, fn($a, $b) => $b['date'] <=> $a['date']);
-
         return $files;
+    }
+
+    public function sendBackupEmail(string $filepath, string $targetEmail): bool
+    {
+        if (!file_exists($filepath)) return false;
+
+        $zipPath = str_replace('.sql', '.zip', $filepath);
+        $attachment = file_exists($zipPath) ? $zipPath : $filepath;
+
+        try {
+            $email = \Config\Services::email();
+            $email->clear(true);
+            
+            $email->setTo($targetEmail);
+            $email->setSubject('FEFO Gudang - Auto Backup Database [' . date('d M Y H:i') . ']');
+            $email->setMessage("Halo Admin,\n\nTerlampir file backup otomatis database FEFO Gudang.\n\nFile: " . basename($attachment) . "\nTanggal: " . date('d-m-Y H:i:s') . "\nUkuran: " . round(filesize($attachment) / 1024, 2) . " KB\n\nSalam,\nSistem FEFO Gudang");
+            
+            $email->attach($attachment);
+            
+            $result = $email->send();
+            if ($result) {
+                return true;
+            }
+            log_message('error', 'Standard SMTP send failed. Debug: ' . strip_tags($email->printDebugger(['headers', 'subject'])));
+        } catch (\Throwable $e) {
+            log_message('error', 'Exception in sendBackupEmail: ' . $e->getMessage());
+        }
+
+        return false;
     }
 
     public function parseMetadata(string $filepath): array

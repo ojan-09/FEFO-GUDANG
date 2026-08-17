@@ -58,8 +58,12 @@ class BarangKeluar extends BaseController
             $no++;
             $row = [];
 
+            $jenisBadge = ($bk['jenis_penyaluran'] === 'Penyaluran Internal')
+                ? '<span class="badge bg-purple-subtle text-purple border border-purple-subtle rounded-pill px-2 py-1 ms-1 small" style="background:#F3E8FF; color:#7E22CE; font-size:11px;">Internal</span>'
+                : '<span class="badge bg-blue-subtle text-blue border border-blue-subtle rounded-pill px-2 py-1 ms-1 small" style="background:#EFF6FF; color:#1D4ED8; font-size:11px;">Relawan</span>';
+
             $row[] = '<div class="text-center text-secondary">' . $no . '</div>';
-            $row[] = '<span class="badge-notrx">' . esc($bk['nomor_transaksi']) . '</span>';
+            $row[] = '<div><span class="badge-notrx">' . esc($bk['nomor_transaksi']) . '</span> ' . $jenisBadge . '</div>';
             $row[] = '<span class="fw-semibold" style="color:#0f172a;">' . esc($bk['tujuan_penyaluran']) . '</span>';
             $row[] = '<span style="color:#475569;">' . esc($bk['nama_wilayah'] ?? '-') . '</span>';
             $row[] = '<span style="color:#475569;">' . date('d M Y', strtotime($bk['tanggal_keluar'])) . '</span>';
@@ -67,10 +71,14 @@ class BarangKeluar extends BaseController
             $row[] = '<span style="color:#475569;">' . esc($bk['petugas']) . '</span>';
             
             $aksi = '<div class="dm-action-group">
-                        <a href="' . site_url('transaksi/barang-keluar/berita-acara/' . $bk['id']) . '" class="dm-btn-action doc" title="Cetak Berita Acara" target="_blank"><i class="fa-solid fa-file-pdf"></i></a>
+                        <a href="' . site_url('transaksi/barang-keluar/berita-acara/' . $bk['id']) . '" class="dm-btn-action pdf" title="Cetak Berita Acara (PDF)" target="_blank"><i class="fa-solid fa-file-pdf"></i></a>
+                        <a href="' . site_url('transaksi/barang-keluar/berita-acara-word/' . $bk['id']) . '" class="dm-btn-action word" title="Download Berita Acara (Word)"><i class="fa-solid fa-file-word"></i></a>
                         <a href="' . site_url('transaksi/barang-keluar/detail/' . $bk['id']) . '" class="dm-btn-action view" title="Lihat Detail"><i class="fa-solid fa-eye"></i></a>
                         <a href="' . site_url('transaksi/barang-keluar/edit/' . $bk['id']) . '" class="dm-btn-action edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
-                        <a href="' . site_url('transaksi/barang-keluar/delete/' . $bk['id']) . '" class="dm-btn-action del" title="Hapus" onclick="return confirm(\'Yakin ingin menghapus transaksi penyaluran ini? Stok akan dikembalikan ke batch awal.\')"><i class="fa-solid fa-trash"></i></a>
+                        <form action="' . site_url('transaksi/barang-keluar/delete/' . $bk['id']) . '" method="POST" class="d-inline form-delete-swal" data-confirm-text="Yakin ingin menghapus transaksi penyaluran ini? Stok akan dikembalikan ke batch awal.">
+                            ' . csrf_field() . '
+                            <button type="submit" class="dm-btn-action del" title="Hapus" style="border:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                        </form>
                      </div>';
             $row[] = $aksi;
             $data[] = $row;
@@ -138,6 +146,7 @@ class BarangKeluar extends BaseController
                   AND status = 'Aktif'
                 GROUP BY id_barang
             ) stock_summary ON stock_summary.id_barang = barang.id
+            WHERE barang.status = 'active'
             ORDER BY barang.nama_barang ASC
         ";
         
@@ -270,12 +279,24 @@ class BarangKeluar extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $db->transBegin();
+        $docService = new \App\Libraries\DocumentNumberService();
 
-        $nomorTransaksi = $this->generateNomorTransaksi();
+        // Get single global atomic counter number
+        $nomorTransaksi = $docService->getNextDocumentNumber(
+            'barang_keluar',
+            null,
+            user()->username ?? 'Petugas'
+        );
+
+        $jenisPenyaluran  = $this->request->getPost('jenis_penyaluran') ?? 'Penyaluran Relawan';
+        $penerimaRelawan = $this->request->getPost('penerima_relawan');
+        $unitInternal    = $this->request->getPost('unit_internal');
 
         $this->barangKeluarModel->insert([
             'nomor_transaksi'   => $nomorTransaksi,
+            'jenis_penyaluran'  => $jenisPenyaluran,
+            'penerima_relawan'  => $penerimaRelawan,
+            'unit_internal'     => $unitInternal,
             'id_user'           => user()->id,
             'id_wilayah'        => $this->request->getPost('id_wilayah'),
             'tanggal_keluar'    => $this->request->getPost('tanggal_keluar'),
@@ -312,6 +333,7 @@ class BarangKeluar extends BaseController
             $logMsg
         );
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi Barang Keluar berhasil disimpan. Stok batch telah dipotong menggunakan metode FEFO.');
     }
 
@@ -371,6 +393,7 @@ class BarangKeluar extends BaseController
                   AND status = 'Aktif'
                 GROUP BY id_barang
             ) stock_summary ON stock_summary.id_barang = barang.id
+            WHERE barang.status = 'active'
             ORDER BY barang.nama_barang ASC
         ";
         
@@ -380,21 +403,28 @@ class BarangKeluar extends BaseController
         $consolidatedDetails = [];
         $addedStok = [];
 
+        $batchIds = array_column($details, 'id_batch');
+        $batchList = !empty($batchIds) ? $this->batchModel->whereIn('id', $batchIds)->findAll() : [];
+        $batchMap  = [];
+        foreach ($batchList as $b) {
+            $batchMap[$b['id']] = $b;
+        }
+
         foreach ($details as $d) {
-            $batchInfo = $this->batchModel->find($d['id_batch']);
+            $batchInfo = $batchMap[$d['id_batch']] ?? null;
             if ($batchInfo) {
                 $idBrg = $batchInfo['id_barang'];
                 if (isset($consolidatedDetails[$idBrg])) {
                     $consolidatedDetails[$idBrg]['jumlah_keluar'] += $d['jumlah_keluar'];
                 } else {
                     $consolidatedDetails[$idBrg] = [
-                        'id_barang'     => $idBrg,
-                        'jumlah_keluar' => $d['jumlah_keluar'],
-                        'satuan'        => $batchInfo['satuan'] ?: 'Pcs',
+                        'id_barang'        => $idBrg,
+                        'jumlah_keluar'    => $d['jumlah_keluar'],
+                        'satuan'           => $batchInfo['satuan'] ?: 'Pcs',
                         'berat_per_satuan' => $batchInfo['berat_per_satuan'],
-                        'satuan_berat'  => $batchInfo['satuan_berat'],
-                        'nama_barang'   => $batchInfo['nama_barang'],
-                        'bisa_dipecah'  => (int)($batchInfo['bisa_dipecah'] ?? 0),
+                        'satuan_berat'     => $batchInfo['satuan_berat'],
+                        'nama_barang'      => $batchInfo['nama_barang'],
+                        'bisa_dipecah'     => (int)($batchInfo['bisa_dipecah'] ?? 0),
                     ];
                 }
                 
@@ -571,6 +601,7 @@ class BarangKeluar extends BaseController
             $logMsg
         );
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi Barang Keluar berhasil diperbarui. Stok batch telah dihitung ulang menggunakan metode FEFO.');
     }
 
@@ -612,7 +643,7 @@ class BarangKeluar extends BaseController
      */
     public function delete($id)
     {
-        if (!in_groups('Administrator')) {
+        if (!in_groups(['Administrator', 'Petugas Gudang'])) {
             return view('errors/html/error_403');
         }
 
@@ -630,7 +661,7 @@ class BarangKeluar extends BaseController
         $db->transComplete();
 
         if ($db->transStatus() === false) {
-            return redirect()->to('/transaksi/barang-keluar')->with('error', 'Gagal menghapus transaksi Barang Keluar. Rollback dibatalkan.');
+            return redirect()->to(site_url('transaksi/barang-keluar'))->with('error', 'Gagal menghapus transaksi Barang Keluar. Rollback dibatalkan.');
         }
 
         \App\Libraries\ActivityLogger::log(
@@ -639,7 +670,8 @@ class BarangKeluar extends BaseController
             "Menghapus Penyaluran\nNo. {$barangKeluar['nomor_transaksi']}"
         );
 
-        return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi berhasil dihapus. Stok batch telah dikembalikan.');
+        helper('format'); clear_dashboard_cache();
+        return redirect()->to(site_url('transaksi/barang-keluar'))->with('success', 'Transaksi berhasil dihapus. Stok batch telah dikembalikan.');
     }
 
     /**
@@ -652,26 +684,12 @@ class BarangKeluar extends BaseController
     }
 
     /**
-     * Generate nomor transaksi: BK-YYYYMMDD-XXXX
+     * Generate nomor transaksi dari Single Global Counter (Hanya Tampilan Form)
      */
     private function generateNomorTransaksi(): string
     {
-        $today  = date('Ymd');
-        $prefix = "BK-{$today}-";
-
-        $last = $this->barangKeluarModel
-            ->like('nomor_transaksi', $prefix, 'after')
-            ->orderBy('id', 'DESC')
-            ->first();
-
-        if ($last) {
-            $lastNumber = (int) substr($last['nomor_transaksi'], -4);
-            $newNumber  = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        $docService = new \App\Libraries\DocumentNumberService();
+        return $docService->getFormattedNumber();
     }
 
     public function downloadBeritaAcara($id)
@@ -695,10 +713,15 @@ class BarangKeluar extends BaseController
             ->where('detail_barang_keluar.id_barang_keluar', $id)
             ->findAll();
 
+        $docService = new \App\Libraries\DocumentNumberService();
+        $provisions = $docService->getActiveProvisions();
+
         $data = [
-            'title'        => 'Berita Acara Pendistribusian Donasi',
-            'barangKeluar' => $barangKeluar,
-            'details'      => $details,
+            'title'           => 'Berita Acara Pendistribusian Donasi',
+            'barangKeluar'    => $barangKeluar,
+            'details'         => $details,
+            'document_number' => $barangKeluar['nomor_transaksi'],
+            'provisions'      => array_column($provisions, 'content'),
         ];
 
         $dompdf = new \Dompdf\Dompdf();
@@ -707,14 +730,55 @@ class BarangKeluar extends BaseController
         $options->set('isHtml5ParserEnabled', true);
         $dompdf->setOptions($options);
 
-        $html = view('laporan/berita_acara_penyaluran', $data);
+        $isInternal = ($barangKeluar['jenis_penyaluran'] === 'Penyaluran Internal');
+        $viewTemplate = $isInternal ? 'laporan/permintaan_barang_keluar_internal' : 'laporan/berita_acara_penyaluran';
+
+        $html = view($viewTemplate, $data);
 
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        $filename = 'BAST_Donasi_' . $barangKeluar['nomor_transaksi'] . '.pdf';
+        $prefixName = $isInternal ? 'PBK_Internal_' : 'BAST_Donasi_';
+        $filename = $prefixName . str_replace('/', '_', $barangKeluar['nomor_transaksi']) . '.pdf';
         $dompdf->stream($filename, ['Attachment' => 0]);
         exit;
+    }
+
+    public function downloadBeritaAcaraWord($id)
+    {
+        $barangKeluar = $this->barangKeluarModel
+            ->select('barang_keluar.*, wilayah.nama_wilayah, users.username as petugas')
+            ->join('wilayah', 'wilayah.id = barang_keluar.id_wilayah', 'left')
+            ->join('users', 'users.id = barang_keluar.id_user')
+            ->find($id);
+
+        if (!$barangKeluar) {
+            return redirect()->to('/transaksi/barang-keluar')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
+        }
+
+        $details = $this->detailModel
+            ->select('detail_barang_keluar.*, batch.nomor_batch, batch.tanggal_kedaluwarsa, batch.jumlah_awal, batch.stok_saat_ini, COALESCE(barang.nama_barang, batch.nama_barang) as nama_barang, batch.satuan, batch.berat_per_satuan, batch.satuan_berat, batch.bisa_dipecah')
+            ->join('batch', 'batch.id = detail_barang_keluar.id_batch')
+            ->join('barang', 'barang.id = batch.id_barang', 'left')
+            ->where('detail_barang_keluar.id_barang_keluar', $id)
+            ->findAll();
+
+        $data = [
+            'title'        => 'Berita Acara Pendistribusian Donasi',
+            'barangKeluar' => $barangKeluar,
+            'details'      => $details,
+            'isWord'       => true,
+        ];
+
+        $html = view('laporan/berita_acara_penyaluran', $data);
+        $filename = 'BAST_Donasi_' . str_replace('/', '_', $barangKeluar['nomor_transaksi']) . '.doc';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/vnd.ms-word; charset=utf-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setHeader('Cache-Control', 'private, max-age=0, must-revalidate')
+            ->setHeader('Pragma', 'public')
+            ->setBody($html);
     }
 }

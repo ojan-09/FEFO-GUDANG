@@ -15,7 +15,7 @@ class BatchModel extends Model
     protected $allowedFields    = [
         'id_barang_masuk', 'id_barang', 'nomor_batch', 'nama_barang', 'kategori',
         'tanggal_masuk', 'tanggal_kedaluwarsa', 'jumlah_awal', 'stok_saat_ini',
-        'jumlah_ctn', 'satuan', 'berat_per_satuan', 'satuan_berat', 'status', 'bisa_dipecah',
+        'menggunakan_kemasan', 'jumlah_ctn', 'isi_per_ctn', 'satuan', 'berat_per_satuan', 'satuan_berat', 'status', 'bisa_dipecah',
         'nilai_satuan'
     ];
 
@@ -24,7 +24,7 @@ class BatchModel extends Model
     protected $updatedField  = 'updated_at';
 
     // --- DataTables Variables ---
-    protected $column_order  = [null, null, 'donatur.nama_donatur', 'batch.kategori', 'batch.tanggal_kedaluwarsa', 'barang.nama_barang', null, null, null, 'batch.stok_saat_ini', 'barang_masuk.keterangan', null];
+    protected $column_order  = [null, null, 'donatur.nama_donatur', 'batch.kategori', 'batch.tanggal_kedaluwarsa', 'umur_stok_hari', 'barang.nama_barang', null, null, null, 'batch.stok_saat_ini', 'barang_masuk.keterangan', null];
     protected $column_search = ['batch.nama_barang', 'barang.nama_barang', 'donatur.nama_donatur', 'batch.kategori', 'barang_masuk.keterangan'];
     protected $order         = ['batch.tanggal_kedaluwarsa' => 'ASC'];
 
@@ -36,8 +36,12 @@ class BatchModel extends Model
             batch.id_barang,
             batch.kategori,
             batch.stok_saat_ini,
+            batch.tanggal_masuk,
             batch.tanggal_kedaluwarsa,
+            DATEDIFF(CURDATE(), batch.tanggal_masuk) AS umur_stok_hari,
+            batch.menggunakan_kemasan,
             batch.jumlah_ctn,
+            batch.isi_per_ctn,
             batch.jumlah_awal,
             batch.bisa_dipecah,
             barang_masuk.keterangan as catatan,

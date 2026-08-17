@@ -98,7 +98,7 @@ class LaporanPenyaluran extends BaseController
                 $totalBarangUtuhPerSatuan[$satuan] = ($totalBarangUtuhPerSatuan[$satuan] ?? 0) + (float)$row['jumlah'];
                 $beratPerSatuan = (float)$row['berat_per_satuan'];
                 $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
-                if (strtolower($row['satuan_berat']) === 'gram') {
+                if (in_array(strtolower(trim($row['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                     $totalBeratRow = $totalBeratRow / 1000;
                 }
             }
@@ -133,21 +133,104 @@ class LaporanPenyaluran extends BaseController
 
     public function index()
     {
-        $result = $this->_getFilteredData();
-        
+        $filters = [
+            'start_date'       => $this->request->getGet('start_date'),
+            'end_date'         => $this->request->getGet('end_date'),
+            'nomor_penyaluran' => $this->request->getGet('nomor_penyaluran'),
+            'wilayah'          => $this->request->getGet('wilayah'),
+            'program'          => $this->request->getGet('program'),
+            'search'           => $this->request->getGet('search')
+        ];
+
         $data = [
-            'title'      => 'Laporan Penyaluran Barang',
-            'laporan'    => $result['data'],
-            'summary'    => $result['summary'],
-            'filters'    => $result['filters']
+            'title'   => 'Laporan Penyaluran Barang',
+            'filters' => $filters
         ];
         
         return view('App\Modules\Reports\Views\laporan_penyaluran\index', $data);
     }
 
+    public function ajaxData()
+    {
+        try {
+            $postData = $this->request->getPost();
+            $model = new \App\Modules\Reports\Models\LaporanPenyaluranModel();
+
+            $list = $model->getDatatables($postData);
+            $data = [];
+            $no = (int)($postData['start'] ?? 0);
+
+            helper('format');
+            foreach ($list as $item) {
+                $no++;
+                $bisaDipecah = (int)($item['bisa_dipecah'] ?? 0);
+                if ($bisaDipecah === 1) {
+                    $totalBeratRow = (float)$item['jumlah'];
+                    if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
+                        $totalBeratRow /= 1000;
+                    }
+                } else {
+                    $beratPerSatuan = (float)$item['berat_per_satuan'];
+                    $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+                    if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
+                        $totalBeratRow /= 1000;
+                    }
+                }
+
+                $tglKeluar = $item['tanggal_keluar'] ? date('d/m/Y', strtotime($item['tanggal_keluar'])) : '-';
+                $totalBeratText = $totalBeratRow > 0 ? format_berat($totalBeratRow, 'Kg') : '-';
+
+                $data[] = [
+                    'no'               => $no,
+                    'tanggal_keluar'   => $tglKeluar,
+                    'nomor_transaksi'  => esc($item['nomor_transaksi']),
+                    'nama_wilayah'     => esc($item['nama_wilayah'] ?? '-'),
+                    'program'          => esc($item['program'] ?? '-'),
+                    'nama_barang'      => '<strong>' . esc($item['nama_barang']) . '</strong>',
+                    'nomor_batch'      => '<span class="badge bg-light text-dark font-monospace">' . esc($item['nomor_batch']) . '</span>',
+                    'jumlah'           => number_format($item['jumlah'], 0, ',', '.'),
+                    'satuan'           => esc($item['satuan']),
+                    'total_berat'      => $totalBeratText,
+                    'keterangan'       => '<small>' . esc($item['keterangan'] ?? '-') . '</small>',
+                    'petugas'          => esc($item['petugas'] ?? '-')
+                ];
+            }
+
+            $summary = $model->getSummaryData($postData);
+
+            $output = [
+                'draw'            => intval($postData['draw'] ?? 0),
+                'recordsTotal'    => $model->countAllData($postData),
+                'recordsFiltered' => $model->countFiltered($postData),
+                'data'            => $data,
+                'summary'         => $summary,
+                'csrf_hash'       => csrf_hash()
+            ];
+
+            return $this->response->setJSON($output);
+        } catch (\Throwable $e) {
+            log_message('error', 'LaporanPenyaluran::ajaxData error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'draw'            => intval($this->request->getPost('draw') ?? 0),
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+                'summary'         => [
+                    'total_penyaluran'           => 0,
+                    'total_barang_utuh_per_satuan' => [],
+                    'total_barang_repack'        => 0,
+                    'total_berat'                => 0,
+                    'total_nilai_donasi'         => 0
+                ],
+                'error'           => 'Terjadi kesalahan saat memuat data.',
+                'csrf_hash'       => csrf_hash()
+            ]);
+        }
+    }
+
     public function pdf()
     {
-        if (!in_groups('Administrator')) {
+        if (!in_groups(['Administrator', 'Petugas Gudang', 'Pimpinan'])) {
             return redirect()->back()->with('error', 'Akses ditolak. Hanya Administrator yang dapat mengunduh laporan ini.');
         }
 
@@ -168,12 +251,12 @@ class LaporanPenyaluran extends BaseController
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
-        $dompdf->stream("Laporan_Penyaluran_Barang_" . date('Ymd_His') . ".pdf", ["Attachment" => true]);
+        $dompdf->stream("Laporan_Penyaluran_Barang_" . date('Ymd_His') . ".pdf", ["Attachment" => false]);
     }
 
     public function excel()
     {
-        if (!in_groups('Administrator')) {
+        if (!in_groups(['Administrator', 'Petugas Gudang', 'Pimpinan'])) {
             return redirect()->back()->with('error', 'Akses ditolak. Hanya Administrator yang dapat mengunduh laporan ini.');
         }
 
@@ -258,7 +341,7 @@ class LaporanPenyaluran extends BaseController
                 $jumlahStok = $item['jumlah'];
             } else {
                 $totalKg = $item['jumlah'] * $beratPerSatuan;
-                if (strtolower($item['satuan_berat']) === 'gram') {
+                if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                     $totalKg = $totalKg / 1000;
                 }
                 $satuanStok = $item['satuan'];

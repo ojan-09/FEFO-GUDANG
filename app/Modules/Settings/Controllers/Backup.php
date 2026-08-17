@@ -81,7 +81,8 @@ class Backup extends BaseController
 
             ActivityLogger::log('Tambah', 'Backup Database', "Melakukan Backup Database\nNama File: {$filename}\nCatatan: {$notes}");
 
-            return redirect()->to('pengaturan/backup')->with('success', 'Backup berhasil dibuat: ' . $filename);
+            helper('format'); clear_dashboard_cache();
+        return redirect()->to('pengaturan/backup')->with('success', 'Backup berhasil dibuat: ' . $filename);
         } catch (\Exception $e) {
             return redirect()->to('pengaturan/backup')->with('error', $e->getMessage());
         }
@@ -135,7 +136,8 @@ class Backup extends BaseController
 
             ActivityLogger::log('Hapus', 'Backup Database', "Menghapus Backup Database\nNama File: {$filename}\nUkuran: {$sizeMb}");
 
-            return redirect()->to('pengaturan/backup')->with('success', 'File backup berhasil dihapus.');
+            helper('format'); clear_dashboard_cache();
+        return redirect()->to('pengaturan/backup')->with('success', 'File backup berhasil dihapus.');
         }
         return redirect()->to('pengaturan/backup')->with('error', 'File tidak ditemukan.');
     }
@@ -196,7 +198,8 @@ class Backup extends BaseController
 
             ActivityLogger::log('Edit', 'Restore Database', "Melakukan Restore Database\nFile Sumber: {$logFilename}\nUkuran: {$sizeMb}");
 
-            return redirect()->to('pengaturan/backup')->with('success', 'Database berhasil di-restore! Restore point diamankan: ' . $rpName);
+            helper('format'); clear_dashboard_cache();
+        return redirect()->to('pengaturan/backup')->with('success', 'Database berhasil di-restore! Restore point diamankan: ' . $rpName);
         } catch (\Exception $e) {
             if ($isUpload) @unlink(WRITEPATH . 'backups/' . $filename);
             return redirect()->to('pengaturan/backup')->with('error', 'Proses Restore Gagal: ' . $e->getMessage());

@@ -264,8 +264,8 @@
     <!-- Toolbar -->
     <div class="wh-toolbar">
         <div class="wh-toolbar-count">
-            <span class="num"><?= number_format(count($laporan), 0, ',', '.') ?></span>
-            <span class="lbl">Total Transaksi Penyesuaian</span>
+            <span class="num">0</span>
+            <span class="lbl">Total Data Penyesuaian</span>
         </div>
     </div>
 
@@ -280,73 +280,17 @@
                 <tr>
                     <th class="text-center" width="40">No</th>
                     <th>Tanggal</th>
-                    <th>No. Transaksi</th>
-                    <th>Jenis Penyesuaian</th>
+                    <th>No. Transaksi / Jenis</th>
                     <th style="min-width:150px;">Barang</th>
                     <th>Batch</th>
-                    <th class="text-end">Jumlah</th>
+                    <th>Tgl Expired</th>
+                    <th class="text-center">Jumlah</th>
+                    <th class="text-center">Satuan</th>
                     <th style="min-width:160px;">Keterangan</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($laporan)): ?>
-                    <tr>
-                        <td colspan="8" style="text-align:center; padding: 60px 20px;">
-                            <i class="fa-solid fa-scale-balanced" style="font-size: 2.5rem; color: var(--wh-border);"></i>
-                            <p style="margin-top: 14px; color: var(--wh-text); font-weight: 600;">Data tidak ditemukan.</p>
-                            <p style="color: var(--wh-text-soft); font-size: 0.85rem;">Coba ubah rentang tanggal filter.</p>
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php $no = 1; foreach ($laporan as $row):
-                        $badgeClass = 'kedaluwarsa';
-                        switch ($row['jenis_penyesuaian']) {
-                            case 'Barang Rusak':      $badgeClass = 'rusak';    break;
-                            case 'Barang Hilang':     $badgeClass = 'hilang';   break;
-                            case 'Koreksi Positif':   $badgeClass = 'positif';  break;
-                            case 'Koreksi Negatif':   $badgeClass = 'negatif';  break;
-                            case 'Hasil Stock Opname':$badgeClass = 'opname';   break;
-                        }
-                        $isPlus = ($row['jenis_penyesuaian'] === 'Koreksi Positif');
-                        $sign   = $isPlus ? '+' : '-';
-                        $jumlahFormatted = (isset($row['bisa_dipecah']) && $row['bisa_dipecah'] == 1)
-                            ? $row['jumlah']
-                            : number_format($row['jumlah'], 0, ',', '.');
-                    ?>
-                    <tr>
-                        <td class="text-center"><?= $no++ ?></td>
-                        <td style="white-space:nowrap;"><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
-                        <td style="font-weight:600; color:var(--wh-primary); white-space:nowrap;">
-                            <?= esc($row['nomor_penyesuaian']) ?>
-                        </td>
-                        <td>
-                            <span class="badge-jenis <?= $badgeClass ?>"><?= esc($row['jenis_penyesuaian']) ?></span>
-                        </td>
-                        <td><strong><?= esc($row['nama_barang']) ?></strong></td>
-                        <td>
-                            <span style="background:var(--wh-dark-soft); border:1px solid var(--wh-border); border-radius:6px; padding:2px 8px; font-size:0.75rem; font-weight:600;">
-                                <?= esc($row['nomor_batch']) ?>
-                            </span><br>
-                            <small style="color:var(--wh-text-soft); font-size:0.72rem;">
-                                Exp: <?= $row['tanggal_kedaluwarsa'] ? date('d/m/y', strtotime($row['tanggal_kedaluwarsa'])) : '-' ?>
-                            </small>
-                        </td>
-                        <td class="text-end" style="font-weight:700; color:<?= $isPlus ? '#15803D' : '#DC2626' ?>;">
-                            <?= $sign ?><?= $jumlahFormatted ?>
-                            <small style="color:var(--wh-text-soft); font-weight:400;"><?= esc($row['satuan']) ?></small>
-                        </td>
-                        <td>
-                            <div style="max-width:200px; font-size:0.8rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-                                 title="<?= esc($row['ket_umum'] . ' - ' . $row['keterangan']) ?>">
-                                <?= esc($row['ket_umum']) ?>
-                            </div>
-                            <small style="color:var(--wh-text-soft); font-style:italic; font-size:0.75rem;">
-                                <?= esc($row['keterangan']) ?>
-                            </small>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                <!-- DataTables akan mengisi data ini secara otomatis via AJAX -->
             </tbody>
         </table>
     </div>
@@ -357,20 +301,56 @@
 
 <?= $this->section('scripts') ?>
 <script>
+let csrfTokenName = '<?= csrf_token() ?>';
+let csrfHash = '<?= csrf_hash() ?>';
+
 $(document).ready(function () {
-    <?php if (!empty($laporan)): ?>
-    $('#tableLaporan').DataTable({
+    var table = $('#tableLaporan').DataTable({
+        processing: true,
+        serverSide: true,
+        stateSave: true,
+        ajax: {
+            url: "<?= site_url('laporan/penyesuaian/ajaxData') ?>",
+            type: "POST",
+            data: function (d) {
+                d[csrfTokenName] = csrfHash;
+                d.start_date = $('input[name="start_date"]').val();
+                d.end_date = $('input[name="end_date"]').val();
+            },
+            dataSrc: function (json) {
+                if (json.csrf_hash) {
+                    csrfHash = json.csrf_hash;
+                }
+                $('.wh-toolbar-count .num').text(new Intl.NumberFormat('id-ID').format(json.recordsFiltered || 0));
+                return json.data || [];
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTables AJAX error:', error, thrown);
+            }
+        },
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
         order: [],
-        columnDefs: [{ orderable: false, targets: [0] }],
+        columnDefs: [
+            { orderable: false, targets: [0, 2, 4, 5, 7, 8] },
+            { className: "text-center", targets: [0, 1, 4, 5, 6, 7] }
+        ],
         dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
-        initComplete: function() {
+        drawCallback: function() {
             $('#tableLaporan').closest('.wh-table-card').addClass('loaded');
         }
     });
-    <?php else: ?>
-    $('#tableLaporan').closest('.wh-table-card').addClass('loaded');
-    <?php endif; ?>
+
+    $('form').on('submit', function(e) {
+        e.preventDefault();
+        $('#tableLaporan').closest('.wh-table-card').removeClass('loaded');
+        table.ajax.reload();
+        
+        // Update export links
+        var start_date = $('input[name="start_date"]').val();
+        var end_date = $('input[name="end_date"]').val();
+        $('a[href*="export_pdf"]').attr('href', "<?= site_url('laporan/penyesuaian/export_pdf') ?>?start_date=" + start_date + "&end_date=" + end_date);
+        $('a[href*="export_excel"]').attr('href', "<?= site_url('laporan/penyesuaian/export_excel') ?>?start_date=" + start_date + "&end_date=" + end_date);
+    });
 });
 </script>
 <?= $this->endSection() ?>

@@ -1,10 +1,613 @@
-<script>
-    (function () {
-        if (window.innerWidth > 768 && localStorage.getItem('wms-sidebar-collapsed') === 'true') {
-            document.documentElement.classList.add('sb-pre-collapsed');
-        }
-    })();
-</script>
+<style>
+/* ─── Variables ─────────────────────────────────────────── */
+:root {
+    --sb-w-expanded:  220px;
+    --sb-w-collapsed:  62px;
+
+    --sb-bg:               #0F172A;
+    --sb-border:           rgba(255,255,255,.05);
+    --sb-icon-color:       rgba(255,255,255,.65);
+    --sb-icon-active:      #FFFFFF;
+    --sb-hover-bg:         rgba(255,255,255,.06);
+    --sb-active-bg:        rgba(255,255,255,.10);
+    --sb-active-bar:       #60a5fa;
+    --sb-divider:          rgba(255,255,255,.07);
+    --sb-label-color:      rgba(255,255,255,.75);
+    --sb-tooltip-bg:       #1E293B;
+    --sb-tooltip-text:     rgba(255,255,255,.92);
+    --sb-section-color:    rgba(148,163,184,.45);
+}
+
+/* ─── Flash prevention ──────────────────────────────────── */
+html.sb-pre-collapsed body            { margin-left: var(--sb-w-collapsed) !important; transition: none !important; }
+html.sb-pre-collapsed .sidebar        { width: var(--sb-w-collapsed); transition: none !important; }
+html.sb-pre-collapsed .sidebar .sb-label,
+html.sb-pre-collapsed .sidebar .sb-section-title { opacity: 0; width: 0; overflow: hidden; display: none; }
+html.sb-pre-collapsed .sidebar .sb-link {
+    justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+    width: 40px;
+    height: 36px;
+    margin: 0 auto;
+    border-radius: 7px;
+}
+html.sb-pre-collapsed .sidebar .sb-icon { width: 18px; height: 18px; flex-shrink: 0; }
+html.sb-pre-collapsed .sidebar .sb-icon svg { width: 18px; height: 18px; }
+html.sb-pre-collapsed .sidebar .sb-logo { justify-content: center; }
+html.sb-pre-collapsed .sidebar .sb-logo-text { opacity: 0; width: 0; pointer-events: none; }
+html.sb-pre-collapsed .sidebar .sb-user-info,
+html.sb-pre-collapsed .sidebar .sb-logout { display: none; }
+html.sb-pre-collapsed .sidebar .sb-footer { padding: 8px 0; }
+html.sb-pre-collapsed .sidebar .sb-user { justify-content: center; }
+
+html.sb-pre-collapsed .sidebar .sb-dropdown-trigger {
+    justify-content: center;
+    padding: 0;
+    width: 40px;
+    height: 36px;
+    margin: 0 auto;
+    border-radius: 7px;
+}
+html.sb-pre-collapsed .sidebar .sb-dropdown-trigger .sb-label,
+html.sb-pre-collapsed .sidebar .sb-dropdown-trigger .sb-chevron { display: none; }
+html.sb-pre-collapsed .sidebar .sb-dropdown-body { display: none; }
+html.sb-pre-collapsed .sidebar .sidebar-toggle #toggleIcon { transform: rotate(180deg); }
+
+/* ─── Prevent animation during load ─────────────────────── */
+html.sb-preload body { transition: none !important; }
+html.sb-preload .sidebar { transition: none !important; }
+html.sb-preload .sb-dropdown-body,
+html.sb-preload .sb-chevron,
+html.sb-preload .sb-label,
+html.sb-preload .sb-logo-text {
+    transition: none !important;
+}
+
+/* ─── Body offset ───────────────────────────────────────── */
+html { overflow-x: hidden; }
+
+body {
+    margin-left: var(--sb-w-expanded);
+    transition: margin-left 200ms ease;
+}
+body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
+
+/* ─── Sidebar shell ─────────────────────────────────────── */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sb-w-expanded);
+    height: 100vh;
+    background: var(--sb-bg);
+    border-right: 1px solid var(--sb-border);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 8px 12px;
+    z-index: 1000;
+    overflow-y: auto;
+    overflow-x: clip;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,.10) transparent;
+    transition: width 200ms ease;
+    will-change: width;
+    box-sizing: border-box;
+}
+.sidebar::-webkit-scrollbar       { width: 3px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.10); border-radius: 10px; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
+
+/* ─── Collapsed state ───────────────────────────────────── */
+.sidebar.collapsed { width: var(--sb-w-collapsed); }
+.sidebar.collapsed .sb-label,
+.sidebar.collapsed .sb-section-title {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.sidebar.collapsed .sb-link {
+    justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+    width: 40px;
+    height: 36px;
+    margin: 0 auto;
+    border-radius: 7px;
+}
+.sidebar.collapsed .sb-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.sidebar.collapsed .sb-icon svg { width: 18px; height: 18px; }
+.sidebar.collapsed .sb-logo { justify-content: center; }
+.sidebar.collapsed .sidebar-toggle #toggleIcon { transform: rotate(180deg); }
+.sidebar.collapsed .sb-user-info,
+.sidebar.collapsed .sb-logout { display: none; }
+.sidebar.collapsed .sb-footer { padding: 8px 0; }
+.sidebar.collapsed .sb-user { justify-content: center; }
+.sidebar.collapsed .sb-section-title { display: none; }
+
+/* ─── Toggle button (desktop) ──────────────────────────── */
+.sidebar-toggle {
+    position: absolute;
+    top: 18px;
+    right: -12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.13);
+    background: #1E293B;
+    color: rgba(255,255,255,.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1100;
+    transition: background 150ms ease;
+    flex-shrink: 0;
+    padding: 0;
+    outline: none;
+}
+.sidebar-toggle:hover { background: #2D3F55; color: #fff; }
+.sidebar-toggle:focus-visible { outline: 2px solid rgba(255,255,255,.5); outline-offset: 2px; }
+.sidebar-toggle #toggleIcon {
+    transition: transform 200ms ease;
+    display: block;
+    pointer-events: none;
+}
+
+/* ─── Logo ──────────────────────────────────────────────── */
+.sb-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 4px 14px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-bottom: 1px solid var(--sb-divider);
+    margin-bottom: 10px;
+    transition: padding 200ms ease;
+}
+.sb-logo img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: block;
+}
+.sb-logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: hidden;
+    transition: opacity 150ms ease, width 150ms ease;
+}
+.sb-logo-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+    white-space: nowrap;
+    line-height: 1.3;
+    letter-spacing: .01em;
+}
+.sb-logo-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    color: rgba(255,255,255,.38);
+    white-space: nowrap;
+    line-height: 1.3;
+}
+.sidebar.collapsed .sb-logo-text {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+}
+
+/* ─── Nav wrapper ───────────────────────────────────────── */
+.sb-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* ─── Section title ─────────────────────────────────────── */
+.sb-section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--sb-section-color);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 10px 8px 4px;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity 150ms ease, width 150ms ease;
+}
+
+/* ─── Group ─────────────────────────────────────────────── */
+.sb-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.sb-group.sb-divider {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--sb-divider);
+}
+
+/* ─── Nav link ──────────────────────────────────────────── */
+.sb-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 9px;
+    height: 36px;
+    border-radius: 7px;
+    color: var(--sb-label-color);
+    text-decoration: none;
+    transition: background 120ms ease, color 120ms ease;
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.sb-link:hover {
+    background: var(--sb-hover-bg);
+    color: #fff;
+}
+.sb-link:focus-visible {
+    outline: 2px solid rgba(255,255,255,.4);
+    outline-offset: 2px;
+}
+.sb-link.active {
+    background: var(--sb-active-bg);
+    color: var(--sb-icon-active);
+}
+.sb-link.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 16px;
+    border-radius: 0 3px 3px 0;
+    background: var(--sb-active-bar);
+}
+
+/* ─── Icon ──────────────────────────────────────────────── */
+.sb-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--sb-icon-color);
+}
+.sb-link.active .sb-icon { color: var(--sb-icon-active); }
+.sb-link:hover .sb-icon  { color: #fff; }
+.sb-icon svg { width: 15px; height: 15px; stroke-width: 1.8; }
+
+/* ─── Label ─────────────────────────────────────────────── */
+.sb-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: inherit;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: opacity 150ms ease, width 150ms ease;
+}
+
+/* ─── Tooltip (hanya saat collapsed) ───────────────────── */
+.sidebar.collapsed .sb-link[data-tooltip] { overflow: visible; }
+.sidebar.collapsed .sb-link[data-tooltip]:hover::before {
+    content: attr(data-tooltip);
+    position: fixed;
+    left: calc(var(--sb-w-collapsed) - 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--sb-tooltip-bg);
+    color: var(--sb-tooltip-text);
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 5px 11px;
+    border-radius: 7px;
+    white-space: nowrap;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,.4);
+    border: 1px solid rgba(255,255,255,.08);
+}
+
+/* ─── Dropdown (Gudang Wilayah & Laporan) ───────────────── */
+.sb-dropdown-trigger {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 9px;
+    height: 36px;
+    border-radius: 7px;
+    color: var(--sb-label-color);
+    cursor: pointer;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    transition: background 120ms ease, color 120ms ease;
+    user-select: none;
+}
+.sb-dropdown-trigger:hover {
+    background: var(--sb-hover-bg);
+    color: #fff;
+}
+.sb-dropdown-trigger:hover .sb-icon { color: #fff; }
+.sb-dropdown-trigger.has-active {
+    background: var(--sb-active-bg);
+    color: var(--sb-icon-active);
+}
+.sb-dropdown-trigger.has-active .sb-icon { color: var(--sb-icon-active); }
+.sb-dropdown-trigger .sb-chevron {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: rgba(255,255,255,.35);
+    transition: transform 200ms ease;
+}
+.sb-dropdown-trigger.open .sb-chevron { transform: rotate(180deg); }
+
+.sb-dropdown-body {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 220ms cubic-bezier(.4,0,.2,1), opacity 180ms ease;
+}
+.sb-dropdown-body.open {
+    max-height: 400px;
+    opacity: 1;
+}
+.sb-dropdown-body .sb-link {
+    padding-left: 36px;
+    height: 33px;
+    font-size: 12px;
+}
+
+/* Collapsed: semua dropdown jadi icon */
+.sidebar.collapsed .sb-dropdown-trigger {
+    justify-content: center;
+    padding: 0;
+    width: 40px;
+    height: 36px;
+    margin: 0 auto;
+    border-radius: 7px;
+}
+.sidebar.collapsed .sb-dropdown-trigger .sb-label,
+.sidebar.collapsed .sb-dropdown-trigger .sb-chevron { display: none; }
+.sidebar.collapsed .sb-dropdown-body { display: none; }
+
+/* Tooltip untuk dropdown trigger saat collapsed */
+.sidebar.collapsed .sb-dropdown-trigger[data-tooltip] { overflow: visible; }
+.sidebar.collapsed .sb-dropdown-trigger[data-tooltip]:hover::before {
+    content: attr(data-tooltip);
+    position: fixed;
+    left: calc(var(--sb-w-collapsed) - 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--sb-tooltip-bg);
+    color: var(--sb-tooltip-text);
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 5px 11px;
+    border-radius: 7px;
+    white-space: nowrap;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,.4);
+    border: 1px solid rgba(255,255,255,.08);
+}
+
+/* ─── Footer / user info ────────────────────────────────── */
+.sb-footer {
+    flex-shrink: 0;
+    padding: 10px 4px 4px;
+    border-top: 1px solid var(--sb-divider);
+    margin-top: 8px;
+}
+.sb-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sb-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(37,99,235,.35);
+    color: #93c5fd;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'Inter', sans-serif;
+}
+.sb-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.sb-user-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sb-user-role {
+    font-family: 'Inter', sans-serif;
+    font-size: 10.5px;
+    color: rgba(255,255,255,.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sb-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: rgba(255,255,255,.4);
+    transition: background 150ms ease, color 150ms ease;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+.sb-logout:hover { background: rgba(220,38,38,.18); color: #f87171; }
+.sb-logout svg { width: 14px; height: 14px; stroke-width: 1.8; }
+
+/* ─── Overlay ───────────────────────────────────────────── */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 1049;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+/* ─── Bottom navigation bar (mobile only) ──────────────── */
+.sb-bottombar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--sb-bg);
+    border-top: 1px solid var(--sb-border);
+    z-index: 1050;
+    align-items: stretch;
+    padding: 0 4px;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.sb-bb-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: rgba(255,255,255,.45);
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: color 150ms ease, background 150ms ease;
+    padding: 6px 4px;
+    -webkit-tap-highlight-color: transparent;
+}
+.sb-bb-item svg { width: 20px; height: 20px; stroke-width: 1.75; }
+.sb-bb-item:hover,
+.sb-bb-item.active { color: #fff; }
+.sb-bb-item.active { color: #60a5fa; }
+
+/* ─── Drawer slide-in (mobile) ──────────────────────────── */
+@media (max-width: 768px) {
+    .sb-bottombar { display: flex; }
+
+    body,
+    body.sb-collapsed { margin-left: 0 !important; padding-bottom: 60px; }
+    html.sb-pre-collapsed body { margin-left: 0 !important; }
+
+    .sidebar {
+        width: 280px !important;
+        transform: translateX(-100%);
+        transition: transform 220ms cubic-bezier(.4,0,.2,1) !important;
+        will-change: transform;
+        overflow-y: auto;
+        overflow-x: hidden;
+        box-shadow: none;
+        z-index: 1060;
+        visibility: hidden;
+    }
+    .sidebar.sb-ready { visibility: visible; }
+    .sidebar.mobile-open {
+        transform: translateX(0);
+        box-shadow: 4px 0 24px rgba(0,0,0,.4);
+    }
+    .sidebar.mobile-open ~ .sidebar-overlay { display: block; }
+
+    .sidebar-toggle { display: none; }
+
+    .sidebar .sb-label {
+        opacity: 1 !important;
+        width: auto !important;
+        pointer-events: auto !important;
+    }
+    .sidebar .sb-section-title {
+        opacity: 1 !important;
+        width: auto !important;
+    }
+    .sidebar .sb-link {
+        justify-content: flex-start !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 9px !important;
+        height: 42px !important;
+    }
+    .sidebar .sb-dropdown-body .sb-link {
+        padding-left: 36px !important;
+        height: 38px !important;
+    }
+    .sidebar .sb-dropdown-trigger {
+        width: auto !important;
+        padding: 0 9px !important;
+        height: 42px !important;
+    }
+    .sidebar .sb-dropdown-trigger .sb-label,
+    .sidebar .sb-dropdown-trigger .sb-chevron { display: flex !important; }
+    .sidebar .sb-dropdown-body { display: block !important; }
+
+    .sidebar .sb-link[data-tooltip]:hover::before { display: none; }
+    .sidebar .sb-link { -webkit-tap-highlight-color: transparent; }
+    .sidebar .sb-link:active { background: rgba(255,255,255,.12); }
+}
+
+body.sb-drawer-open {
+    position: fixed;
+    width: 100%;
+    overflow: hidden;
+}
+.modal-backdrop { z-index: 1070 !important; }
+.modal          { z-index: 1075 !important; }
+</style>
 
 <aside class="sidebar" id="sidebar">
 
@@ -26,6 +629,7 @@
 
     <nav class="sb-nav">
 
+        <!-- Dashboard -->
         <div class="sb-group">
             <a href="<?= site_url('/') ?>"
                class="sb-link <?= (url_is('/') || url_is('dashboard*')) ? 'active' : '' ?>"
@@ -35,8 +639,10 @@
             </a>
         </div>
 
+        <!-- Master Data (Admin only) -->
         <?php if (in_groups('Administrator')): ?>
-        <div class="sb-group sb-divider">
+        <div class="sb-section-title">Master Data</div>
+        <div class="sb-group">
             <a href="<?= site_url('masterdata/donatur') ?>"
                class="sb-link <?= url_is('masterdata/donatur*') ? 'active' : '' ?>"
                data-tooltip="Donatur">
@@ -58,8 +664,10 @@
         </div>
         <?php endif; ?>
 
+        <!-- Transaksi -->
         <?php if (in_groups(['Administrator', 'Petugas Gudang'])): ?>
-        <div class="sb-group sb-divider">
+        <div class="sb-section-title">Transaksi</div>
+        <div class="sb-group">
             <a href="<?= site_url('transaksi/barang-masuk') ?>"
                class="sb-link <?= url_is('transaksi/barang-masuk*') ? 'active' : '' ?>"
                data-tooltip="Donasi Masuk">
@@ -78,9 +686,20 @@
                 <span class="sb-icon"><i data-lucide="scale"></i></span>
                 <span class="sb-label">Penyesuaian Stok</span>
             </a>
+            <a href="<?= site_url('transaksi/stok-gudang') ?>"
+               class="sb-link <?= url_is('transaksi/stok-gudang*') ? 'active' : '' ?>"
+               data-tooltip="Stok Gudang">
+                <span class="sb-icon"><i data-lucide="warehouse"></i></span>
+                <span class="sb-label">Stok Gudang</span>
+            </a>
+            <a href="<?= site_url('transaksi/monitoring-expired') ?>"
+               class="sb-link <?= url_is('transaksi/monitoring-expired*') ? 'active' : '' ?>"
+               data-tooltip="Monitoring Expired">
+                <span class="sb-icon"><i data-lucide="alert-triangle"></i></span>
+                <span class="sb-label">Monitoring Expired</span>
+            </a>
         </div>
-        <?php endif; ?>
-
+        <?php else: ?>
         <div class="sb-group sb-divider">
             <a href="<?= site_url('transaksi/stok-gudang') ?>"
                class="sb-link <?= url_is('transaksi/stok-gudang*') ? 'active' : '' ?>"
@@ -89,42 +708,119 @@
                 <span class="sb-label">Stok Gudang</span>
             </a>
         </div>
+        <?php endif; ?>
 
-        <div class="sb-group sb-divider">
-            <a href="<?= site_url('laporan/donasi') ?>"
-               class="sb-link <?= url_is('laporan/donasi*') ? 'active' : '' ?>"
-               data-tooltip="Laporan Donasi Masuk">
-                <span class="sb-icon"><i data-lucide="file-down"></i></span>
-                <span class="sb-label">Laporan Donasi Masuk</span>
-            </a>
-            <a href="<?= site_url('laporan/penyaluran') ?>"
-               class="sb-link <?= url_is('laporan/penyaluran*') ? 'active' : '' ?>"
-               data-tooltip="Laporan Penyaluran">
-                <span class="sb-icon"><i data-lucide="file-up"></i></span>
-                <span class="sb-label">Laporan Penyaluran</span>
-            </a>
-            <a href="<?= site_url('laporan/stok') ?>"
-               class="sb-link <?= url_is('laporan/stok*') ? 'active' : '' ?>"
-               data-tooltip="Laporan Stok Gudang">
-                <span class="sb-icon"><i data-lucide="file-bar-chart-2"></i></span>
-                <span class="sb-label">Laporan Stok Gudang</span>
-            </a>
-            <a href="<?= site_url('laporan/expired') ?>"
-               class="sb-link <?= url_is('laporan/expired*') ? 'active' : '' ?>"
-               data-tooltip="Laporan Barang Expired">
-                <span class="sb-icon"><i data-lucide="file-warning"></i></span>
-                <span class="sb-label">Laporan Expired</span>
-            </a>
-            <a href="<?= site_url('laporan/penyesuaian') ?>"
-               class="sb-link <?= url_is('laporan/penyesuaian*') ? 'active' : '' ?>"
-               data-tooltip="Laporan Penyesuaian">
-                <span class="sb-icon"><i data-lucide="scale"></i></span>
-                <span class="sb-label">Laporan Penyesuaian</span>
-            </a>
+        <!-- Laporan (dropdown) -->
+        <?php
+        $laporanActive = url_is('laporan/donasi*')      || url_is('laporan/penyaluran*')
+                      || url_is('laporan/stok*')        || url_is('laporan/expired*')
+                      || url_is('laporan/penyesuaian*');
+        ?>
+        <div class="sb-section-title">Laporan</div>
+        <div class="sb-group">
+            <div class="sb-dropdown">
+                <div class="sb-dropdown-trigger <?= $laporanActive ? 'has-active open' : '' ?>"
+                     id="laporanTrigger"
+                     data-tooltip="Laporan"
+                     onclick="toggleLaporanDropdown()">
+                    <span class="sb-icon"><i data-lucide="file-text"></i></span>
+                    <span class="sb-label">Laporan</span>
+                    <svg class="sb-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </div>
+                <div class="sb-dropdown-body <?= $laporanActive ? 'open' : '' ?>" id="laporanBody">
+                    <a href="<?= site_url('laporan/donasi') ?>"
+                       class="sb-link <?= url_is('laporan/donasi*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="file-down"></i></span>
+                        <span class="sb-label">Donasi Masuk</span>
+                    </a>
+                    <a href="<?= site_url('laporan/penyaluran') ?>"
+                       class="sb-link <?= url_is('laporan/penyaluran*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="file-up"></i></span>
+                        <span class="sb-label">Penyaluran</span>
+                    </a>
+                    <a href="<?= site_url('laporan/stok') ?>"
+                       class="sb-link <?= url_is('laporan/stok*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="file-bar-chart-2"></i></span>
+                        <span class="sb-label">Stok Gudang</span>
+                    </a>
+                    <a href="<?= site_url('laporan/expired') ?>"
+                       class="sb-link <?= url_is('laporan/expired*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="file-warning"></i></span>
+                        <span class="sb-label">Expired</span>
+                    </a>
+                    <a href="<?= site_url('laporan/penyesuaian') ?>"
+                       class="sb-link <?= url_is('laporan/penyesuaian*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="scale"></i></span>
+                        <span class="sb-label">Penyesuaian</span>
+                    </a>
+                </div>
+            </div>
         </div>
 
+        <!-- Gudang Wilayah (dropdown) -->
+        <?php
+        $wilayahActive = url_is('wilayah/dashboard*') || url_is('wilayah/master*')
+                      || url_is('wilayah/masuk*')     || url_is('wilayah/keluar*')
+                      || url_is('wilayah/stok*')      || url_is('wilayah/laporan*');
+        ?>
+        <div class="sb-section-title">Gudang Wilayah</div>
+        <div class="sb-group">
+            <div class="sb-dropdown">
+                <div class="sb-dropdown-trigger <?= $wilayahActive ? 'has-active open' : '' ?>"
+                     id="wilayahTrigger"
+                     data-tooltip="Gudang Wilayah"
+                     onclick="toggleWilayahDropdown()">
+                    <span class="sb-icon"><i data-lucide="map-pin"></i></span>
+                    <span class="sb-label">Gudang Wilayah</span>
+                    <svg class="sb-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </div>
+                <div class="sb-dropdown-body <?= $wilayahActive ? 'open' : '' ?>" id="wilayahBody">
+                    <a href="<?= site_url('wilayah/dashboard') ?>"
+                       class="sb-link <?= url_is('wilayah/dashboard*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="layout-dashboard"></i></span>
+                        <span class="sb-label">Dashboard Wilayah</span>
+                    </a>
+                    <?php if (in_groups('Administrator')): ?>
+                    <a href="<?= site_url('wilayah/master') ?>"
+                       class="sb-link <?= url_is('wilayah/master') || url_is('wilayah/master/*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="map-pin"></i></span>
+                        <span class="sb-label">Master Gudang</span>
+                    </a>
+                    <?php endif; ?>
+                    <a href="<?= site_url('wilayah/masuk') ?>"
+                       class="sb-link <?= url_is('wilayah/masuk*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="package-plus"></i></span>
+                        <span class="sb-label">Barang Masuk</span>
+                    </a>
+                    <a href="<?= site_url('wilayah/keluar') ?>"
+                       class="sb-link <?= url_is('wilayah/keluar*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="package-minus"></i></span>
+                        <span class="sb-label">Barang Keluar</span>
+                    </a>
+                    <a href="<?= site_url('wilayah/stok') ?>"
+                       class="sb-link <?= url_is('wilayah/stok*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="boxes"></i></span>
+                        <span class="sb-label">Monitoring Stok</span>
+                    </a>
+                    <a href="<?= site_url('wilayah/laporan') ?>"
+                       class="sb-link <?= url_is('wilayah/laporan*') ? 'active' : '' ?>">
+                        <span class="sb-icon"><i data-lucide="file-spreadsheet"></i></span>
+                        <span class="sb-label">Laporan Wilayah</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings (Admin only) -->
         <?php if (in_groups('Administrator')): ?>
-        <div class="sb-group sb-divider">
+        <div class="sb-section-title">Settings</div>
+        <div class="sb-group">
             <a href="<?= site_url('masterdata/maintenance-barang') ?>"
                class="sb-link <?= url_is('masterdata/maintenance-barang*') ? 'active' : '' ?>"
                data-tooltip="Maintenance Master">
@@ -143,6 +839,12 @@
                 <span class="sb-icon"><i data-lucide="history"></i></span>
                 <span class="sb-label">Log Aktivitas</span>
             </a>
+            <a href="<?= site_url('pengaturan/dokumen') ?>"
+               class="sb-link <?= url_is('pengaturan/dokumen*') ? 'active' : '' ?>"
+               data-tooltip="Workspace Dokumen">
+                <span class="sb-icon"><i data-lucide="folder-kanban"></i></span>
+                <span class="sb-label">Workspace Dokumen</span>
+            </a>
             <a href="<?= site_url('pengaturan/backup') ?>"
                class="sb-link <?= url_is('pengaturan/backup*') ? 'active' : '' ?>"
                data-tooltip="Backup & Restore">
@@ -160,7 +862,6 @@
 
     </nav>
 
-    <!-- User info + logout di bawah sidebar (mobile) -->
     <div class="sb-footer">
         <?php if (logged_in()): ?>
         <div class="sb-user">
@@ -171,7 +872,7 @@
                 <span class="sb-user-name"><?= esc(user()->username) ?></span>
                 <span class="sb-user-role"><?= esc(get_user_role()) ?></span>
             </div>
-            <a href="<?= site_url('logout') ?>" class="sb-logout" title="Logout">
+            <a href="<?= site_url('logout') ?>" class="sb-logout" title="Logout" onclick="window.WmsSidebarState.clearOnLogout()">
                 <i data-lucide="log-out"></i>
             </a>
         </div>
@@ -222,469 +923,15 @@
     <?php endif; ?>
 </nav>
 
-<style>
-/* ─── Variables ─────────────────────────────────────────── */
-:root {
-    --sb-w-expanded:  220px;
-    --sb-w-collapsed:  62px;
-
-    --sb-bg:               #0F172A;
-    --sb-border:           rgba(255,255,255,.05);
-    --sb-icon-color:       rgba(255,255,255,.72);
-    --sb-icon-active:      #FFFFFF;
-    --sb-hover-bg:         rgba(255,255,255,.07);
-    --sb-active-bg:        rgba(255,255,255,.11);
-    --sb-active-bar:       rgba(255,255,255,.9);
-    --sb-divider:          rgba(255,255,255,.07);
-    --sb-label-color:      rgba(255,255,255,.82);
-    --sb-tooltip-bg:       #1E293B;
-    --sb-tooltip-text:     rgba(255,255,255,.92);
-    --sb-section-color:    rgba(148,163,184,.55);
-}
-
-/* ─── Flash prevention ──────────────────────────────────── */
-html.sb-pre-collapsed body            { margin-left: var(--sb-w-collapsed) !important; }
-html.sb-pre-collapsed .sidebar        { width: var(--sb-w-collapsed); transition: none !important; }
-html.sb-pre-collapsed .sidebar .sb-label,
-html.sb-pre-collapsed .sidebar .sb-section-title { opacity: 0; width: 0; overflow: hidden; }
-html.sb-pre-collapsed .sidebar .sb-link  { justify-content: center; }
-
-/* ─── Body offset ───────────────────────────────────────── */
-body {
-    margin-left: var(--sb-w-expanded);
-    transition: margin-left 200ms ease;
-}
-body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
-
-/* ─── Sidebar shell ─────────────────────────────────────── */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: var(--sb-w-expanded);
-    height: 100vh;
-    background: var(--sb-bg);
-    border-right: 1px solid var(--sb-border);
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 14px 8px 12px;
-    z-index: 1000;
-    overflow-y: auto;
-    overflow-x: visible;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,.12) transparent;
-    transition: width 200ms ease;
-    will-change: width;
-    box-sizing: border-box;
-}
-.sidebar::-webkit-scrollbar       { width: 4px; }
-.sidebar::-webkit-scrollbar-track { background: transparent; }
-.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.13); border-radius: 10px; }
-.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.28); }
-
-/* ─── Collapsed state ───────────────────────────────────── */
-.sidebar.collapsed { width: var(--sb-w-collapsed); }
-.sidebar.collapsed .sb-label,
-.sidebar.collapsed .sb-section-title {
-    opacity: 0;
-    width: 0;
-    pointer-events: none;
-    overflow: hidden;
-    white-space: nowrap;
-}
-.sidebar.collapsed .sb-link {
-    justify-content: center;
-    padding: 0;
-    box-sizing: border-box;
-    width: 44px;
-    height: 44px;
-    margin: 0 auto;
-    border-radius: 8px;
-}
-.sidebar.collapsed .sb-icon { width: 20px; height: 20px; flex-shrink: 0; }
-.sidebar.collapsed .sb-icon svg { width: 20px; height: 20px; }
-.sidebar.collapsed .sb-logo { justify-content: center; }
-.sidebar.collapsed .sidebar-toggle #toggleIcon { transform: rotate(180deg); }
-.sidebar.collapsed .sb-user-info,
-.sidebar.collapsed .sb-logout { display: none; }
-.sidebar.collapsed .sb-footer { padding: 8px 0; }
-.sidebar.collapsed .sb-user { justify-content: center; }
-
-/* ─── Toggle button (desktop) ──────────────────────────── */
-.sidebar-toggle {
-    position: absolute;
-    top: 18px;
-    right: -12px;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.15);
-    background: #1E293B;
-    color: rgba(255,255,255,.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 1100;
-    transition: background 150ms ease;
-    flex-shrink: 0;
-    padding: 0;
-    outline: none;
-}
-.sidebar-toggle:hover { background: #2D3F55; color: #fff; }
-.sidebar-toggle:focus-visible { outline: 2px solid rgba(255,255,255,.5); outline-offset: 2px; }
-.sidebar-toggle #toggleIcon {
-    transition: transform 200ms ease;
-    display: block;
-    pointer-events: none;
-}
-
-/* ─── Logo ──────────────────────────────────────────────── */
-.sb-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 2px 4px 18px;
-    flex-shrink: 0;
-    overflow: hidden;
-    transition: padding 200ms ease;
-}
-.sb-logo img {
-    width: 34px;
-    height: 34px;
-    object-fit: contain;
-    flex-shrink: 0;
-    display: block;
-}
-.sb-logo-text {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    overflow: hidden;
-    transition: opacity 150ms ease, width 150ms ease;
-}
-.sb-logo-title {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #FFFFFF;
-    white-space: nowrap;
-    line-height: 1.3;
-}
-.sb-logo-sub {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 400;
-    color: rgba(255,255,255,.5);
-    white-space: nowrap;
-    line-height: 1.3;
-}
-.sidebar.collapsed .sb-logo-text {
-    opacity: 0;
-    width: 0;
-    pointer-events: none;
-}
-
-/* ─── Nav wrapper ───────────────────────────────────────── */
-.sb-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-    min-width: 0;
-}
-
-/* ─── Group ─────────────────────────────────────────────── */
-.sb-group {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-.sb-group.sb-divider {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--sb-divider);
-}
-
-/* ─── Nav link ──────────────────────────────────────────── */
-.sb-link {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 8px;
-    height: 44px;
-    border-radius: 8px;
-    color: var(--sb-label-color);
-    text-decoration: none;
-    transition: background 150ms ease, color 150ms ease, transform 150ms ease;
-    overflow: hidden;
-    white-space: nowrap;
-    cursor: pointer;
-    box-sizing: border-box;
-}
-.sb-link:hover {
-    background: var(--sb-hover-bg);
-    color: #fff;
-    transform: translateX(2px);
-}
-.sb-link:focus-visible {
-    outline: 2px solid rgba(255,255,255,.45);
-    outline-offset: 2px;
-}
-.sb-link.active {
-    background: var(--sb-active-bg);
-    color: var(--sb-icon-active);
-}
-.sb-link.active::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 18px;
-    border-radius: 0 3px 3px 0;
-    background: var(--sb-active-bar);
-}
-
-/* ─── Icon ──────────────────────────────────────────────── */
-.sb-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    color: var(--sb-icon-color);
-}
-.sb-link.active .sb-icon { color: var(--sb-icon-active); }
-.sb-link:hover .sb-icon  { color: #fff; }
-.sb-icon svg { width: 18px; height: 18px; stroke-width: 1.75; }
-
-/* ─── Label ─────────────────────────────────────────────── */
-.sb-label {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: inherit;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    transition: opacity 150ms ease, width 150ms ease;
-}
-
-/* ─── Tooltip (hanya saat collapsed) ───────────────────── */
-.sidebar.collapsed .sb-link[data-tooltip] { overflow: visible; }
-.sidebar.collapsed .sb-link[data-tooltip]:hover::before {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: calc(var(--sb-w-collapsed) - 8px);
-    top: 50%;
-    transform: translateY(-50%);
-    background: var(--sb-tooltip-bg);
-    color: var(--sb-tooltip-text);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 5px 11px;
-    border-radius: 7px;
-    white-space: nowrap;
-    z-index: 9999;
-    pointer-events: none;
-    box-shadow: 0 4px 14px rgba(0,0,0,.4);
-    border: 1px solid rgba(255,255,255,.08);
-}
-
-/* ─── Footer / user info ────────────────────────────────── */
-.sb-footer {
-    flex-shrink: 0;
-    padding: 10px 4px 4px;
-    border-top: 1px solid var(--sb-divider);
-    margin-top: 8px;
-}
-.sb-user {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-}
-.sb-user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(37,99,235,.35);
-    color: #fff;
-    font-size: 0.78rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-family: 'Inter', sans-serif;
-}
-.sb-user-info {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-}
-.sb-user-name {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.sb-user-role {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.68rem;
-    color: rgba(255,255,255,.45);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.sb-logout {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
-    color: rgba(255,255,255,.5);
-    transition: background 150ms ease, color 150ms ease;
-    flex-shrink: 0;
-    text-decoration: none;
-}
-.sb-logout:hover { background: rgba(220,38,38,.2); color: #f87171; }
-.sb-logout svg { width: 15px; height: 15px; stroke-width: 1.75; }
-
-/* ─── Overlay ───────────────────────────────────────────── */
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.5);
-    z-index: 1049;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-}
-
-/* ─── Bottom navigation bar (mobile only) ──────────────── */
-.sb-bottombar {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: var(--sb-bg);
-    border-top: 1px solid var(--sb-border);
-    z-index: 1050;
-    align-items: stretch;
-    padding: 0 4px;
-    padding-bottom: env(safe-area-inset-bottom);
-}
-.sb-bb-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    color: rgba(255,255,255,.5);
-    text-decoration: none;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.62rem;
-    font-weight: 500;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    border-radius: 10px;
-    transition: color 150ms ease, background 150ms ease;
-    padding: 6px 4px;
-    -webkit-tap-highlight-color: transparent;
-}
-.sb-bb-item svg { width: 20px; height: 20px; stroke-width: 1.75; }
-.sb-bb-item:hover,
-.sb-bb-item.active { color: #fff; }
-.sb-bb-item.active { color: #60a5fa; }
-
-/* ─── Drawer slide-in (mobile) ──────────────────────────── */
-@media (max-width: 768px) {
-    .sb-bottombar { display: flex; }
-
-    body, 
-    body.sb-collapsed { margin-left: 0 !important; padding-bottom: 60px; }
-    html.sb-pre-collapsed body { margin-left: 0 !important; }
-
-    .sidebar {
-        width: 280px !important;
-        transform: translateX(-100%);
-        transition: transform 220ms cubic-bezier(.4,0,.2,1) !important;
-        will-change: transform;
-        overflow-y: auto;
-        overflow-x: hidden; /* ← ganti dari visible ke hidden */
-        box-shadow: none;
-        z-index: 1060; /* ← tambah ini, harus lebih tinggi dari overlay (1049) */
-    
-}
-    .sidebar.mobile-open {
-        transform: translateX(0);
-        box-shadow: 4px 0 24px rgba(0,0,0,.4);
-    }
-    .sidebar.mobile-open ~ .sidebar-overlay { display: block; }
-
-    .sidebar-toggle { display: none; }
-
-    .sidebar .sb-label {
-        opacity: 1 !important;
-        width: auto !important;
-        pointer-events: auto !important;
-    }
-    .sidebar .sb-link {
-        justify-content: flex-start !important;
-        width: auto !important;
-        margin: 0 !important;
-        padding: 0 8px !important;
-        height: 48px !important;
-    }
-    .sidebar .sb-link[data-tooltip]:hover::before { display: none; }
-
-    /* Link item tap highlight */
-    .sidebar .sb-link { -webkit-tap-highlight-color: transparent; }
-    .sidebar .sb-link:active { background: rgba(255,255,255,.14); transform: none; }
-}
-
-    body.sb-drawer-open {
-    position: fixed;
-    width: 100%;
-    overflow: hidden;
-}
-/* Modal di atas sidebar */
-.modal-backdrop { 
-    z-index: 1070 !important; 
-}
-.modal          { 
-    z-index: 1075 !important; 
-}
-</style>
-
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
 (function () {
     var STORAGE_KEY = 'wms-sidebar-collapsed';
 
-    var sidebar    = document.getElementById('sidebar');
-    var toggleBtn  = document.getElementById('sidebarToggle');
-    var mobileBtn  = document.getElementById('mobileMenuBtn');
-    var overlay    = document.getElementById('sidebarOverlay');
+    var sidebar   = document.getElementById('sidebar');
+    var toggleBtn = document.getElementById('sidebarToggle');
+    var mobileBtn = document.getElementById('mobileMenuBtn');
+    var overlay   = document.getElementById('sidebarOverlay');
 
     function renderIcons() {
         if (window.lucide) lucide.createIcons();
@@ -692,24 +939,17 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
     renderIcons();
     document.addEventListener('DOMContentLoaded', renderIcons);
 
-    /* ── Apply saved state (desktop only) ───────────────── */
-    if (window.innerWidth > 768) {
-        if (localStorage.getItem(STORAGE_KEY) === 'true') {
-            sidebar.classList.add('collapsed');
-            document.body.classList.add('sb-collapsed');
-        }
-    }
-    requestAnimationFrame(function () {
-        document.documentElement.classList.remove('sb-pre-collapsed');
-    });
+    <?php
+        $isWilayahActiveJs = isset($wilayahActive) && $wilayahActive ? 'true' : 'false';
+        $isLaporanActiveJs = isset($laporanActive) && $laporanActive ? 'true' : 'false';
+    ?>
+    window.WmsSidebarState.init(<?= $isWilayahActiveJs ?>, <?= $isLaporanActiveJs ?>);
 
     /* ── Desktop toggle ─────────────────────────────────── */
     if (toggleBtn) {
         toggleBtn.addEventListener('click', function (e) {
             e.stopPropagation();
-            var isCollapsed = sidebar.classList.toggle('collapsed');
-            document.body.classList.toggle('sb-collapsed', isCollapsed);
-            localStorage.setItem(STORAGE_KEY, isCollapsed);
+            window.WmsSidebarState.toggleSidebar();
         });
     }
 
@@ -741,6 +981,18 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
 
     overlay.addEventListener('click', closeMobile);
 
+    /* ── Preserve Sidebar Scroll Position ───────────────── */
+    var sbNav = document.querySelector('.sidebar');
+    if (sbNav) {
+        var activeLink = sbNav.querySelector('.sb-link.active');
+        if (activeLink) {
+            activeLink.scrollIntoView({ block: 'center' });
+        }
+        window.addEventListener('beforeunload', function () {
+            localStorage.removeItem('wms-sidebar-scroll');
+        });
+    }
+
     /* Tutup drawer saat link diklik (mobile) */
     sidebar.querySelectorAll('.sb-link').forEach(function (link) {
         link.addEventListener('click', function () {
@@ -765,4 +1017,24 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
         }
     });
 })();
-</script>
+
+/* ── Laporan dropdown toggle ─────────────────────────────── */
+function toggleLaporanDropdown() {
+    var trigger = document.getElementById('laporanTrigger');
+    var body    = document.getElementById('laporanBody');
+    if (!trigger || !body) return;
+    var isOpen = body.classList.contains('open');
+    trigger.classList.toggle('open',    !isOpen);
+    body.classList.toggle('open',       !isOpen);
+}
+
+/* ── Gudang Wilayah dropdown toggle ─────────────────────── */
+function toggleWilayahDropdown() {
+    var trigger = document.getElementById('wilayahTrigger');
+    var body    = document.getElementById('wilayahBody');
+    if (!trigger || !body) return;
+    var isOpen = body.classList.contains('open');
+    trigger.classList.toggle('open', !isOpen);
+    body.classList.toggle('open', !isOpen);
+}
+</script>   

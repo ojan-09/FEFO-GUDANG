@@ -135,17 +135,28 @@
                         $beratPerSatuan = (float) $item['berat_per_satuan'];
                         if ($bisaDipecah === 1) {
                             $totalBeratRow = (float) $item['jumlah'];
-                            if (strtolower($item['satuan_berat']) === 'gram') {
+                            if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                                 $totalBeratRow *= 1000;
                             }
                         } else {
                             $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
                         }
                         $statusText = str_replace(['🔴 ', '🟡 ', '🟢 '], '', $item['status_label']);
+                        $statusBg = '#FFFFFF';
+                        $statusColor = '#000000';
+                        if (isset($item['sisa_hari']) && $item['sisa_hari'] !== null) {
+                            if ($item['sisa_hari'] < 0) {
+                                $statusBg = '#F8D7DA'; $statusColor = '#842029';
+                            } elseif ($item['sisa_hari'] <= 30) {
+                                $statusBg = '#FFF3CD'; $statusColor = '#664D03';
+                            } else {
+                                $statusBg = '#D1E7DD'; $statusColor = '#0F5132';
+                            }
+                        }
                     ?>
-                    <tr>
+                    <tr style="background-color: <?= $statusBg ?>;">
                         <td class="text-center"><?= $no++ ?></td>
-                        <td class="text-center"><?= esc($statusText) ?></td>
+                        <td class="text-center" style="color: <?= $statusColor ?>; font-weight: bold;"><?= esc($statusText) ?></td>
                         <td class="text-center"><?= $item['tanggal_kedaluwarsa'] ? date('d/m/Y', strtotime($item['tanggal_kedaluwarsa'])) : '-' ?></td>
                         <td class="text-center"><?= $item['sisa_hari'] !== null ? $item['sisa_hari'] . ' Hari' : '-' ?></td>
                         <td><?= esc($item['nama_donatur'] ?? '-') ?></td>

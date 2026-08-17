@@ -111,12 +111,24 @@
     .mod-penyesuaian { color: #9333EA; }
     .mod-user { color: #EA580C; }
     .mod-login { color: #1F2937; }
+    .mod-export-pdf { color: #2563EB; }
+    .mod-export-excel { color: #16A34A; }
+    .mod-backup { color: #D97706; }
+    .mod-restore { color: #EA580C; }
+    .mod-logout { color: #64748B; }
+    .mod-penyaluran-danger { color: #DC2626; }
 
     .bg-donasi { background: #DCFCE7; color: #16A34A; }
     .bg-penyaluran { background: #DBEAFE; color: #2563EB; }
     .bg-penyesuaian { background: #F3E8FF; color: #9333EA; }
     .bg-user { background: #FFEDD5; color: #EA580C; }
     .bg-login { background: #F3F4F6; color: #1F2937; }
+    .bg-export-pdf { background: #DBEAFE; color: #1D4ED8; }
+    .bg-export-excel { background: #DCFCE7; color: #15803D; }
+    .bg-backup { background: #FEF3C7; color: #B45309; }
+    .bg-restore { background: #FFEDD5; color: #C2410C; }
+    .bg-logout { background: #F1F5F9; color: #475569; }
+    .bg-penyaluran-danger { background: #FEE2E2; color: #B91C1C; }
 
     /* Table Toolbar */
     .wh-dt-toolbar {
@@ -139,15 +151,50 @@
     .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { display: none; }
     .dataTables_wrapper .dataTables_info { font-size: 0.75rem; color: var(--wh-text-soft); }
     .dataTables_wrapper .dataTables_paginate .paginate_button {
-        width: 30px; height: 30px; border-radius: 7px !important; padding: 0 !important; margin-left: 3px;
-        display: inline-flex !important; align-items: center; justify-content: center;
-        border: 1px solid var(--wh-border) !important; background: #fff !important; color: var(--wh-text) !important; font-size: 0.75rem; transition: background .12s;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        margin: 0 1px !important;
+        box-shadow: none !important;
     }
+    .dataTables_wrapper .dataTables_paginate .paginate_button .page-link,
+    .dataTables_wrapper .dataTables_paginate .paginate_button a,
+    .dataTables_wrapper .dataTables_paginate .paginate_button span,
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 10px !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px !important;
+        border: 1px solid var(--wh-border) !important;
+        background: #fff !important;
+        color: var(--wh-text) !important;
+        font-size: 0.75rem;
+        text-decoration: none !important;
+        box-shadow: none !important;
+        transition: background .12s;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current .page-link,
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current a,
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current span,
     .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: var(--wh-primary) !important; color: #fff !important; border-color: var(--wh-primary) !important;
+        background: var(--wh-primary) !important;
+        color: #fff !important;
+        border-color: var(--wh-primary) !important;
     }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) .page-link,
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) a,
     .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
-        background: var(--wh-primary-soft) !important; border-color: #BFDBFE !important; color: var(--wh-primary) !important;
+        background: var(--wh-primary-soft) !important;
+        border-color: #BFDBFE !important;
+        color: var(--wh-primary) !important;
     }
 
     /* Timeline Cards */
@@ -402,32 +449,46 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="detail-drawer" id="detailDrawer">
     <div class="drawer-header">
-        <h3 id="drwTitle">Ringkasan Aktivitas</h3>
+        <h3 id="drwTitle">Informasi Aktivitas</h3>
         <button class="drawer-close" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="drawer-body">
-        <div class="drawer-item">
+        <div class="drawer-item mb-2">
             <div class="drawer-lbl">Modul</div>
-            <div class="drawer-val" id="drwModul">-</div>
+            <div class="drawer-val fw-semibold" id="drwModul">-</div>
         </div>
-        <div class="drawer-item">
-            <div class="drawer-lbl">Aksi</div>
-            <div class="drawer-val" id="drwAksi">-</div>
+        <div class="drawer-item mb-2">
+            <div class="drawer-lbl">Jenis / Aksi</div>
+            <div class="drawer-val fw-semibold" id="drwAksi">-</div>
         </div>
-        <div class="drawer-item">
+        <div class="drawer-item mb-2">
             <div class="drawer-lbl">Waktu</div>
             <div class="drawer-val" id="drwTanggal">-</div>
         </div>
-        <div class="drawer-item">
+        <div class="drawer-item mb-2">
             <div class="drawer-lbl">Operator</div>
             <div class="drawer-val" id="drwOperator">-</div>
         </div>
-        <div class="drawer-item">
-            <div class="drawer-lbl">Detail & Keterangan</div>
-            <div class="drawer-val" id="drwDeskripsi" style="background:#F8FAFC; padding:16px; border-radius:12px; border:1px solid var(--wh-border); margin-top:8px;">-</div>
+        <div class="drawer-item mb-3">
+            <div class="drawer-lbl">Ringkasan Aktivitas</div>
+            <div class="drawer-val fw-medium text-dark" id="drwSummary" style="background:#F8FAFC; padding:12px 14px; border-radius:10px; border:1px solid var(--wh-border); margin-top:4px;">-</div>
+        </div>
+
+        <!-- Dynamic Structured Details -->
+        <div id="drwDetailsContainer"></div>
+        
+        <!-- Collapsible Audit JSON Accordion -->
+        <div class="mt-4 pt-3 border-top">
+            <button type="button" class="btn btn-sm btn-light w-100 text-start fw-semibold d-flex justify-content-between align-items-center" onclick="toggleAuditJson()" style="border: 1px solid #E2E8F0; padding: 10px 14px; border-radius: 8px;">
+                <span><i class="fa-solid fa-code me-2 text-secondary"></i>Data Audit (JSON)</span>
+                <i id="auditJsonChevron" class="fa-solid fa-chevron-down text-secondary"></i>
+            </button>
+            <div id="auditJsonBody" style="display:none; margin-top:8px;">
+                <pre id="drwRawJson" style="background:#0f172a; color:#f8fafc; padding:12px; border-radius:8px; font-size:11px; max-height:220px; overflow:auto; white-space:pre-wrap; word-break:break-all; margin:0;">-</pre>
+            </div>
         </div>
         
-        <div id="drwActionContainer" style="display:none; margin-top:32px;">
+        <div id="drwActionContainer" style="display:none; margin-top:24px;">
             <a href="#" id="drwActionBtn" class="drawer-action-btn">Lihat Halaman Transaksi <i class="fa-solid fa-arrow-right ms-2"></i></a>
         </div>
     </div>
@@ -440,23 +501,42 @@
 function openDrawer(element) {
     const data = JSON.parse(element.getAttribute('data-info'));
     
-    document.getElementById('drwModul').innerText = data.modul;
-    document.getElementById('drwAksi').innerText = data.aksi;
-    document.getElementById('drwTanggal').innerText = data.tanggal;
-    document.getElementById('drwOperator').innerText = data.operator;
+    document.getElementById('drwModul').innerText = data.modul || '-';
+    document.getElementById('drwAksi').innerText = data.aksi || '-';
+    document.getElementById('drwTanggal').innerText = data.tanggal || '-';
+    document.getElementById('drwOperator').innerText = data.operator || '-';
+    document.getElementById('drwSummary').innerText = data.summary || '-';
     
-    // Parse deskripsi back to HTML
-    document.getElementById('drwDeskripsi').innerHTML = data.deskripsi.replace(/\n/g, "<br>");
+    // Render key-value pairs details
+    let detailsHtml = '';
+    if (data.details && typeof data.details === 'object') {
+        for (let [key, val] of Object.entries(data.details)) {
+            detailsHtml += `
+                <div class="drawer-item mb-2">
+                    <div class="drawer-lbl">${key}</div>
+                    <div class="drawer-val fw-semibold" style="color:#1e293b;">${val}</div>
+                </div>
+            `;
+        }
+    }
+    document.getElementById('drwDetailsContainer').innerHTML = detailsHtml;
     
-    // Action Button Logic
+    // Raw JSON for Accordion
+    document.getElementById('drwRawJson').innerText = data.raw_json || '-';
+    
+    // Reset Accordion
+    document.getElementById('auditJsonBody').style.display = 'none';
+    document.getElementById('auditJsonChevron').className = 'fa-solid fa-chevron-down text-secondary';
+
+    // Action Button Logic (Transaction link if any)
     const btn = document.getElementById('drwActionBtn');
     const container = document.getElementById('drwActionContainer');
     
-    // Try to extract Transaction Number (e.g. BM-2026..., BK-2026..., ADJ-2026...)
+    let rawText = data.raw_json || '';
     let trxNo = '';
-    const lines = data.deskripsi.split('\n');
-    for(let line of lines) {
-        if(line.includes('No.')) {
+    const lines = rawText.split('\n');
+    for (let line of lines) {
+        if (line.includes('No.')) {
             trxNo = line.replace('No.', '').trim();
             break;
         }
@@ -479,6 +559,18 @@ function openDrawer(element) {
 
     document.getElementById('drawerOverlay').classList.add('show');
     document.getElementById('detailDrawer').classList.add('show');
+}
+
+function toggleAuditJson() {
+    const body = document.getElementById('auditJsonBody');
+    const chevron = document.getElementById('auditJsonChevron');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        chevron.className = 'fa-solid fa-chevron-up text-secondary';
+    } else {
+        body.style.display = 'none';
+        chevron.className = 'fa-solid fa-chevron-down text-secondary';
+    }
 }
 
 function closeDrawer() {
@@ -512,7 +604,15 @@ $(document).ready(function() {
             }
         },
         order: [],
-        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json',
+            paginate: {
+                previous: '‹',
+                next: '›',
+                first: '«',
+                last: '»'
+            }
+        },
         pageLength: 25,
         dom: 'rt<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4"ip>', 
         columnDefs: [{ orderable: false, targets: [0] }]

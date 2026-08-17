@@ -43,7 +43,7 @@
                         
                         if ($bisaDipecah === 1) {
                             $totalBeratRow = (float)$batch['stok_saat_ini'];
-                            if (strtolower($batch['satuan_berat']) === 'gram') $totalBeratRow *= 1000;
+                            if (in_array(strtolower(trim($batch['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) $totalBeratRow *= 1000;
                         } else {
                             $totalBeratRow = $batch['stok_saat_ini'] * $beratPerSatuan;
                         }
@@ -58,6 +58,28 @@
                         <td class="text-center"><?= number_format($batch['jumlah_awal'], $decimals, ',', '.') ?> <?= esc($batch['satuan']) ?></td>
                         <td class="text-end fw-bold" style="font-size: 1.1rem;">
                             <?= number_format($batch['stok_saat_ini'], $decimals, ',', '.') ?> <small class="text-muted fw-normal"><?= esc($batch['satuan']) ?></small>
+                            <?php if (!empty($batch['menggunakan_kemasan']) && !empty($batch['jumlah_ctn']) && !empty($batch['isi_per_ctn'])) : ?>
+                                <?php
+                                    $isiCtn  = (int)$batch['isi_per_ctn'];
+                                    $stkAkt  = (float)$batch['stok_saat_ini'];
+                                    $ctnSisa = floor($stkAkt / $isiCtn);
+                                    $pcsSisa = fmod($stkAkt, $isiCtn);
+
+                                    if ($ctnSisa > 0 && $pcsSisa > 0) {
+                                        $sisaStr = number_format($ctnSisa, 0, ',', '.') . ' CTN + ' . number_format($pcsSisa, 0, ',', '.') . ' ' . esc($batch['satuan']);
+                                    } elseif ($ctnSisa > 0) {
+                                        $sisaStr = number_format($ctnSisa, 0, ',', '.') . ' CTN';
+                                    } elseif ($pcsSisa > 0) {
+                                        $sisaStr = number_format($pcsSisa, 0, ',', '.') . ' ' . esc($batch['satuan']);
+                                    } else {
+                                        $sisaStr = '0 CTN';
+                                    }
+                                ?>
+                                <div class="text-secondary fw-normal mt-1" style="font-size: 11px;">
+                                    <i class="fa-solid fa-box text-muted me-1"></i>Awal: <?= (int)$batch['jumlah_ctn'] ?> CTN &times; <?= (int)$batch['isi_per_ctn'] ?> <?= esc($batch['satuan']) ?><br>
+                                    <i class="fa-solid fa-box-open text-primary me-1"></i>Sisa Kemasan: <strong><?= $sisaStr ?></strong>
+                                </div>
+                            <?php endif; ?>
                         </td>
                         <td class="text-end text-muted">
                             <?= $totalBeratRow > 0 ? format_berat($totalBeratRow, $batch['satuan_berat']) : '-' ?>

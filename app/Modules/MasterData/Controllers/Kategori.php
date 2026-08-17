@@ -44,7 +44,8 @@ class Kategori extends BaseController
             'nama_kategori' => $this->request->getPost('nama_kategori'),
         ]);
 
-        return redirect()->to('/masterdata/kategori')->with('success', 'Kategori berhasil ditambahkan.');
+        helper('format'); clear_dashboard_cache();
+        return redirect()->to(site_url('masterdata/kategori'))->with('success', 'Kategori berhasil ditambahkan.');
     }
 
     public function edit($id)
@@ -75,18 +76,38 @@ class Kategori extends BaseController
             'nama_kategori' => $this->request->getPost('nama_kategori'),
         ]);
 
-        return redirect()->to('/masterdata/kategori')->with('success', 'Kategori berhasil diperbarui.');
+        helper('format'); clear_dashboard_cache();
+        return redirect()->to(site_url('masterdata/kategori'))->with('success', 'Kategori berhasil diperbarui.');
     }
 
     public function delete($id)
     {
         $kategori = $this->kategoriModel->find($id);
         if (!$kategori) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => false, 'message' => 'Kategori tidak ditemukan.']);
+            }
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Kategori tidak ditemukan.');
         }
 
+        $db = \Config\Database::connect();
+        $isUsedBarang = $db->table('barang')->where('id_kategori', $id)->countAllResults();
+        if ($isUsedBarang > 0) {
+            $msg = "Kategori '" . esc($kategori['nama_kategori']) . "' tidak dapat dihapus karena masih digunakan oleh " . $isUsedBarang . " data Barang.";
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => false, 'message' => $msg]);
+            }
+            return redirect()->to(site_url('masterdata/kategori'))->with('error', $msg);
+        }
+
         $this->kategoriModel->delete($id);
-        return redirect()->to('/masterdata/kategori')->with('success', 'Kategori berhasil dihapus.');
+        helper('format'); clear_dashboard_cache();
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => true, 'message' => 'Kategori berhasil dihapus.']);
+        }
+
+        return redirect()->to(site_url('masterdata/kategori'))->with('success', 'Kategori berhasil dihapus.');
     }
 
     /**
@@ -112,8 +133,8 @@ class Kategori extends BaseController
             $rowData[] = '<span class="text-muted"><i class="fa-regular fa-calendar me-1"></i> ' . date('d M Y, H:i', strtotime($row['created_at'])) . '</span>';
             
             $aksi = '<div class="kat-actions">
-                        <button type="button" class="kat-action-btn kat-action-edit" onclick="editKategori(' . $row['id'] . ', \'' . htmlspecialchars($row['nama_kategori'], ENT_QUOTES) . '\')" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <a href="' . site_url('masterdata/kategori/delete/' . $row['id']) . '" class="kat-action-btn kat-action-delete" onclick="return confirm(\'Hapus kategori ini?\')" title="Hapus"><i class="fa-solid fa-trash"></i></a>
+                        <a href="' . site_url('masterdata/kategori/edit/' . $row['id']) . '" class="kat-action-btn kat-action-edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                        <button type="button" class="kat-action-btn kat-action-delete" onclick="confirmDeleteKategori(' . $row['id'] . ')" title="Hapus"><i class="fa-solid fa-trash"></i></button>
                      </div>';
             $rowData[] = $aksi;
             $data[] = $rowData;

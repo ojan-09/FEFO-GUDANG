@@ -62,6 +62,7 @@ class Wilayah extends BaseController
             'status'         => $this->request->getPost('status'),
         ]);
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('/masterdata/wilayah')->with('success', 'Data Wilayah berhasil ditambahkan.');
     }
 
@@ -112,6 +113,7 @@ class Wilayah extends BaseController
             'status'         => $this->request->getPost('status'),
         ]);
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('/masterdata/wilayah')->with('success', 'Data Wilayah berhasil diubah.');
     }
 
@@ -122,6 +124,9 @@ class Wilayah extends BaseController
     {
         $wilayah = $this->wilayahModel->find($id);
         if (!$wilayah) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => false, 'message' => 'Wilayah tidak ditemukan.']);
+            }
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Wilayah tidak ditemukan.');
         }
 
@@ -130,12 +135,22 @@ class Wilayah extends BaseController
         $isUsed = $barangKeluarModel->where('id_wilayah', $id)->countAllResults();
 
         if ($isUsed > 0) {
-            return redirect()->to('/masterdata/wilayah')->with('error', 'Wilayah tidak dapat dihapus karena sudah digunakan pada transaksi Penyaluran Barang. Silakan ubah status menjadi Nonaktif jika sudah tidak digunakan.');
+            $msg = 'Wilayah tidak dapat dihapus karena sudah digunakan pada transaksi Penyaluran Barang. Silakan ubah status menjadi Nonaktif jika sudah tidak digunakan.';
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => false, 'message' => $msg]);
+            }
+            return redirect()->to(site_url('masterdata/wilayah'))->with('error', $msg);
         }
 
         $this->wilayahModel->delete($id);
 
-        return redirect()->to('/masterdata/wilayah')->with('success', 'Data Wilayah berhasil dihapus.');
+        helper('format'); clear_dashboard_cache();
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => true, 'message' => 'Data Wilayah berhasil dihapus.']);
+        }
+
+        return redirect()->to(site_url('masterdata/wilayah'))->with('success', 'Data Wilayah berhasil dihapus.');
     }
 
     /**
@@ -167,7 +182,7 @@ class Wilayah extends BaseController
             
             $aksi = '<div class="wil-actions">
                         <a href="' . site_url('masterdata/wilayah/edit/' . $row['id']) . '" class="wil-action-btn wil-action-edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
-                        <a href="' . site_url('masterdata/wilayah/delete/' . $row['id']) . '" class="wil-action-btn wil-action-delete" title="Hapus" onclick="return confirm(\'Yakin ingin menghapus wilayah ini?\')"><i class="fa-solid fa-trash"></i></a>
+                        <a href="' . site_url('masterdata/wilayah/delete/' . $row['id']) . '" class="wil-action-btn wil-action-delete btn-delete-swal" title="Hapus" data-confirm-text="Yakin ingin menghapus wilayah ini?"><i class="fa-solid fa-trash"></i></a>
                      </div>';
             $rowData[] = $aksi;
             $data[] = $rowData;

@@ -150,7 +150,7 @@
                         $beratPerSatuan = (float) $item['berat_per_satuan'];
                         if ($bisaDipecah === 1) {
                             $totalBeratRow = (float) $item['jumlah'];
-                            if (strtolower($item['satuan_berat']) === 'gram') {
+                            if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                                 $totalBeratRow *= 1000;
                             }
                         } else {

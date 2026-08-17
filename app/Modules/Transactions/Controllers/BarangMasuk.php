@@ -61,15 +61,24 @@ class BarangMasuk extends BaseController
         }
         $tanggalMasuk = $this->request->getPost('tanggal_masuk');
         $kategoriValid    = array_column($this->kategoriModel->findAll(), 'nama_kategori');
-        // FIX Bug 2 & 3: Tambah 'Repack' ke satuanValid, hapus 'Kg'
-        $satuanValid      = ['Box', 'Dus', 'Pcs', 'Karung', 'Repack', 'Botol', 'Pack', 'Tray', 'Kaleng', 'Pouch', 'Sak'];
-        $satuanBeratValid = ['Gram', 'Kg'];
+        $satuanValid      = ['Karung', 'Dus', 'Box', 'Kotak', 'Pack', 'Pcs', 'Botol', 'Kaleng', 'Sak', 'Tray', 'Pouch', 'Sachet', 'Renceng', 'Kantong', 'Kardus', 'Repack'];
+        $satuanBeratValid = ['Gram', 'Kg', 'ml', 'Liter'];
         $cleanItems = [];
         foreach ($items as $key => $item) {
             $namaBarang         = trim($item['nama_barang'] ?? '');
             $kategori           = trim($item['kategori'] ?? '');
             $jumlahCtn          = trim($item['jumlah_ctn'] ?? '');
-            $jumlah             = (int) ($item['jumlah'] ?? 0);
+            $isiPerCtn          = trim($item['isi_per_ctn'] ?? '');
+            $jumlahCtnVal       = ($jumlahCtn !== '' && (int)$jumlahCtn > 0) ? (int)$jumlahCtn : null;
+            $isiPerCtnVal       = ($isiPerCtn !== '' && (int)$isiPerCtn > 0) ? (int)$isiPerCtn : null;
+            $menggunakanKemasan = ($jumlahCtnVal !== null && $isiPerCtnVal !== null) ? 1 : 0;
+
+            if ($menggunakanKemasan === 1) {
+                $jumlah = $jumlahCtnVal * $isiPerCtnVal;
+            } else {
+                $jumlah = (int) ($item['jumlah'] ?? 0);
+            }
+
             $satuan             = trim($item['satuan'] ?? '');
             $beratPerSatuan     = (float) ($item['berat_per_satuan'] ?? 0);
             $satuanBerat        = trim($item['satuan_berat'] ?? '');
@@ -89,7 +98,7 @@ class BarangMasuk extends BaseController
             if ($satuan === '') {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Satuan wajib diisi."]);
             }
-            if (!in_array($satuan, $satuanValid, true)) {
+            if (!in_array(strtoupper($satuan), ['PCS', 'KOTAK', 'KARUNG', 'DUS', 'BOX', 'PACK', 'BOTOL', 'KALENG', 'TRAY', 'POUCH', 'SACHET', 'RENCENG', 'KANTONG', 'REPACK', 'KG'], true)) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Satuan tidak valid."]);
             }
             if ($beratPerSatuan <= 0) {
@@ -124,7 +133,9 @@ class BarangMasuk extends BaseController
             $cleanItems[] = [
                 'nama_barang'         => $namaBarang,
                 'kategori'            => $kategori,
-                'jumlah_ctn'          => $jumlahCtn === '' ? null : (int) $jumlahCtn,
+                'menggunakan_kemasan' => $menggunakanKemasan,
+                'jumlah_ctn'          => $jumlahCtnVal,
+                'isi_per_ctn'         => $isiPerCtnVal,
                 'jumlah'              => $jumlah,
                 'satuan'              => $satuan,
                 'berat_per_satuan'    => $beratPerSatuan,
@@ -156,12 +167,8 @@ class BarangMasuk extends BaseController
         $namaBarangUnikLower = array_map('strtolower', $namaBarangUnik);
         $barangList = [];
         if (!empty($namaBarangUnikLower)) {
-            $escapedNames = array_map(function($val) use ($db) {
-                return $db->escape($val);
-            }, $namaBarangUnikLower);
-            $namesString = implode(',', $escapedNames);
             $barangList = $barangModel->select('id, nama_barang, bisa_dipecah, satuan')
-                ->where("LOWER(nama_barang) IN ($namesString)")
+                ->whereIn('nama_barang', $namaBarangUnikLower)
                 ->findAll();
         }
         $barangMap = [];
@@ -238,8 +245,9 @@ class BarangMasuk extends BaseController
                 'tanggal_kedaluwarsa' => $item['tanggal_kedaluwarsa'],
                 'jumlah_awal'         => $jumlahAwal,
                 'stok_saat_ini'       => $stokSaatIni,
-                'jumlah_ctn'          => $jumlahCtn,
-                // FIX: simpan 'Repack' bukan 'Kg'
+                'menggunakan_kemasan' => $item['menggunakan_kemasan'],
+                'jumlah_ctn'          => $item['jumlah_ctn'],
+                'isi_per_ctn'         => $item['isi_per_ctn'],
                 'satuan'              => $item['satuan'],
                 'berat_per_satuan'    => $item['berat_per_satuan'],
                 'satuan_berat'        => $item['satuan_berat'],
@@ -266,6 +274,8 @@ class BarangMasuk extends BaseController
             'Donasi Masuk',
             "Menambahkan Donasi Masuk\nNo. {$nomorTransaksi}\nDonatur : {$namaDonatur}\nTotal Item : {$totalItem}"
         );
+        $this->clearDashboardCache();
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('/transaksi/barang-masuk')->with('success', 'Transaksi Barang Masuk berhasil disimpan.');
     }
     /**
@@ -330,9 +340,8 @@ class BarangMasuk extends BaseController
         }
         $tanggalMasuk = $this->request->getPost('tanggal_masuk');
         $kategoriValid    = array_column($this->kategoriModel->findAll(), 'nama_kategori');
-        // FIX Bug 2 & 3: Tambah 'Repack' ke satuanValid, hapus 'Kg'
-        $satuanValid      = ['Box', 'Dus', 'Pcs', 'Karung', 'Repack', 'Botol', 'Pack', 'Tray', 'Kaleng', 'Pouch', 'Sak'];
-        $satuanBeratValid = ['Gram', 'Kg'];
+        $satuanValid      = ['Karung', 'Dus', 'Box', 'Kotak', 'Pack', 'Pcs', 'Botol', 'Kaleng', 'Sak', 'Tray', 'Pouch', 'Sachet', 'Renceng', 'Kantong', 'Kardus', 'Repack'];
+        $satuanBeratValid = ['Gram', 'Kg', 'ml', 'Liter'];
         $cleanItems = [];
         foreach ($items as $key => $item) {
             $namaBarang         = trim($item['nama_barang'] ?? '');
@@ -389,12 +398,23 @@ class BarangMasuk extends BaseController
             if ($nilaiSatuan < 0) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Nilai Satuan tidak boleh negatif."]);
             }
+            $isiPerCtn          = trim($item['isi_per_ctn'] ?? '');
+            $jumlahCtnVal       = ($jumlahCtn !== '' && is_numeric($jumlahCtn)) ? (int)$jumlahCtn : null;
+            $isiPerCtnVal       = ($isiPerCtn !== '' && is_numeric($isiPerCtn)) ? (int)$isiPerCtn : null;
+            $menggunakanKemasan = ($jumlahCtnVal !== null && $isiPerCtnVal !== null && $jumlahCtnVal > 0 && $isiPerCtnVal > 0) ? 1 : 0;
+
+            if ($menggunakanKemasan === 1) {
+                $jumlah = $jumlahCtnVal * $isiPerCtnVal;
+            }
+
             $idBatch = trim($item['id'] ?? '');
             $cleanItems[] = [
                 'id'                  => $idBatch === '' ? null : (int) $idBatch,
                 'nama_barang'         => $namaBarang,
                 'kategori'            => $kategori,
-                'jumlah_ctn'          => $jumlahCtn === '' ? null : (int) $jumlahCtn,
+                'menggunakan_kemasan' => $menggunakanKemasan,
+                'jumlah_ctn'          => $jumlahCtnVal,
+                'isi_per_ctn'         => $isiPerCtnVal,
                 'jumlah'              => $jumlah,
                 'satuan'              => $satuan,
                 'berat_per_satuan'    => $beratPerSatuan,
@@ -405,7 +425,7 @@ class BarangMasuk extends BaseController
             ];
         }
         $db = \Config\Database::connect();
-        $db->transBegin();
+        $db->transStart();
         $this->barangMasukModel->update($id, [
             'id_donatur'    => $this->request->getPost('id_donatur'),
             'tanggal_masuk' => $tanggalMasuk,
@@ -437,12 +457,8 @@ class BarangMasuk extends BaseController
         $namaBarangUnikLower = array_map('strtolower', $namaBarangUnik);
         $barangList = [];
         if (!empty($namaBarangUnikLower)) {
-            $escapedNames = array_map(function($val) use ($db) {
-                return $db->escape($val);
-            }, $namaBarangUnikLower);
-            $namesString = implode(',', $escapedNames);
             $barangList = $barangModel->select('id, nama_barang, bisa_dipecah, satuan')
-                ->where("LOWER(nama_barang) IN ($namesString)")
+                ->whereIn('nama_barang', $namaBarangUnikLower)
                 ->findAll();
         }
         $barangMap  = [];
@@ -517,7 +533,9 @@ class BarangMasuk extends BaseController
                         'tanggal_kedaluwarsa' => $item['tanggal_kedaluwarsa'],
                         'jumlah_awal'         => $newQty,
                         'stok_saat_ini'       => $newQty,
-                        'jumlah_ctn'          => $jumlahCtn,
+                        'menggunakan_kemasan' => $item['menggunakan_kemasan'],
+                        'jumlah_ctn'          => $item['jumlah_ctn'],
+                        'isi_per_ctn'         => $item['isi_per_ctn'],
                         'satuan'              => $item['satuan'],
                         'berat_per_satuan'    => $item['berat_per_satuan'],
                         'satuan_berat'        => $item['satuan_berat'],
@@ -534,10 +552,8 @@ class BarangMasuk extends BaseController
                         } else {
                             $submittedQty = ($satuanB === 'gram') ? (($qty * $berat) / 1000) : ($qty * $berat);
                         }
-                        $jumlahCtn = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                     } else {
                         $submittedQty = $item['jumlah'];
-                        $jumlahCtn    = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                     }
                     $delta    = $submittedQty - $eb['jumlah_awal'];
                     $stokBaru = $eb['stok_saat_ini'] + $delta;
@@ -552,7 +568,9 @@ class BarangMasuk extends BaseController
                         'tanggal_kedaluwarsa' => $item['tanggal_kedaluwarsa'],
                         'jumlah_awal'         => $submittedQty,
                         'stok_saat_ini'       => $stokBaru,
-                        'jumlah_ctn'          => $jumlahCtn,
+                        'menggunakan_kemasan' => $item['menggunakan_kemasan'],
+                        'jumlah_ctn'          => $item['jumlah_ctn'],
+                        'isi_per_ctn'         => $item['isi_per_ctn'],
                         'satuan'              => $item['satuan'],
                         'berat_per_satuan'    => $item['berat_per_satuan'],
                         'satuan_berat'        => $item['satuan_berat'],
@@ -572,10 +590,8 @@ class BarangMasuk extends BaseController
                     } else {
                         $newQty = ($satuanB === 'gram') ? (($qty * $berat) / 1000) : ($qty * $berat);
                     }
-                    $jumlahCtn = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
                 } else {
-                    $newQty    = $item['jumlah'];
-                    $jumlahCtn = $item['jumlah_ctn'] !== null ? (int)$item['jumlah_ctn'] : null;
+                    $newQty = $item['jumlah'];
                 }
                 $this->batchModel->insert([
                     'id_barang_masuk'     => $id,
@@ -587,7 +603,9 @@ class BarangMasuk extends BaseController
                     'tanggal_kedaluwarsa' => $item['tanggal_kedaluwarsa'],
                     'jumlah_awal'         => $newQty,
                     'stok_saat_ini'       => $newQty,
-                    'jumlah_ctn'          => $jumlahCtn,
+                    'menggunakan_kemasan' => $item['menggunakan_kemasan'],
+                    'jumlah_ctn'          => $item['jumlah_ctn'],
+                    'isi_per_ctn'         => $item['isi_per_ctn'],
                     'satuan'              => $item['satuan'],
                     'berat_per_satuan'    => $item['berat_per_satuan'],
                     'satuan_berat'        => $item['satuan_berat'],
@@ -597,11 +615,10 @@ class BarangMasuk extends BaseController
                 ]);
             }
         }
+        $db->transComplete();
         if ($db->transStatus() === false) {
-            $db->transRollback();
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
         }
-        $db->transCommit();
         $id_donatur = $this->request->getPost('id_donatur');
         $donaturModel = new DonaturModel();
         $donatur = $donaturModel->find($id_donatur);
@@ -613,6 +630,8 @@ class BarangMasuk extends BaseController
             'Donasi Masuk',
             "Mengubah Donasi Masuk\nNo. {$barangMasuk['nomor_transaksi']}\nDonatur : {$namaDonatur}\nTotal Item : {$totalItem}"
         );
+        $this->clearDashboardCache();
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('/transaksi/barang-masuk')->with('success', 'Transaksi Barang Masuk berhasil diperbarui.');
     }
     /**
@@ -653,55 +672,48 @@ class BarangMasuk extends BaseController
      */
     public function delete($id)
     {
-        if (!in_groups('Administrator')) {
+        if (!in_groups(['Administrator', 'Petugas Gudang'])) {
             return view('errors/html/error_403');
         }
         $barangMasuk = $this->barangMasukModel->find($id);
         if (!$barangMasuk) {
-            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
+            return redirect()->to(site_url('transaksi/barang-masuk'))->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
         $batchTerpakai = $this->batchModel
             ->where('id_barang_masuk', $id)
             ->where('stok_saat_ini < jumlah_awal')
             ->countAllResults();
         if ($batchTerpakai > 0) {
-            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi Donasi Masuk tidak dapat dihapus karena sebagian atau seluruh stoknya sudah digunakan pada transaksi Barang Keluar atau Penyesuaian Stok.');
+            return redirect()->to(site_url('transaksi/barang-masuk'))->with('error', 'Transaksi Donasi Masuk tidak dapat dihapus karena sebagian atau seluruh stoknya sudah digunakan pada transaksi Barang Keluar atau Penyesuaian Stok.');
         }
         $db = \Config\Database::connect();
-        $logData = [
-            'id_transaksi'         => $id,
-            'waktu_delete'         => date('Y-m-d H:i:s'),
-            'batch_sebelum'        => $this->batchModel->where('id_barang_masuk', $id)->findAll(),
-            'barang_masuk_sebelum' => $this->barangMasukModel->find($id)
-        ];
         $db->transStart();
         $this->batchModel->where('id_barang_masuk', $id)->delete();
-        $affectedBatch = $db->affectedRows();
         $this->barangMasukModel->delete($id);
-        $affectedBm = $db->affectedRows();
         $db->transComplete();
-        $logData['affected_batch'] = $affectedBatch;
-        $logData['affected_bm']    = $affectedBm;
-        $logData['trans_status']   = $db->transStatus();
-        $logData['batch_sesudah']  = $db->query("SELECT * FROM batch WHERE id_barang_masuk = ?", [$id])->getResultArray();
-        $compiledQuery = $db->table('batch')
-            ->select('batch.id, batch.id_barang, batch.stok_saat_ini, barang.nama_barang')
-            ->join('barang', 'barang.id = batch.id_barang')
-            ->where('batch.stok_saat_ini >', 0)
-            ->getCompiledSelect();
-        $monitoringData = $db->query($compiledQuery)->getResultArray();
-        $logData['monitoring_sesudah'] = $monitoringData;
-        file_put_contents(WRITEPATH . 'logs/delete_ui_log.json', json_encode($logData, JSON_PRETTY_PRINT));
+
         if ($db->transStatus() === false) {
-            return redirect()->to('/transaksi/barang-masuk')->with('error', 'Gagal menghapus transaksi. Silakan coba lagi.');
+            return redirect()->to(site_url('transaksi/barang-masuk'))->with('error', 'Gagal menghapus transaksi. Silakan coba lagi.');
         }
         \App\Libraries\ActivityLogger::log(
             'Hapus Donasi',
             'Donasi Masuk',
             "Menghapus Donasi Masuk\nNo. {$barangMasuk['nomor_transaksi']}"
         );
-        return redirect()->to('/transaksi/barang-masuk')->with('success', 'Transaksi berhasil dihapus.');
+        $this->clearDashboardCache();
+        helper('format'); clear_dashboard_cache();
+        return redirect()->to(site_url('transaksi/barang-masuk'))->with('success', 'Transaksi berhasil dihapus.');
     }
+    private function clearDashboardCache()
+    {
+        cache()->delete('dashboard_total_jenis_barang');
+        cache()->delete('dashboard_total_batch');
+        cache()->delete('dashboard_total_berat');
+        cache()->delete('dashboard_top_barang');
+        cache()->delete('dashboard_kategori');
+        cache()->delete('dashboard_grafik_12bln');
+    }
+
     /**
      * Daftar barang master untuk autocomplete di form Donasi Masuk.
      */
@@ -711,6 +723,8 @@ class BarangMasuk extends BaseController
         return $barangModel
             ->select('barang.nama_barang, kategori.nama_kategori as kategori, barang.satuan, barang.berat_per_satuan, barang.satuan_berat, barang.bisa_dipecah')
             ->join('kategori', 'kategori.id = barang.id_kategori')
+            ->where('barang.status', 'active')
+            ->groupBy('barang.nama_barang')
             ->orderBy('barang.nama_barang', 'ASC')
             ->findAll();
     }
@@ -730,25 +744,6 @@ class BarangMasuk extends BaseController
             $newNumber  = $lastNumber + 1;
         } else {
             $newNumber = 1;
-        }
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
-    }
-    /**
-     * Generate nomor batch: BT-YYYYMMDD-XXXX
-     */
-    private function generateNomorBatch(int $index = 0): string
-    {
-        $today  = date('Ymd');
-        $prefix = "BT-{$today}-";
-        $last   = $this->batchModel
-            ->like('nomor_batch', $prefix, 'after')
-            ->orderBy('id', 'DESC')
-            ->first();
-        if ($last) {
-            $lastNumber = (int) substr($last['nomor_batch'], -4);
-            $newNumber  = $lastNumber + 1 + $index;
-        } else {
-            $newNumber = 1 + $index;
         }
         return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
@@ -797,7 +792,10 @@ class BarangMasuk extends BaseController
                 $aksi .= '<button type="button" class="dm-btn-action lock" disabled title="Sudah Digunakan"><i class="fa-solid fa-lock"></i></button>';
             } else {
                 $aksi .= '<a href="' . site_url('transaksi/barang-masuk/edit/' . $bm['id']) . '" class="dm-btn-action edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
-                          <a href="' . site_url('transaksi/barang-masuk/delete/' . $bm['id']) . '" class="dm-btn-action del" title="Hapus" onclick="return confirm(\'Yakin ingin menghapus transaksi ini beserta semua batch-nya?\')"><i class="fa-solid fa-trash"></i></a>';
+                          <form action="' . site_url('transaksi/barang-masuk/delete/' . $bm['id']) . '" method="POST" class="d-inline form-delete-swal" data-confirm-text="Yakin ingin menghapus transaksi ini beserta semua batch-nya?">
+                              ' . csrf_field() . '
+                              <button type="submit" class="dm-btn-action del" title="Hapus" style="border:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                          </form>';
             }
             $aksi .= '</div>';
             

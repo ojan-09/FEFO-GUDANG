@@ -211,6 +211,12 @@
         <?= session()->getFlashdata('success') ?>
     </div>
     <?php endif; ?>
+    <?php if (session()->getFlashdata('error')) : ?>
+    <div class="kat-alert" style="background:#FEF2F2; border:1px solid #FECACA; color:#DC2626;">
+        <i class="fa-solid fa-circle-exclamation me-1"></i>
+        <?= session()->getFlashdata('error') ?>
+    </div>
+    <?php endif; ?>
 
     <!-- CARD -->
     <div class="kat-card">
@@ -278,5 +284,38 @@
             responsive: true
         });
     });
+
+    function confirmDeleteKategori(id) {
+        Swal.fire({
+            title: 'Hapus Kategori?',
+            text: 'Data yang sudah dihapus tidak dapat dikembalikan!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#DC2626',
+            cancelButtonColor: '#64748B',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '<?= site_url("masterdata/kategori/delete/") ?>' + id,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.status) {
+                            Swal.fire('Berhasil!', res.message, 'success');
+                            $('#tabelKategori').DataTable().ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        window.location.href = '<?= site_url("masterdata/kategori/delete/") ?>' + id;
+                    }
+                });
+            }
+        });
+    }
 </script>
 <?= $this->endSection() ?>

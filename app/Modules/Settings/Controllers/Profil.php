@@ -51,6 +51,7 @@ class Profil extends BaseController
             );
         }
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('profil')->with('success', 'Profil berhasil diperbarui.');
     }
 }

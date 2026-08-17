@@ -229,6 +229,12 @@
         <?= session()->getFlashdata('success') ?>
     </div>
     <?php endif; ?>
+    <?php if (session()->getFlashdata('error')) : ?>
+    <div class="don-alert" style="background:#FEF2F2; border:1px solid #FECACA; color:#DC2626;">
+        <i class="fa-solid fa-circle-exclamation me-1"></i>
+        <?= session()->getFlashdata('error') ?>
+    </div>
+    <?php endif; ?>
 
     <!-- CARD -->
     <div class="don-card">
@@ -298,5 +304,22 @@
             responsive: true
         });
     });
+
+    function confirmDeleteDonatur(id) {
+        Swal.fire({
+            title: 'Hapus Donatur?',
+            text: 'Data yang sudah dihapus tidak dapat dikembalikan!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#DC2626',
+            cancelButtonColor: '#64748B',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '<?= site_url("masterdata/donatur/delete/") ?>' + id;
+            }
+        });
+    }
 </script>
 <?= $this->endSection() ?>

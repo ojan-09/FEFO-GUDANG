@@ -23,7 +23,7 @@ class ManajemenUser extends BaseController
         $db = \Config\Database::connect();
         
         $builder = $db->table('users');
-        $builder->select('users.id, users.username, users.email, users.active, users.created_at, (SELECT MAX(date) FROM auth_logins WHERE email = users.email AND success = 1) as last_login_at');
+        $builder->select('users.id, users.username, users.email, users.active, users.created_at, users.id_gudang_wilayah, (SELECT MAX(date) FROM auth_logins WHERE email = users.email AND success = 1) as last_login_at');
         $builder->select('auth_groups.name as role_name');
         $builder->join('auth_groups_users', 'auth_groups_users.user_id = users.id', 'left');
         $builder->join('auth_groups', 'auth_groups.id = auth_groups_users.group_id', 'left');
@@ -33,10 +33,14 @@ class ManajemenUser extends BaseController
         
         $roles = $this->groupModel->findAll();
 
+        $gudangWilayahModel = new \App\Modules\Wilayah\Models\MasterGudangWilayahModel();
+        $gudang = $gudangWilayahModel->where('status', 'Aktif')->findAll();
+
         $data = [
             'title' => 'Manajemen User',
             'users' => $users,
-            'roles' => $roles
+            'roles' => $roles,
+            'gudang' => $gudang
         ];
 
         return view('App\Modules\Settings\Views\manajemen_user\index', $data);
@@ -63,13 +67,21 @@ class ManajemenUser extends BaseController
         ]);
 
         $this->userModel->save($user);
+        $newUserId = $this->userModel->getInsertID();
+
+        // Update id_gudang_wilayah via query builder
+        $idGudangWilayah = $this->request->getPost('id_gudang_wilayah') ?: null;
+        if ($idGudangWilayah) {
+            $db = \Config\Database::connect();
+            $db->table('users')->where('id', $newUserId)->update(['id_gudang_wilayah' => $idGudangWilayah]);
+        }
 
         // Tambahkan Role
         $roleId = $this->request->getPost('role');
         $group = $this->groupModel->find($roleId);
         if ($group) {
             $groupId = is_object($group) ? $group->id : $group['id'];
-            $this->groupModel->addUserToGroup((int)$this->userModel->getInsertID(), (int)$groupId);
+            $this->groupModel->addUserToGroup((int)$newUserId, (int)$groupId);
             $roleName = is_object($group) ? $group->name : $group['name'];
         } else {
             $roleName = 'Tidak Diketahui';
@@ -81,6 +93,7 @@ class ManajemenUser extends BaseController
             "Menambahkan pengguna baru: {$this->request->getPost('username')} dengan role {$roleName}."
         );
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('manajemen-user')->with('success', 'User berhasil ditambahkan.');
     }
 
@@ -105,6 +118,11 @@ class ManajemenUser extends BaseController
             $this->userModel->skipValidation(true)->save($user);
         }
 
+        // Update id_gudang_wilayah
+        $idGudangWilayah = $this->request->getPost('id_gudang_wilayah') ?: null;
+        $db = \Config\Database::connect();
+        $db->table('users')->where('id', $id)->update(['id_gudang_wilayah' => $idGudangWilayah]);
+
         // Update Role
         $roleId = $this->request->getPost('role');
         $group = $this->groupModel->find($roleId);
@@ -125,6 +143,7 @@ class ManajemenUser extends BaseController
             "Mengubah profil atau role pengguna {$user->username} menjadi {$roleName}."
         );
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('manajemen-user')->with('success', 'User berhasil diperbarui.');
     }
 
@@ -152,6 +171,7 @@ class ManajemenUser extends BaseController
             "Mereset password pengguna {$user->username}."
         );
 
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('manajemen-user')->with('success', 'Password berhasil direset.');
     }
 
@@ -173,6 +193,7 @@ class ManajemenUser extends BaseController
             ucfirst($statusMsg) . " akun pengguna {$user->username}."
         );
         
+        helper('format'); clear_dashboard_cache();
         return redirect()->to('manajemen-user')->with('success', "Akun berhasil $statusMsg.");
     }
 }

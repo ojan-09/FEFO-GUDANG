@@ -74,10 +74,11 @@
                         id="satuan" name="satuan" required>
                         <option value="">-- Pilih Satuan --</option>
                         <?php
-                            $satuanOpsi = ['Karung', 'Dus', 'Box', 'Pack', 'Pcs', 'Botol', 'Kaleng', 'Sak', 'Tray', 'Pouch'];
+                            $satuanOpsi = ['Pcs', 'Kotak', 'Kaleng', 'Pouch', 'Botol', 'Karung', 'Sachet', 'Kantong', 'Pack', 'Box', 'Renceng', 'Kg', 'Dus', 'Tray', 'Repack'];
+                            $valSatuan  = old('satuan', $isEdit ? $barang['satuan'] : '');
                             foreach ($satuanOpsi as $s) :
                         ?>
-                            <option value="<?= $s ?>" <?= old('satuan', $isEdit ? $barang['satuan'] : '') == $s ? 'selected' : '' ?>>
+                            <option value="<?= $s ?>" <?= strtolower(trim($valSatuan)) === strtolower(trim($s)) ? 'selected' : '' ?>>
                                 <?= $s ?>
                             </option>
                         <?php endforeach; ?>
@@ -108,7 +109,7 @@
                                 id="satuan_berat" name="satuan_berat" required>
                                 <option value="">-- Pilih --</option>
                                 <?php
-                                    $beratOpsi = ['Gram', 'Kg'];
+                                    $beratOpsi = ['Gram', 'Kg', 'ml', 'Liter'];
                                     foreach ($beratOpsi as $bo) :
                                 ?>
                                     <option value="<?= $bo ?>" <?= old('satuan_berat', $isEdit ? $barang['satuan_berat'] : '') == $bo ? 'selected' : '' ?>>

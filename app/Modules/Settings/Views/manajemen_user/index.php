@@ -354,20 +354,21 @@
                                         data-bs-toggle="modal" data-bs-target="#modalReset<?= $row['id'] ?>">
                                         <i class="fa-solid fa-key"></i>
                                     </button>
-                                    <form action="<?= site_url('manajemen-user/toggle-status/' . $row['id']) ?>" method="post" class="loading-form" data-overlay="true" class="d-inline">
-                                        <?= csrf_field() ?>
-                                        <?php if ($row['active']): ?>
-                                            <button type="submit" class="wh-action-btn danger" title="Nonaktifkan"
-                                                onclick="return confirm('Apakah Anda yakin ingin menonaktifkan akun ini?')">
+                                    <?php if ($row['active']): ?>
+                                        <form action="<?= site_url('manajemen-user/toggle-status/' . $row['id']) ?>" method="post" class="d-inline form-delete-swal" data-confirm-text="Apakah Anda yakin ingin menonaktifkan akun ini?">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="wh-action-btn danger" title="Nonaktifkan">
                                                 <i class="fa-solid fa-ban"></i>
                                             </button>
-                                        <?php else: ?>
-                                            <button type="submit" class="wh-action-btn success" title="Aktifkan"
-                                                onclick="return confirm('Apakah Anda yakin ingin mengaktifkan kembali akun ini?')">
+                                        </form>
+                                    <?php else: ?>
+                                        <form action="<?= site_url('manajemen-user/toggle-status/' . $row['id']) ?>" method="post" class="d-inline form-delete-swal" data-confirm-text="Apakah Anda yakin ingin mengaktifkan kembali akun ini?">
+                                            <?= csrf_field() ?>
+                                            <button type="submit" class="wh-action-btn success" title="Aktifkan">
                                                 <i class="fa-solid fa-circle-check"></i>
                                             </button>
-                                        <?php endif; ?>
-                                    </form>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -396,6 +397,15 @@
                                                 <select name="role" class="form-select" required>
                                                     <?php foreach ($roles as $role): ?>
                                                         <option value="<?= $role->id ?>" <?= ($role->name == $row['role_name']) ? 'selected' : '' ?>><?= esc($role->name) ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Gudang Wilayah (Opsional untuk Operator Gudang Wilayah)</label>
+                                                <select name="id_gudang_wilayah" class="form-select">
+                                                    <option value="">-- Tidak Ada / Akses Semua --</option>
+                                                    <?php foreach ($gudang as $g): ?>
+                                                        <option value="<?= $g['id'] ?>" <?= ($g['id'] == $row['id_gudang_wilayah']) ? 'selected' : '' ?>><?= esc($g['nama']) ?> - <?= esc($g['kota']) ?></option>
                                                     <?php endforeach; ?>
                                                 </select>
                                             </div>
@@ -466,6 +476,15 @@
                             <option value="">-- Pilih Role --</option>
                             <?php foreach ($roles as $role): ?>
                                 <option value="<?= $role->id ?>"><?= esc($role->name) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Gudang Wilayah (Opsional untuk Operator Gudang Wilayah)</label>
+                        <select name="id_gudang_wilayah" class="form-select">
+                            <option value="">-- Tidak Ada / Akses Semua --</option>
+                            <?php foreach ($gudang as $g): ?>
+                                <option value="<?= $g['id'] ?>"><?= esc($g['nama']) ?> - <?= esc($g['kota']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

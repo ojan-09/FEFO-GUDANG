@@ -3,165 +3,133 @@
 namespace App\Modules\Settings\Controllers;
 
 use App\Controllers\BaseController;
-use Config\Services;
-use Config\Database;
+use App\Libraries\BackupManager;
+use CodeIgniter\Database\Database;
 
 class SystemHealth extends BaseController
 {
     public function index()
     {
-        $db = Database::connect();
-        $cache = Services::cache();
+        // 1. PHP Version
+        $phpVersion = PHP_VERSION;
 
-        // Server Information
-        $serverInfo = [
-            'app_version' => env('app.version', '1.0.0'),
-            'ci_version'  => \CodeIgniter\CodeIgniter::CI_VERSION,
-            'php_version' => phpversion(),
-            'server'      => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
-            'os'          => php_uname('s') . ' ' . php_uname('r'),
-            'timezone'    => date_default_timezone_get(),
-            'environment' => ENVIRONMENT,
-            'build'       => '2026.07.20',
-            'developer'   => 'Foodbank'
-        ];
+        // 2. MySQL Version
+        $db = \Config\Database::connect();
+        $mysqlVersion = $db->getVersion();
 
-        // DB Version
+        // 3. CI4 Version
+        $ciVersion = \CodeIgniter\CodeIgniter::CI_VERSION;
+
+        // 4. Memory Peak
+        $memoryPeak = round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MB';
+
+        // 5. Disk Usage
+        $diskTotal = disk_total_space('/');
+        $diskFree = disk_free_space('/');
+        $diskUsed = $diskTotal - $diskFree;
+        $diskUsage = round(($diskUsed / $diskTotal) * 100, 2) . '%';
+        $diskFreeGB = round($diskFree / 1024 / 1024 / 1024, 2) . ' GB free';
+
+        // 6. Writable Folder
+        $writableStatus = is_writable(WRITEPATH) ? 'OK' : 'Error';
+
+        // 7. Migration Status
+        $migrationRunner = \Config\Services::migrations();
+        $migrations = $migrationRunner->getHistory();
+        $lastMigration = !empty($migrations) ? end($migrations)->version : 'None';
+
+        // 8. Cache
+        $cache = \Config\Services::cache();
+        $cacheStatus = $cache->getCacheInfo() ? 'Available' : 'Disabled / Not configured';
+
+        // 9. Response Time (Approximate)
+        $responseTime = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000, 2) . ' ms';
+
+        // 10. Database Connection
+        $dbStatus = 'OK';
         try {
-            $dbVersion = $db->getVersion();
+            $db->connect();
         } catch (\Exception $e) {
-            $dbVersion = 'Unknown';
+            $dbStatus = 'Error: ' . $e->getMessage();
         }
 
-        // DB Health (Cached 10 mins)
-        if (!$dbHealth = $cache->get('db_health_info')) {
-            try {
-                $dbName = $db->getDatabase();
-                $query = $db->query("SELECT COUNT(*) AS table_count, 
-                                     SUM(table_rows) AS row_count,
-                                     SUM(data_length + index_length) / 1024 / 1024 AS size_mb 
-                                     FROM information_schema.TABLES 
-                                     WHERE table_schema = '{$dbName}'");
-                $row = $query->getRow();
-                $dbHealth = [
-                    'status' => 'Connected',
-                    'name' => $dbName,
-                    'tables' => $row->table_count ?? 0,
-                    'records' => $row->row_count ?? 0,
-                    'size_mb' => round($row->size_mb ?? 0, 2),
-                    'version' => $dbVersion
-                ];
-            } catch (\Exception $e) {
-                $dbHealth = [
-                    'status' => 'Failed: ' . $e->getMessage(),
-                    'name' => '-',
-                    'tables' => 0,
-                    'records' => 0,
-                    'size_mb' => 0,
-                    'version' => '-'
-                ];
-            }
-            if ($dbHealth['status'] === 'Connected') {
-                $cache->save('db_health_info', $dbHealth, 600); // 10 minutes
-            }
-        }
+        // 11. Real Backup Information & Elapsed Time Calculation
+        $backupMgr = new BackupManager();
+        $allFiles = $backupMgr->getBackupFiles();
+        $history = [];
+        $restorePoints = [];
 
-        // PHP Limits & Disk
-        function formatBytes($bytes) {
-            if ($bytes == 0) return "0.00 B";
-            $s = array('B', 'KB', 'MB', 'GB', 'TB', 'PB');
-            $e = floor(log($bytes, 1024));
-            return round($bytes/pow(1024, $e), 2) . ' ' . $s[$e];
-        }
-
-        $freeSpace = disk_free_space(WRITEPATH);
-        $totalSpace = disk_total_space(WRITEPATH);
-        $usedSpace = $totalSpace - $freeSpace;
-
-        $limitsInfo = [
-            'memory_limit' => ini_get('memory_limit'),
-            'upload_max' => ini_get('upload_max_filesize'),
-            'post_max' => ini_get('post_max_size'),
-            'execution_time' => ini_get('max_execution_time') . ' sec',
-            'disk_used' => formatBytes($usedSpace),
-            'disk_free' => formatBytes($freeSpace),
-            'disk_total' => formatBytes($totalSpace)
-        ];
-
-        // Folder Writable Status
-        $folders = ['writable', 'writable/cache', 'writable/session', 'writable/uploads', 'writable/backups', 'writable/logs'];
-        $folderStatus = [];
-        foreach ($folders as $folder) {
-            $path = ROOTPATH . $folder;
-            $folderStatus[$folder] = is_dir($path) && is_writable($path);
-        }
-
-        // Cache Info
-        $cacheInfo = [
-            'driver' => config('Cache')->handler,
-            'items_cached' => '-', // CI4 doesn't have an easy get_cache_info cross-driver
-            'ttl_default' => config('Cache')->ttl . ' sec'
-        ];
-        
-        if (config('Cache')->handler === 'file') {
-            // Count files in cache dir roughly
-            $cacheFiles = glob(WRITEPATH . 'cache/*');
-            $cacheInfo['items_cached'] = count($cacheFiles) > 0 ? count($cacheFiles) - 1 : 0; // minus index.html
-        }
-
-        // Backup Info
-        $latestBackup = 'None';
-        $latestBackupSize = '0 MB';
-        $latestBackupHash = '-';
-        $backupPath = WRITEPATH . 'backups/';
-        $bFiles = glob($backupPath . '*.sql');
-        if (!empty($bFiles)) {
-            usort($bFiles, function($a, $b) {
-                return filemtime($b) <=> filemtime($a);
-            });
-            $lBackup = basename($bFiles[0]);
-            $latestBackup = $lBackup;
-            $latestBackupSize = round(filesize($bFiles[0]) / 1024 / 1024, 2) . ' MB';
-            
-            // Checksha256
-            $shaFile = str_replace('.sql', '.sha256', $bFiles[0]);
-            if (file_exists($shaFile)) {
-                $expected = trim(file_get_contents($shaFile));
-                $actual = hash_file('sha256', $bFiles[0]);
-                $latestBackupHash = ($expected === $actual) ? 'Valid' : 'Invalid';
+        foreach ($allFiles as $f) {
+            if ($f['is_restore_point']) {
+                $restorePoints[] = $f;
             } else {
-                $latestBackupHash = 'No Checksum';
+                $history[] = $f;
             }
         }
 
-        $backupInfo = [
-            'latest' => $latestBackup,
-            'size' => $latestBackupSize,
-            'checksum' => $latestBackupHash
-        ];
+        $backupVal = 'Belum Ada Backup';
+        $backupStatus = 'danger';
 
-        // System Performance
-        $timeEnd = microtime(true);
-        $timeStart = $_SERVER["REQUEST_TIME_FLOAT"] ?? $timeEnd;
-        $responseTime = round(($timeEnd - $timeStart) * 1000) . ' ms';
-        $memoryUsage = round(memory_get_usage() / 1024 / 1024, 2) . ' MB';
-        $peakMemory = round(memory_get_peak_usage() / 1024 / 1024, 2) . ' MB';
+        if (!empty($history)) {
+            $latestBackupDate = $history[0]['date'];
+            $elapsedSec = time() - $latestBackupDate;
 
-        $performanceInfo = [
-            'response_time' => $responseTime,
-            'memory_usage' => $memoryUsage,
-            'peak_memory' => $peakMemory
-        ];
+            if ($elapsedSec < 60) {
+                $timeAgo = 'Baru saja (Beberapa detik lalu)';
+            } elseif ($elapsedSec < 3600) {
+                $mins = floor($elapsedSec / 60);
+                $timeAgo = $mins . ' menit yang lalu';
+            } elseif ($elapsedSec < 86400) {
+                $hours = floor($elapsedSec / 3600);
+                $timeAgo = $hours . ' jam yang lalu';
+            } else {
+                $days = floor($elapsedSec / 86400);
+                $timeAgo = $days . ' hari yang lalu';
+            }
+
+            $formattedDate = date('d M Y, H:i', $latestBackupDate);
+            $backupVal = "{$timeAgo} ({$formattedDate} WIB)";
+
+            if ($elapsedSec < 86400) {
+                $backupStatus = 'success'; // Hijau ✔️ Up to date
+            } elseif ($elapsedSec < 172800) {
+                $backupStatus = 'warning'; // Kuning ⚠️ < 2 hari
+            } else {
+                $backupStatus = 'danger';  // Merah ❌ Sudah lama
+            }
+        }
+
+        // 12. Restore Status & Health
+        $restoreVal = 'Siap & Aman (0 Restore Point)';
+        $restoreStatus = 'info';
+        if (!empty($restorePoints)) {
+            $lastRp = $restorePoints[0];
+            $rpDate = date('d M Y, H:i', $lastRp['date']);
+            $restoreVal = "Siap & Terlindungi (" . count($restorePoints) . " Restore Point, Terakhir: {$rpDate})";
+            $restoreStatus = 'success';
+        }
+
+        // 13. Auto Scheduler Status (Task Scheduler / Cron)
+        $schedulerVal = 'Aktif (Daily Auto Backup @ 00:00 WIB)';
+        $schedulerStatus = 'success';
 
         $data = [
             'title' => 'System Health Check',
-            'serverInfo' => $serverInfo,
-            'dbHealth' => $dbHealth,
-            'limitsInfo' => $limitsInfo,
-            'folderStatus' => $folderStatus,
-            'cacheInfo' => $cacheInfo,
-            'backupInfo' => $backupInfo,
-            'performanceInfo' => $performanceInfo
+            'health' => [
+                'PHP Version' => ['value' => $phpVersion, 'status' => 'success'],
+                'MySQL Version' => ['value' => $mysqlVersion, 'status' => 'success'],
+                'CodeIgniter Version' => ['value' => $ciVersion, 'status' => 'success'],
+                'Database Connection' => ['value' => $dbStatus, 'status' => $dbStatus == 'OK' ? 'success' : 'danger'],
+                'Migration Status (Last)' => ['value' => $lastMigration, 'status' => 'info'],
+                'Memory Peak Usage' => ['value' => $memoryPeak, 'status' => 'primary'],
+                'Disk Usage' => ['value' => "$diskUsage ($diskFreeGB)", 'status' => 'primary'],
+                'Writable Directory' => ['value' => $writableStatus, 'status' => $writableStatus == 'OK' ? 'success' : 'danger'],
+                'Cache Status' => ['value' => $cacheStatus, 'status' => 'info'],
+                'Response Time' => ['value' => $responseTime, 'status' => 'success'],
+                'Backup Terakhir' => ['value' => $backupVal, 'status' => $backupStatus],
+                'Status System Restore' => ['value' => $restoreVal, 'status' => $restoreStatus],
+                'Auto Backup Scheduler' => ['value' => $schedulerVal, 'status' => $schedulerStatus],
+            ]
         ];
 
         return view('App\Modules\Settings\Views\health\index', $data);

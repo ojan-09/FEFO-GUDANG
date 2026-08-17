@@ -13,7 +13,7 @@ class BarangKeluarModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'nomor_transaksi', 'id_user', 'id_wilayah', 'tanggal_keluar', 'tujuan_penyaluran', 'keterangan'
+        'nomor_transaksi', 'jenis_penyaluran', 'penerima_relawan', 'unit_internal', 'id_user', 'id_wilayah', 'tanggal_keluar', 'tujuan_penyaluran', 'keterangan'
     ];
 
     protected $useTimestamps = true;
@@ -21,17 +21,30 @@ class BarangKeluarModel extends Model
     protected $updatedField  = 'updated_at';
 
     // --- DataTables Variables ---
-    protected $column_order  = [null, 'barang_keluar.nomor_transaksi', 'barang_keluar.tujuan_penyaluran', 'wilayah.nama_wilayah', 'barang_keluar.tanggal_keluar', 'jumlah_item', 'users.username', null];
-    protected $column_search = ['barang_keluar.nomor_transaksi', 'barang_keluar.tujuan_penyaluran', 'wilayah.nama_wilayah', 'users.username'];
+    protected $column_order  = [
+        0 => null, 
+        1 => 'barang_keluar.nomor_transaksi', 
+        2 => 'barang_keluar.tujuan_penyaluran', 
+        3 => 'wilayah.nama_wilayah', 
+        4 => 'barang_keluar.tanggal_keluar', 
+        5 => 'jumlah_item', 
+        6 => 'users.username', 
+        7 => null
+    ];
+    protected $column_search = ['barang_keluar.nomor_transaksi', 'barang_keluar.jenis_penyaluran', 'barang_keluar.penerima_relawan', 'barang_keluar.unit_internal', 'barang_keluar.tujuan_penyaluran', 'wilayah.nama_wilayah', 'users.username'];
     protected $order         = ['barang_keluar.created_at' => 'DESC'];
 
     private function _getDatatablesQuery($postData)
     {
         $builder = $this->db->table($this->table)
-            ->select('barang_keluar.id, barang_keluar.nomor_transaksi, barang_keluar.tujuan_penyaluran, barang_keluar.tanggal_keluar, wilayah.nama_wilayah, users.username as petugas')
+            ->select('barang_keluar.id, barang_keluar.nomor_transaksi, barang_keluar.jenis_penyaluran, barang_keluar.penerima_relawan, barang_keluar.unit_internal, barang_keluar.tujuan_penyaluran, barang_keluar.tanggal_keluar, wilayah.nama_wilayah, users.username as petugas')
             ->select('(SELECT COUNT(id) FROM detail_barang_keluar WHERE id_barang_keluar = barang_keluar.id) as jumlah_item')
             ->join('wilayah', 'wilayah.id = barang_keluar.id_wilayah', 'left')
             ->join('users', 'users.id = barang_keluar.id_user', 'left');
+
+        if (!empty($postData['filter_jenis'])) {
+            $builder->where('barang_keluar.jenis_penyaluran', $postData['filter_jenis']);
+        }
 
         $i = 0;
         if (isset($postData['search']['value']) && $postData['search']['value']) {

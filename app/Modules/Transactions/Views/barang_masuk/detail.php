@@ -172,7 +172,7 @@
                             $stokDisplay = number_format($b['stok_saat_ini'], 2, ',', '.');
                         } else {
                             $beratTotal = $b['jumlah_awal'] * $beratPerSatuan;
-                            if (strtolower($b['satuan_berat']) === 'gram') {
+                            if (in_array(strtolower(trim($b['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                                 $beratTotal = $beratTotal / 1000;
                             }
                             $satuanJumlah = esc($b['satuan']);

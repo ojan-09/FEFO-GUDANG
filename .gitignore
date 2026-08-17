@@ -1,17 +1,55 @@
-# CodeIgniter 4 standard gitignore
+# Environment & Local Configuration
 .env
-/vendor/
-/writable/
-/public/reset_pass.php
+.env.local
+.env.development
+.env.test
+.env.production
+env
 
-# Developer temporary files
+# Vendor & Dependencies
+/vendor/
+node_modules/
+
+# Writable Directory (except index.html or .gitkeep if needed)
+/writable/cache/*
+/writable/debugbar/*
+/writable/logs/*
+/writable/session/*
+/writable/uploads/*
+/writable/backups/*
+!/writable/cache/index.html
+!/writable/logs/index.html
+!/writable/uploads/index.html
+!/writable/backups/index.html
+
+# Sensitive & Temporary Scripts
+/public/reset_pass.php
 check_*.php
 test_*.php
 fix_*.php
-*output*.txt
-read_db_units.php
+inspect_*.php
+audit_*.php
+import_*.php
+reconcile_*.php
+wipe_*.php
+stok_gantung.php
+*.log
+*.sql
+*.gz
+*.zip
 
-# IDEs and OS files
+# Architecture Diagrams & Scratch Documents
+*.drawio
+*.drawio.png
+/*.agents/
+/scratch/
+/scripts/
+/style.css
+/toArray()
+/restore*.php
+/public/test.php
+
+# IDEs, Editors & OS Files
 .idea/
 .vscode/
 *.suo
@@ -21,3 +59,4 @@ read_db_units.php
 *.sw?
 Thumbs.db
 .DS_Store
+desktop.ini

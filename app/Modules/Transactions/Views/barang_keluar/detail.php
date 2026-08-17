@@ -178,10 +178,13 @@
         <span class="subtle">Detail transaksi pengeluaran barang &middot; metode FEFO</span>
     </div>
     <div class="d-flex gap-2">
-        <a href="<?= site_url('transaksi/barang-keluar/berita-acara/' . $barangKeluar['id']) ?>" target="_blank" class="btn btn-primary rounded-pill px-4">
-            <i class="fa-solid fa-file-pdf me-1"></i> Cetak Berita Acara
+        <a href="<?= site_url('transaksi/barang-keluar/berita-acara/' . $barangKeluar['id']) ?>" target="_blank" class="btn btn-danger rounded-pill px-3">
+            <i class="fa-solid fa-file-pdf me-1"></i> Cetak PDF
         </a>
-        <a href="<?= site_url('transaksi/barang-keluar') ?>" class="btn btn-outline-secondary rounded-pill px-4">
+        <a href="<?= site_url('transaksi/barang-keluar/berita-acara-word/' . $barangKeluar['id']) ?>" class="btn btn-primary rounded-pill px-3">
+            <i class="fa-solid fa-file-word me-1"></i> Export Word (.doc)
+        </a>
+        <a href="<?= site_url('transaksi/barang-keluar') ?>" class="btn btn-outline-secondary rounded-pill px-3">
             <i class="fa-solid fa-arrow-left me-1"></i> Kembali
         </a>
     </div>
@@ -195,6 +198,26 @@
     </div>
 
     <div class="row g-3">
+        <div class="col-6 col-md-3 info-item">
+            <small class="text-muted d-block mb-1">Jenis Penyaluran</small>
+            <?php if (($barangKeluar['jenis_penyaluran'] ?? '') === 'Penyaluran Internal'): ?>
+                <span class="badge bg-purple-subtle text-purple border border-purple-subtle rounded-pill px-2 py-1 small" style="background:#F3E8FF; color:#7E22CE;">Penyaluran Internal</span>
+            <?php else: ?>
+                <span class="badge bg-blue-subtle text-blue border border-blue-subtle rounded-pill px-2 py-1 small" style="background:#EFF6FF; color:#1D4ED8;">Penyaluran Relawan</span>
+            <?php endif; ?>
+        </div>
+        <?php if (!empty($barangKeluar['penerima_relawan'])): ?>
+        <div class="col-6 col-md-3 info-item">
+            <small class="text-muted d-block mb-1">Nama Relawan / Penerima</small>
+            <strong><?= esc($barangKeluar['penerima_relawan']) ?></strong>
+        </div>
+        <?php endif; ?>
+        <?php if (!empty($barangKeluar['unit_internal'])): ?>
+        <div class="col-6 col-md-3 info-item">
+            <small class="text-muted d-block mb-1">Unit / Bagian Internal</small>
+            <strong><?= esc($barangKeluar['unit_internal']) ?></strong>
+        </div>
+        <?php endif; ?>
         <div class="col-6 col-md-3 info-item">
             <small class="text-muted d-block mb-1">Tujuan Penyaluran</small>
             <strong><?= esc($barangKeluar['tujuan_penyaluran']) ?></strong>
@@ -237,7 +260,7 @@
             $satuan = $d['satuan'] ?: 'Pcs';
             $totalItemPerSatuan[$satuan] = ($totalItemPerSatuan[$satuan] ?? 0) + (float) $d['jumlah_keluar'];
             $beratBaris = $d['jumlah_keluar'] * $beratPerSatuan;
-            if (strtolower(trim($d['satuan_berat'])) === 'gram') {
+            if (in_array(strtolower(trim($d['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                 $beratBaris = $beratBaris / 1000;
             }
         }
@@ -339,13 +362,13 @@
 
                         if ($bisaDipecah === 1) {
                             $beratBarisDisplay = format_berat((float) $d['jumlah_keluar'], 'Kg');
-                            $jumlahDisplay = number_format($d['jumlah_keluar'], 2, ',', '.');
-                            $stokDisplay = number_format($d['stok_saat_ini'], 2, ',', '.');
+                            $jumlahDisplay = format_jumlah($d['jumlah_keluar']);
+                            $stokDisplay = format_jumlah($d['stok_saat_ini']);
                         } else {
                             $beratBaris = $d['jumlah_keluar'] * $beratPerSatuan;
                             $beratBarisDisplay = format_berat($beratBaris, $d['satuan_berat']);
-                            $jumlahDisplay = number_format($d['jumlah_keluar'], 0, ',', '.');
-                            $stokDisplay = number_format($d['stok_saat_ini'], 0, ',', '.');
+                            $jumlahDisplay = format_jumlah($d['jumlah_keluar']);
+                            $stokDisplay = format_jumlah($d['stok_saat_ini']);
                         }
                     ?>
                     <tr>

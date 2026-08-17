@@ -1,0 +1,121 @@
+<?php
+
+namespace App\Modules\Wilayah\Models;
+
+use CodeIgniter\Model;
+
+class BarangKeluarWilayahModel extends Model
+{
+    protected $table            = 'barang_keluar_wilayah';
+    protected $primaryKey       = 'id';
+    protected $useAutoIncrement = true;
+    protected $useSoftDeletes   = true;
+    protected $returnType       = 'array';
+    protected $protectFields    = true;
+    protected $allowedFields    = [
+        'nomor_dokumen',
+        'id_gudang',
+        'tujuan',
+        'tanggal',
+        'keterangan',
+        'created_by',
+        'updated_by',
+        'created_ip',
+        'updated_ip',
+        'deleted_at',  // ← TAMBAH INI
+    ];
+
+    protected $useTimestamps = true;
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';
+
+    // --- DataTables Variables ---
+    protected $column_order  = ['b.nomor_dokumen', 'b.tanggal', 'm.nama', 'b.tujuan', 'total_item', 'total_qty', 'b.keterangan', null];
+    protected $column_search = ['b.nomor_dokumen', 'b.tanggal', 'm.nama', 'b.tujuan', 'b.keterangan'];
+    protected $order         = ['b.created_at' => 'DESC'];
+
+    private function _getDatatablesQuery($postData)
+    {
+        $builder = $this->db->table('barang_keluar_wilayah b')
+            ->select('
+                b.*, 
+                m.nama as nama_gudang, 
+                m.kota, 
+                COUNT(d.id) as total_item, 
+                COALESCE(SUM(d.jumlah), 0) as total_qty
+            ')
+            ->join('master_gudang_wilayah m', 'm.id = b.id_gudang', 'left')
+            ->join('detail_barang_keluar_wilayah d', 'd.id_keluar = b.id', 'left')
+            ->where('b.deleted_at', null)
+            ->groupBy('b.id');
+
+        // Filter Gudang Wilayah
+        if (!empty($postData['id_gudang'])) {
+            $builder->where('b.id_gudang', $postData['id_gudang']);
+        }
+
+        // Filter Tanggal
+        if (!empty($postData['start_date'])) {
+            $builder->where('b.tanggal >=', $postData['start_date']);
+        }
+        if (!empty($postData['end_date'])) {
+            $builder->where('b.tanggal <=', $postData['end_date']);
+        }
+
+        // Search Global
+        if (isset($postData['search']['value']) && $postData['search']['value'] !== '') {
+            $searchVal = $postData['search']['value'];
+            $builder->groupStart();
+            $i = 0;
+            foreach ($this->column_search as $item) {
+                if ($i === 0) {
+                    $builder->like($item, $searchVal);
+                } else {
+                    $builder->orLike($item, $searchVal);
+                }
+                $i++;
+            }
+            $builder->groupEnd();
+        }
+
+        // Sorting
+        if (isset($postData['order'])) {
+            $colIndex = (int)$postData['order']['0']['column'];
+            $colName = $this->column_order[$colIndex] ?? null;
+            if ($colName) {
+                $builder->orderBy($colName, $postData['order']['0']['dir']);
+            }
+        } elseif (isset($this->order)) {
+            $order = $this->order;
+            $builder->orderBy(key($order), $order[key($order)]);
+        }
+
+        return $builder;
+    }
+
+    public function getDatatables($postData)
+    {
+        $builder = $this->_getDatatablesQuery($postData);
+        if (isset($postData['length']) && $postData['length'] != -1) {
+            $builder->limit((int)$postData['length'], (int)$postData['start']);
+        }
+        return $builder->get()->getResultArray();
+    }
+
+    public function countFiltered($postData)
+    {
+        $builder = $this->_getDatatablesQuery($postData);
+        return $builder->countAllResults();
+    }
+
+    public function countAllData($idGudang = null)
+    {
+        $builder = $this->db->table($this->table)->where('deleted_at', null);
+        if ($idGudang) {
+            $builder->where('id_gudang', $idGudang);
+        }
+        return $builder->countAllResults();
+    }
+}

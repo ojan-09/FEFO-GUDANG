@@ -234,6 +234,10 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,.10);
 }
+.dm-btn-action.pdf  { color: #dc2626; border-color: #ef4444; background: #fff5f5; }
+.dm-btn-action.pdf:hover  { background: #fee2e2; border-color: #dc2626; }
+.dm-btn-action.word { color: #2563eb; border-color: #3b82f6; background: #eff6ff; }
+.dm-btn-action.word:hover { background: #dbeafe; border-color: #2563eb; }
 .dm-btn-action.view  { color: #0284c7; border-color: #bae6fd; }
 .dm-btn-action.view:hover  { background: #e0f2fe; }
 .dm-btn-action.edit  { color: #d97706; border-color: #fde68a; }
@@ -281,6 +285,18 @@
     </div>
 <?php endif; ?>
 
+<!-- ── Filter & Search Section ── -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2">
+        <label for="filterJenis" class="fw-semibold text-secondary mb-0" style="font-size:12.5px;"><i class="fa-solid fa-filter me-1"></i>Filter Jenis:</label>
+        <select id="filterJenis" class="form-select form-select-sm rounded-pill" style="width: auto; min-width: 170px; font-size:12.5px;">
+            <option value="">Semua Penyaluran</option>
+            <option value="Penyaluran Relawan">Penyaluran Relawan</option>
+            <option value="Penyaluran Internal">Penyaluran Internal</option>
+        </select>
+    </div>
+</div>
+
 <!-- ── Data Card ── -->
 <div class="dm-card">
     <table class="table mb-0" id="tabelBarangKeluar" style="width: 100%;">
@@ -313,7 +329,7 @@
     var csrfHash = '<?= csrf_hash() ?>';
 
     $(document).ready(function () {
-        $('#tabelBarangKeluar').DataTable({
+        var table = $('#tabelBarangKeluar').DataTable({
             processing: true,
             serverSide: true,
             ajax: {
@@ -321,6 +337,7 @@
                 type: "POST",
                 data: function (d) {
                     d[csrfName] = csrfHash;
+                    d.filter_jenis = $('#filterJenis').val();
                 }
             },
             drawCallback: function (settings) {
@@ -354,6 +371,10 @@
                 { className: "col-aksi text-center", targets: [7] }
             ],
             dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
+        });
+
+        $('#filterJenis').on('change', function() {
+            table.ajax.reload();
         });
     });
 </script>

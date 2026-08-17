@@ -14,6 +14,7 @@
                 'nama_barang'         => $b['nama_barang'],
                 'kategori'            => $b['kategori'],
                 'jumlah_ctn'          => $b['jumlah_ctn'],
+                'isi_per_ctn'         => $b['isi_per_ctn'] ?? null,
                 'jumlah'              => (function($b) {
                     $jumlah = (float)$b['jumlah_awal'];
                     if ((int)$b['bisa_dipecah'] === 1) {
@@ -224,16 +225,17 @@
 
 /* column widths */
 #tabelItem .tc-no      { width: 42px;  text-align: center; }
-#tabelItem .tc-nama    { width: 210px; }
-#tabelItem .tc-kat     { width: 130px; }
-#tabelItem .tc-sat     { width: 125px; }
-#tabelItem .tc-ctn     { width: 72px;  }
-#tabelItem .tc-jml     { width: 82px;  }
-#tabelItem .tc-berat   { width: 92px;  }
-#tabelItem .tc-sberat  { width: 100px; }
-#tabelItem .tc-exp     { width: 155px; }
-#tabelItem .tc-nilai   { width: 155px; }
-#tabelItem .tc-aksi    { width: 52px;  text-align: center; }
+#tabelItem .tc-nama    { width: 190px; }
+#tabelItem .tc-kat     { width: 120px; }
+#tabelItem .tc-sat     { width: 110px; }
+#tabelItem .tc-ctn     { width: 75px;  }
+#tabelItem .tc-isi-ctn { width: 85px;  }
+#tabelItem .tc-jml     { width: 85px;  }
+#tabelItem .tc-berat   { width: 85px;  }
+#tabelItem .tc-sberat  { width: 95px;  }
+#tabelItem .tc-exp     { width: 145px; }
+#tabelItem .tc-nilai   { width: 145px; }
+#tabelItem .tc-aksi    { width: 48px;  text-align: center; }
 
 /* inputs inside table */
 #tabelItem .dm-input,
@@ -429,7 +431,8 @@
                             <th class="tc-nama">NAMA BARANG <span class="text-danger">*</span></th>
                             <th class="tc-kat">KATEGORI <span class="text-danger">*</span></th>
                             <th class="tc-sat">SATUAN <span class="text-danger">*</span></th>
-                            <th class="tc-ctn">CTN<br><small style="font-size:9px;font-weight:400;color:#9ca3af;">(OPSIONAL)</small></th>
+                            <th class="tc-ctn">JML CTN<br><small style="font-size:9px;font-weight:400;color:#9ca3af;">(OPSIONAL)</small></th>
+                            <th class="tc-isi-ctn">ISI/CTN<br><small style="font-size:9px;font-weight:400;color:#9ca3af;">(OPSIONAL)</small></th>
                             <th class="tc-jml">JUMLAH <span class="text-danger">*</span></th>
                             <th class="tc-berat">BERAT/SAT. <span class="text-danger">*</span></th>
                             <th class="tc-sberat">SAT. BERAT <span class="text-danger">*</span></th>
@@ -441,11 +444,6 @@
                     <tbody id="tbodyItem"></tbody>
                 </table>
             </div>
-            <datalist id="daftarNamaBarang">
-                <?php foreach ($barangList ?? [] as $b) : ?>
-                    <option value="<?= esc($b['nama_barang']) ?>"></option>
-                <?php endforeach; ?>
-            </datalist>
             <div id="errorItem" class="text-danger mt-2" style="display:none;">
                 <i class="fa-solid fa-circle-exclamation me-1"></i> Minimal harus ada 1 barang.
             </div>
@@ -476,8 +474,8 @@
         barangMasterMap[String(b.nama_barang ?? '').trim().toLowerCase()] = b;
     });
 
-    const satuanOptions      = ['Box','Dus','Pcs','Karung','Botol','Pack','Tray','Kaleng','Pouch','Sak'];
-    const satuanBeratOptions = ['Gram','Kg'];
+    const satuanOptions      = ['Karung', 'Dus', 'Box', 'Kotak', 'Pack', 'Pcs', 'Botol', 'Kaleng', 'Tray', 'Pouch', 'Sachet', 'Renceng', 'Kantong', 'Repack', 'Kg'];
+    const satuanBeratOptions = ['Gram', 'Kg', 'ml', 'Liter'];
     const namaBarangPlaceholders = ['Beras Premium','Nasi Box Ayam','Brownies','Air Mineral'];
     let rowCount = 0;
 
@@ -626,6 +624,27 @@
         return rupiah;
     }
 
+    function calculateCtnRow(row) {
+        if (!row) return;
+        const inputCtn = row.querySelector('.input-jumlah-ctn');
+        const inputIsi = row.querySelector('.input-isi-ctn');
+        const inputJumlah = row.querySelector('.input-jumlah');
+        if (!inputCtn || !inputIsi || !inputJumlah) return;
+
+        const ctn = parseInt(inputCtn.value, 10) || 0;
+        const isi = parseInt(inputIsi.value, 10) || 0;
+
+        if (ctn > 0 && isi > 0) {
+            inputJumlah.value = ctn * isi;
+            inputJumlah.readOnly = true;
+            inputJumlah.classList.add('readonly');
+        } else {
+            inputJumlah.readOnly = false;
+            inputJumlah.classList.remove('readonly');
+        }
+        calculateEstimasiTotal(row);
+    }
+
     function calculateEstimasiTotal(row) {
         const inputJumlah = row.querySelector('.input-jumlah');
         const inputNilai = row.querySelector('.input-nilai');
@@ -660,11 +679,12 @@
                 <span class="row-number">${tmpIdx}</span>
                 <input type="hidden" name="items[${tmpIdx}][id]" value="">
             </td>
-            <td class="tc-nama">
+            <td class="tc-nama" style="position:relative;">
                 <input type="text" class="dm-input input-nama-barang"
                     name="items[${tmpIdx}][nama_barang]" maxlength="150"
                     placeholder="Contoh: ${escapeHtml(placeholder)}"
-                    list="daftarNamaBarang" autocomplete="off" required>
+                    autocomplete="off" required>
+                <div class="suggestion-box dropdown-menu shadow-sm" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:1050; max-height:220px; overflow-y:auto;"></div>
                 <span class="badge-barang-exists badge bg-success-subtle text-success border border-success-subtle">
                     <i class="fa-solid fa-circle-check me-1"></i>Barang terdaftar
                 </span>
@@ -690,12 +710,16 @@
                 </div>
             </td>
             <td class="tc-ctn">
-                <input type="number" class="dm-input" name="items[${tmpIdx}][jumlah_ctn]"
-                    min="0" step="1" placeholder="—">
+                <input type="number" class="dm-input input-jumlah-ctn" name="items[${tmpIdx}][jumlah_ctn]"
+                    min="1" step="1" placeholder="—" oninput="calculateCtnRow(this.closest('tr'))">
+            </td>
+            <td class="tc-isi-ctn">
+                <input type="number" class="dm-input input-isi-ctn" name="items[${tmpIdx}][isi_per_ctn]"
+                    min="1" step="1" placeholder="—" oninput="calculateCtnRow(this.closest('tr'))">
             </td>
             <td class="tc-jml">
                 <input type="number" class="dm-input input-jumlah" name="items[${tmpIdx}][jumlah]"
-                    min="1" step="1" required>
+                    min="1" step="1" required oninput="calculateEstimasiTotal(this.closest('tr'))">
             </td>
             <td class="tc-berat">
                 <input type="number" class="dm-input input-berat" name="items[${tmpIdx}][berat_per_satuan]"
@@ -733,15 +757,15 @@
         // FIX #3: Set nilai via DOM, bukan string interpolasi, untuk menghindari XSS
         const newRow = document.getElementById(`row-${tmpIdx}`);
         newRow.querySelector('.input-nama-barang').value   = item.nama_barang        ?? '';
-        newRow.querySelector('[name$="[jumlah_ctn]"]').value = item.jumlah_ctn       ?? '';
+        newRow.querySelector('.input-jumlah-ctn').value    = item.jumlah_ctn         ?? '';
+        newRow.querySelector('.input-isi-ctn').value       = item.isi_per_ctn        ?? '';
         newRow.querySelector('.input-jumlah').value        = item.jumlah             ?? '';
         newRow.querySelector('.input-berat').value         = item.berat_per_satuan   ?? '';
         newRow.querySelector('.input-expired').value       = item.tanggal_kedaluwarsa ?? '';
         newRow.querySelector('.input-nilai').value         = formatRupiahString(item.nilai_satuan);
         newRow.querySelector('[name$="[id]"]').value       = item.id                 ?? '';
         
-        // Calculate preview
-        calculateEstimasiTotal(newRow);
+        calculateCtnRow(newRow);
 
         const chk = newRow.querySelector('.chk-repack');
         if (chk) chk.checked = String(item.bisa_dipecah ?? '0') === '1';
@@ -785,6 +809,39 @@
 
     form.addEventListener('input', function(e) {
         if (!e.target.matches('input,select,textarea')) return;
+        if (e.target.classList.contains('input-nama-barang')) {
+            const input = e.target;
+            const row   = input.closest('tr');
+            const box   = row ? row.querySelector('.suggestion-box') : null;
+            const term  = input.value.trim().toLowerCase();
+
+            if (row) syncBarangMaster(row, false);
+
+            if (box) {
+                if (term.length < 1) {
+                    box.style.display = 'none';
+                    box.innerHTML = '';
+                } else {
+                    const matches = barangMasterList.filter(b => 
+                        String(b.nama_barang ?? '').toLowerCase().includes(term)
+                    );
+                    if (matches.length > 0) {
+                        let html = '';
+                        matches.slice(0, 10).forEach(m => {
+                            html += `<div class="dropdown-item py-1 px-2 text-wrap suggestion-item" data-nama="${escapeHtml(m.nama_barang)}" style="font-size:12px; cursor:pointer;">
+                                        <strong>${escapeHtml(m.nama_barang)}</strong> 
+                                        <small class="text-muted">(${escapeHtml(m.kategori)} - ${escapeHtml(m.satuan)})</small>
+                                     </div>`;
+                        });
+                        box.innerHTML = html;
+                        box.style.display = 'block';
+                    } else {
+                        box.style.display = 'none';
+                        box.innerHTML = '';
+                    }
+                }
+            }
+        }
         if (e.target.classList.contains('input-jumlah') || e.target.classList.contains('input-berat')) {
             const row = e.target.closest('tr');
             if (row) updateRepackPreview(row);
@@ -794,6 +851,27 @@
             if (row) calculateEstimasiTotal(row);
         }
         if (e.target.dataset.touched === 'true' || isFormSubmitted) validateField(e.target);
+    });
+
+    document.addEventListener('click', function(e) {
+        const item = e.target.closest('.suggestion-item');
+        if (item) {
+            const row   = item.closest('tr');
+            const input = row.querySelector('.input-nama-barang');
+            const box   = row.querySelector('.suggestion-box');
+            if (input && box) {
+                input.value = item.dataset.nama;
+                syncBarangMaster(row, true);
+                box.style.display = 'none';
+                box.innerHTML = '';
+            }
+            return;
+        }
+        if (!e.target.closest('.tc-nama')) {
+            document.querySelectorAll('.suggestion-box').forEach(b => {
+                b.style.display = 'none';
+            });
+        }
     });
 
     form.addEventListener('change', function(e) {

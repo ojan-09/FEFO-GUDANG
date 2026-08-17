@@ -104,7 +104,7 @@ class LaporanDonasi extends BaseController
                 $weightInKg = (float) $row['jumlah'];
             } else {
                 $totalBeratRow = $row['jumlah'] * $beratPerSatuan;
-                $weightInKg = (strtolower($row['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+                $weightInKg = (in_array(strtolower(trim($row['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) ? ($totalBeratRow / 1000) : $totalBeratRow;
             }
             $totalBerat += $weightInKg;
             
@@ -140,11 +140,9 @@ class LaporanDonasi extends BaseController
     public function index()
     {
         $db = \Config\Database::connect();
-        $result = $this->_getFilteredData();
         
         $kategoriList = $db->table('kategori')->select('nama_kategori')->orderBy('nama_kategori', 'ASC')->get()->getResultArray();
 
-        // Siapkan list bulan dan tahun
         $bulanList = [
             '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
             '04' => 'April', '05' => 'Mei', '06' => 'Juni',
@@ -157,11 +155,21 @@ class LaporanDonasi extends BaseController
             $tahunList[] = $i;
         }
 
+        $filters = [
+            'bulan' => $this->request->getGet('bulan') ?: date('m'),
+            'tahun' => $this->request->getGet('tahun') ?: date('Y'),
+            'start_date' => $this->request->getGet('start_date'),
+            'end_date' => $this->request->getGet('end_date'),
+            'donatur' => $this->request->getGet('donatur'),
+            'search' => $this->request->getGet('search'),
+            'kategori' => $this->request->getGet('kategori'),
+            'nomor_donasi' => $this->request->getGet('nomor_donasi'),
+            'use_custom_date' => (!empty($this->request->getGet('start_date')) && !empty($this->request->getGet('end_date')))
+        ];
+
         $data = [
             'title'      => 'Laporan Donasi Masuk',
-            'laporan'    => $result['data'],
-            'summary'    => $result['summary'],
-            'filters'    => $result['filters'],
+            'filters'    => $filters,
             'kategori'   => $kategoriList,
             'bulanList'  => $bulanList,
             'tahunList'  => $tahunList
@@ -170,9 +178,85 @@ class LaporanDonasi extends BaseController
         return view('App\Modules\Reports\Views\laporan_donasi\index', $data);
     }
 
+    public function ajaxData()
+    {
+        try {
+            $postData = $this->request->getPost();
+            $model = new \App\Modules\Reports\Models\LaporanDonasiModel();
+
+            $list = $model->getDatatables($postData);
+            $data = [];
+            $no = (int)($postData['start'] ?? 0);
+
+            helper('format');
+            foreach ($list as $item) {
+                $no++;
+                $bisaDipecah    = (int) ($item['bisa_dipecah'] ?? 0);
+                $beratPerSatuan = (float) $item['berat_per_satuan'];
+                if ($bisaDipecah === 1) {
+                    $totalBeratRow = (float) $item['jumlah'];
+                    if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
+                        $totalBeratRow /= 1000;
+                    }
+                } else {
+                    $totalBeratRow = $item['jumlah'] * $beratPerSatuan;
+                    if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
+                        $totalBeratRow /= 1000;
+                    }
+                }
+
+                $tglMasuk = $item['tanggal_masuk'] ? date('d/m/Y', strtotime($item['tanggal_masuk'])) : '-';
+                $tglExp   = $item['tanggal_kedaluwarsa'] ? date('d/m/Y', strtotime($item['tanggal_kedaluwarsa'])) : '-';
+                $beratBersihText = $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-';
+                $totalBeratText  = $totalBeratRow > 0 ? format_berat($totalBeratRow, 'Kg') : '-';
+
+                $data[] = [
+                    'no'                  => $no,
+                    'tanggal_masuk'       => $tglMasuk,
+                    'nomor_transaksi'     => esc($item['nomor_transaksi']),
+                    'nama_donatur'        => esc($item['nama_donatur'] ?? '-'),
+                    'nama_barang'         => '<strong>' . esc($item['nama_barang']) . '</strong>',
+                    'kategori_batch'      => esc($item['kategori_batch']),
+                    'jumlah'              => number_format($item['jumlah'], 0, ',', '.'),
+                    'satuan'              => esc($item['satuan']),
+                    'jumlah_ctn'          => !empty($item['jumlah_ctn']) ? $item['jumlah_ctn'] : '-',
+                    'berat_bersih'        => $beratBersihText,
+                    'total_berat'         => $totalBeratText,
+                    'tanggal_kedaluwarsa' => $tglExp,
+                    'keterangan'          => '<small>' . esc($item['keterangan'] ?? '-') . '</small>',
+                    'petugas'             => esc($item['petugas'] ?? '-')
+                ];
+            }
+
+            $summary = $model->getSummaryData($postData);
+
+            $output = [
+                'draw'            => intval($postData['draw'] ?? 0),
+                'recordsTotal'    => $model->countAllData($postData),
+                'recordsFiltered' => $model->countFiltered($postData),
+                'data'            => $data,
+                'summary'         => $summary,
+                'csrf_hash'       => csrf_hash()
+            ];
+
+            return $this->response->setJSON($output);
+        } catch (\Throwable $e) {
+            log_message('error', 'LaporanDonasi::ajaxData error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'draw'            => intval($this->request->getPost('draw') ?? 0),
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+                'summary'         => ['total_transaksi' => 0, 'total_barang' => 0, 'total_berat' => 0, 'total_nilai_donasi' => 0],
+                'error'           => 'Terjadi kesalahan saat memuat data.',
+                'csrf_hash'       => csrf_hash()
+            ]);
+        }
+    }
+
     public function pdf()
     {
-        if (!in_groups('Administrator')) {
+        if (!in_groups(['Administrator', 'Petugas Gudang', 'Pimpinan'])) {
             return redirect()->back()->with('error', 'Akses ditolak. Hanya Administrator yang dapat mengunduh laporan ini.');
         }
 
@@ -193,12 +277,12 @@ class LaporanDonasi extends BaseController
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
-        $dompdf->stream("Laporan_Donasi_Masuk_" . date('Ymd_His') . ".pdf", ["Attachment" => true]);
+        $dompdf->stream("Laporan_Donasi_Masuk_" . date('Ymd_His') . ".pdf", ["Attachment" => false]);
     }
 
     public function excel()
     {
-        if (!in_groups('Administrator')) {
+        if (!in_groups(['Administrator', 'Petugas Gudang', 'Pimpinan'])) {
             return redirect()->back()->with('error', 'Akses ditolak. Hanya Administrator yang dapat mengunduh laporan ini.');
         }
 
@@ -278,7 +362,7 @@ class LaporanDonasi extends BaseController
             $beratPerSatuan = (float) $item['berat_per_satuan'];
             if ($bisaDipecah === 1) {
                 $totalBeratRow = (float) $item['jumlah'];
-                if (strtolower($item['satuan_berat']) === 'gram') {
+                if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                     $totalBeratRow *= 1000;
                 }
             } else {

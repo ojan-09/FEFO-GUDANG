@@ -39,6 +39,7 @@ class PenyesuaianStok extends BaseController
         $builder->join('batch', 'batch.id_barang = barang.id');
         $builder->where('batch.stok_saat_ini >', 0);
         $builder->where('batch.status', 'Aktif');
+        $builder->where('barang.status', 'active');
         $builder->groupBy('barang.id');
         $builder->orderBy('barang.nama_barang', 'ASC');
         
@@ -97,9 +98,12 @@ class PenyesuaianStok extends BaseController
                         <a href="' . site_url('transaksi/penyesuaian/detail/' . $trx['id']) . '" class="btn btn-sm btn-info text-white" title="Lihat Detail" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:none; background:#0ea5e9;">
                             <i class="fa-solid fa-eye"></i>
                         </a>
-                        <a href="' . site_url('transaksi/penyesuaian/delete/' . $trx['id']) . '" class="btn btn-sm btn-danger text-white" title="Hapus" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:none; background:#ef4444;" onclick="return confirm(\'Yakin ingin menghapus riwayat penyesuaian ini? Stok batch akan dikembalikan ke kondisi sebelumnya.\')">
-                            <i class="fa-solid fa-trash"></i>
-                        </a>
+                        <form action="' . site_url('transaksi/penyesuaian/delete/' . $trx['id']) . '" method="POST" class="d-inline form-delete-swal" data-confirm-text="Yakin ingin menghapus riwayat penyesuaian ini? Stok batch akan dikembalikan ke kondisi sebelumnya.">
+                            ' . csrf_field() . '
+                            <button type="submit" class="btn btn-sm btn-danger text-white" title="Hapus" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:none; background:#ef4444; cursor:pointer;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
                      </div>';
             $row[] = $aksi;
             $data[] = $row;
@@ -255,6 +259,8 @@ class PenyesuaianStok extends BaseController
             "Menambahkan Penyesuaian Stok\nNo. {$nomor}\nJenis : {$jenis}"
         );
 
+        helper('format');
+        clear_dashboard_cache();
         return redirect()->to(site_url('transaksi/penyesuaian'))->with('success', 'Transaksi penyesuaian stok berhasil disimpan.');
     }
 
@@ -336,6 +342,8 @@ class PenyesuaianStok extends BaseController
             "Menghapus Penyesuaian Stok\nNo. {$penyesuaian['nomor_penyesuaian']}"
         );
 
+        helper('format');
+        clear_dashboard_cache();
         return redirect()->to(site_url('transaksi/penyesuaian'))->with('success', 'Penyesuaian stok berhasil dihapus dan stok telah di-rollback.');
     }
 }

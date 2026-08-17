@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
 
         $data = [
             [
-                'email'    => 'admin@foodbank.id',
+                'email'    => 'fauzan.foodbankindo@gmail.com',
                 'username' => 'admin',
                 'password' => 'admin123',
                 'active'   => 1,

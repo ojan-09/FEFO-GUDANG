@@ -14,7 +14,8 @@ class BarangModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'kode_barang', 'id_kategori', 'nama_barang', 'satuan', 
-        'berat_per_satuan', 'satuan_berat', 'minimum_stok', 'bisa_dipecah'
+        'berat_per_satuan', 'satuan_berat', 'minimum_stok', 'bisa_dipecah',
+        'status', 'merged_to'
     ];
 
     protected $useTimestamps = true;
@@ -29,8 +30,13 @@ class BarangModel extends Model
     private function _getDatatablesQuery($postData)
     {
         $builder = $this->db->table($this->table)
-            ->select('barang.*, kategori.nama_kategori')
-            ->join('kategori', 'kategori.id = barang.id_kategori');
+            ->select('barang.*, kategori.nama_kategori, target_barang.nama_barang as target_nama_barang')
+            ->join('kategori', 'kategori.id = barang.id_kategori')
+            ->join('barang as target_barang', 'target_barang.id = barang.merged_to', 'left');
+
+        if (isset($postData['status_filter']) && in_array($postData['status_filter'], ['active', 'merged'])) {
+            $builder->where('barang.status', $postData['status_filter']);
+        }
 
         $i = 0;
         if (isset($postData['search']['value']) && $postData['search']['value']) {

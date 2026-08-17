@@ -273,6 +273,12 @@
     </div>
 <?php endif; ?>
 
+<?php
+    $valJenisPenyaluran  = old('jenis_penyaluran',  $isEdit ? ($barangKeluar['jenis_penyaluran'] ?? 'Penyaluran Relawan') : 'Penyaluran Relawan');
+    $valPenerimaRelawan = old('penerima_relawan', $isEdit ? ($barangKeluar['penerima_relawan'] ?? '') : '');
+    $valUnitInternal    = old('unit_internal',    $isEdit ? ($barangKeluar['unit_internal'] ?? '') : '');
+?>
+
 <form action="<?= $actionUrl ?>" method="POST" id="formBarangKeluar" class="loading-form" data-overlay="true">
     <?= csrf_field() ?>
 
@@ -282,16 +288,39 @@
             <h5 class="dm-card__title"><i class="fa-solid fa-file-lines"></i>Informasi Transaksi</h5>
         </div>
         <div class="dm-card__body">
-            <!-- Row 1: Nomor | Tanggal | Tujuan -->
-            <div class="dm-grid-3">
+            <!-- Row 1: Jenis Penyaluran | Nomor | Tanggal -->
+            <div class="dm-grid-3 mb-3">
                 <div>
-                    <label class="dm-label">Nomor Transaksi</label>
+                    <label for="jenis_penyaluran" class="dm-label">Jenis Penyaluran <span class="text-danger">*</span></label>
+                    <select class="dm-select" id="jenis_penyaluran" name="jenis_penyaluran" onchange="toggleJenisPenyaluran()" required>
+                        <option value="Penyaluran Relawan" <?= $valJenisPenyaluran === 'Penyaluran Relawan' ? 'selected' : '' ?>>Penyaluran Relawan</option>
+                        <option value="Penyaluran Internal" <?= $valJenisPenyaluran === 'Penyaluran Internal' ? 'selected' : '' ?>>Penyaluran Internal</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="dm-label">Nomor Dokumen <span class="text-muted">(Otomatis Global)</span></label>
                     <input type="text" class="dm-input readonly" value="<?= esc($nomor_transaksi) ?>" readonly>
                 </div>
                 <div>
-                    <label for="tanggal_keluar" class="dm-label">Tanggal Keluar <span class="text-danger">*</span></label>
+                    <label for="tanggal_keluar" class="dm-label">Tanggal Penyaluran <span class="text-danger">*</span></label>
                     <input type="date" class="dm-input" id="tanggal_keluar" name="tanggal_keluar"
                            value="<?= esc($valTanggalKeluar) ?>" required>
+                </div>
+            </div>
+
+            <!-- Row 2: Dynamic Field (Relawan vs Internal) & Tujuan -->
+            <div class="dm-grid-2 mb-3">
+                <div id="field_relawan_wrap">
+                    <label for="penerima_relawan" class="dm-label">Nama Relawan / Penerima <span class="text-danger">*</span></label>
+                    <input type="text" class="dm-input" id="penerima_relawan" name="penerima_relawan"
+                           placeholder="Contoh: Andi / Tim Relawan Dapur Umum"
+                           value="<?= esc($valPenerimaRelawan) ?>">
+                </div>
+                <div id="field_internal_wrap" style="display: none;">
+                    <label for="unit_internal" class="dm-label">Unit / Bagian Internal <span class="text-danger">*</span></label>
+                    <input type="text" class="dm-input" id="unit_internal" name="unit_internal"
+                           placeholder="Contoh: Operasional / Dapur Komunitas"
+                           value="<?= esc($valUnitInternal) ?>">
                 </div>
                 <div>
                     <label for="tujuan_penyaluran" class="dm-label">Program / Tujuan Penyaluran <span class="text-danger">*</span></label>
@@ -300,7 +329,8 @@
                            value="<?= esc($valTujuanPenyaluran) ?>" required>
                 </div>
             </div>
-            <!-- Row 2: Wilayah | Keterangan -->
+
+            <!-- Row 3: Wilayah | Keterangan -->
             <div class="dm-grid-2">
                 <div>
                     <label for="id_wilayah" class="dm-label">Wilayah Tujuan <span class="text-danger">*</span></label>
@@ -316,7 +346,7 @@
                 <div>
                     <label for="keterangan" class="dm-label">Keterangan</label>
                     <textarea class="dm-textarea" id="keterangan" name="keterangan"
-                              placeholder="Opsional"><?= esc($valKeterangan) ?></textarea>
+                               placeholder="Opsional"><?= esc($valKeterangan) ?></textarea>
                 </div>
             </div>
         </div>
@@ -658,8 +688,10 @@
 
         errorDiv.style.display = 'none';
 
+        const formElem = document.getElementById('formBarangKeluar');
         const btnSimpan = document.getElementById('btnSimpan');
-        if (btnSimpan.dataset.submitted === 'true') {
+        
+        if (formElem.dataset.submitting === 'true' || btnSimpan.dataset.submitted === 'true') {
             e.preventDefault();
             return false;
         }
@@ -667,6 +699,7 @@
         if (!document.getElementById('force_expired')) {
             e.preventDefault(); // Stop native submit
 
+            formElem.dataset.submitting = 'true';
             btnSimpan.dataset.submitted = 'true';
             btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengecek...';
             btnSimpan.style.pointerEvents = 'none';
@@ -750,6 +783,7 @@
                     document.getElementById('formBarangKeluar').appendChild(inputForce);
                     
                     btnSimpan.dataset.submitted = 'true';
+                    btnSimpan.disabled = true;
                     btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
                     btnSimpan.style.pointerEvents = 'none';
                     btnSimpan.style.opacity = '0.7';
@@ -788,5 +822,23 @@
     });
 
     if (oldDetails.length > 0) { oldDetails.forEach(d => tambahBaris(d)); } else { tambahBaris(); }
+    function toggleJenisPenyaluran() {
+        const val = document.getElementById('jenis_penyaluran').value;
+        const relawanWrap = document.getElementById('field_relawan_wrap');
+        const internalWrap = document.getElementById('field_internal_wrap');
+        
+        if (val === 'Penyaluran Internal') {
+            relawanWrap.style.display = 'none';
+            internalWrap.style.display = 'block';
+        } else {
+            relawanWrap.style.display = 'block';
+            internalWrap.style.display = 'none';
+        }
+    }
+
+    // Call on DOM content loaded to initialize field state
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleJenisPenyaluran();
+    });
 </script>
 <?= $this->endSection() ?>

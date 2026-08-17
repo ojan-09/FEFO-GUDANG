@@ -4,6 +4,7 @@ namespace App\Modules\Settings\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\ActivityLogModel;
+use App\Services\ActivityLogFormatter;
 use Myth\Auth\Models\GroupModel;
 
 class LogAktivitas extends BaseController
@@ -96,34 +97,31 @@ class LogAktivitas extends BaseController
         $list     = $this->activityLogModel->getDatatables($postData);
         $data     = [];
 
+        // Bulk load gudang map to prevent N+1 query
+        $db = \Config\Database::connect();
+        $gudangList = $db->table('master_gudang_wilayah')->get()->getResultArray();
+        $gudangMap = [];
+        foreach ($gudangList as $g) {
+            $gudangMap[$g['id']] = $g['nama'];
+        }
+
         foreach ($list as $log) {
             $rowData = [];
             
-            $modul = strtolower($log['modul'] ?? '');
-            
-            $icon = 'fa-circle-dot'; $colorCls = 'mod-login'; $bgCls = 'bg-login';
-            if (strpos($modul, 'donasi') !== false || strpos($modul, 'masuk') !== false) {
-                $icon = 'fa-hand-holding-heart'; $colorCls = 'mod-donasi'; $bgCls = 'bg-donasi';
-            } elseif (strpos($modul, 'penyaluran') !== false || strpos($modul, 'keluar') !== false) {
-                $icon = 'fa-truck-fast'; $colorCls = 'mod-penyaluran'; $bgCls = 'bg-penyaluran';
-            } elseif (strpos($modul, 'penyesuaian') !== false) {
-                $icon = 'fa-scale-balanced'; $colorCls = 'mod-penyesuaian'; $bgCls = 'bg-penyesuaian';
-            } elseif (strpos($modul, 'user') !== false || strpos($modul, 'profil') !== false) {
-                $icon = 'fa-users-gear'; $colorCls = 'mod-user'; $bgCls = 'bg-user';
-            } elseif (strpos($modul, 'auth') !== false || strpos($modul, 'login') !== false) {
-                $icon = 'fa-shield-halved'; $colorCls = 'mod-login'; $bgCls = 'bg-login';
-            }
+            $formatted = ActivityLogFormatter::format($log, $gudangMap);
 
             $namaUser = $log['nama_user'] ?? 'Sistem';
             $initials = strtoupper(substr($namaUser, 0, 1));
             
             // JSON Data for Drawer
             $drawerData = htmlspecialchars(json_encode([
-                'modul' => $log['modul'],
-                'aksi' => $log['aktivitas'],
-                'tanggal' => date('d M Y - H:i', strtotime($log['created_at'])) . ' WIB',
-                'operator' => $namaUser,
-                'deskripsi' => $log['deskripsi']
+                'modul'     => $log['modul'],
+                'aksi'      => $log['aktivitas'],
+                'tanggal'   => date('d M Y - H:i', strtotime($log['created_at'])) . ' WIB',
+                'operator'  => $namaUser,
+                'summary'   => $formatted['summary'],
+                'details'   => $formatted['details'],
+                'raw_json'  => $formatted['raw_json']
             ]), ENT_QUOTES, 'UTF-8');
 
             $html = '
@@ -141,14 +139,14 @@ class LogAktivitas extends BaseController
                         </div>
                     </div>
                     <div class="tl-module">
-                        <i class="fa-solid ' . $icon . ' ' . $colorCls . ' tl-icon"></i>
+                        <i class="fa-solid ' . $formatted['icon'] . ' ' . $formatted['color_class'] . ' tl-icon"></i>
                         <div>
                             <div class="tl-mod-name">' . esc($log['modul']) . '</div>
-                            <div class="tl-action ' . $bgCls . '">' . esc($log['aktivitas']) . '</div>
+                            <div class="tl-action ' . $formatted['badge_class'] . '">' . esc($log['aktivitas']) . '</div>
                         </div>
                     </div>
                     <div class="tl-desc">
-                        ' . nl2br(esc($log['deskripsi'])) . '
+                        ' . esc($formatted['summary']) . '
                     </div>
                 </div>
             </div>';

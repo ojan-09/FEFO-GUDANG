@@ -350,7 +350,7 @@
             zeroRecords: "Tidak ditemukan data yang sesuai",
             paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
         },
-            order: [[1, 'desc']], // Default order on "No. Transaksi"
+            order: [], // Default order from server side (id DESC)
             columnDefs: [
                 { orderable: false, targets: [0, 6] },
                 { className: "col-no text-center", targets: [0] },

@@ -23,7 +23,7 @@ class BarangMasukModel extends Model
     // --- DataTables Variables ---
     protected $column_order  = [null, 'barang_masuk.nomor_transaksi', 'donatur.nama_donatur', 'jumlah_item', 'barang_masuk.tanggal_masuk', 'users.username', null];
     protected $column_search = ['barang_masuk.nomor_transaksi', 'donatur.nama_donatur', 'users.username', 'barang_masuk.tanggal_masuk'];
-    protected $order         = ['barang_masuk.created_at' => 'DESC'];
+    protected $order         = ['barang_masuk.id' => 'DESC'];
 
     /**
      * Membangun query utama dengan filter dan sorting

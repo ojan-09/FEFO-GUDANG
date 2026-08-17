@@ -406,8 +406,9 @@
             </div>
         </div>
         <div class="wb-header-right">
-            <span class="wb-date"><i class="bi bi-calendar3 me-1"></i><?= $tanggalHariIni ?></span>
+            <span class="wb-date mb-1"><i class="bi bi-calendar3 me-1"></i><?= $tanggalHariIni ?></span>
             <div class="wb-clock" id="wb-clock">--:--:--</div>
+            <span id="liveSyncStatus" class="wb-date mt-1" style="color: #16a34a; font-size: 10.5px; font-weight: 600;"><i class="bi bi-broadcast me-1" id="liveSyncIcon"></i>Live Sync Active</span>
         </div>
     </div>
 
@@ -421,7 +422,7 @@
                     <div class="wb-kpi-icon blue"><i class="bi bi-box"></i></div>
                 </div>
                 <div>
-                    <div class="wb-kpi-num" data-count="<?= $totalJenisBarang ?>">0</div>
+                    <div class="wb-kpi-num" id="kpiTotalJenisBarang" data-count="<?= $totalJenisBarang ?>">0</div>
                     <div class="wb-kpi-sub">Barang dengan stok aktif</div>
                 </div>
             </div>
@@ -431,7 +432,7 @@
                     <div class="wb-kpi-icon slate"><i class="bi bi-boxes"></i></div>
                 </div>
                 <div>
-                    <div class="wb-kpi-num" data-count="<?= $totalBatch ?>">0</div>
+                    <div class="wb-kpi-num" id="kpiTotalBatch" data-count="<?= $totalBatch ?>">0</div>
                     <div class="wb-kpi-sub">Batch dengan stok tersedia</div>
                 </div>
             </div>
@@ -441,7 +442,7 @@
                     <div class="wb-kpi-icon green"><i class="bi bi-arrow-down-circle"></i></div>
                 </div>
                 <div>
-                    <div class="wb-kpi-num" data-count="<?= $donasiBulanIni ?>">0</div>
+                    <div class="wb-kpi-num" id="kpiDonasiBulanIni" data-count="<?= $donasiBulanIni ?>">0</div>
                     <div class="wb-kpi-sub">Transaksi barang masuk bulan ini</div>
                 </div>
             </div>
@@ -451,7 +452,7 @@
                     <div class="wb-kpi-icon amber"><i class="bi bi-arrow-up-circle"></i></div>
                 </div>
                 <div>
-                    <div class="wb-kpi-num" data-count="<?= $penyaluranBulanIni ?>">0</div>
+                    <div class="wb-kpi-num" id="kpiPenyaluranBulanIni" data-count="<?= $penyaluranBulanIni ?>">0</div>
                     <div class="wb-kpi-sub">Transaksi penyaluran bulan ini</div>
                 </div>
             </div>
@@ -489,32 +490,32 @@
             <div class="wb-summary-grid">
                 <div class="wb-tile">
                     <div class="wb-tile-label">Total Berat Gudang</div>
-                    <div class="wb-tile-val"><?= format_berat($totalBeratGudang, 'Kg') ?></div>
+                    <div class="wb-tile-val" id="tileTotalBeratGudang"><?= format_berat($totalBeratGudang, 'Kg') ?></div>
                     <div class="wb-tile-unit">Seluruh stok tersedia</div>
                 </div>
                 <div class="wb-tile">
                     <div class="wb-tile-label">Total Donatur</div>
-                    <div class="wb-tile-val"><?= number_format($totalDonatur, 0, ',', '.') ?></div>
+                    <div class="wb-tile-val" id="tileTotalDonatur"><?= number_format($totalDonatur, 0, ',', '.') ?></div>
                     <div class="wb-tile-unit">Donatur terdaftar</div>
                 </div>
                 <div class="wb-tile">
                     <div class="wb-tile-label">Titik Penyaluran</div>
-                    <div class="wb-tile-val"><?= number_format($totalWilayah, 0, ',', '.') ?></div>
+                    <div class="wb-tile-val" id="tileTotalWilayah"><?= number_format($totalWilayah, 0, ',', '.') ?></div>
                     <div class="wb-tile-unit">Wilayah target</div>
                 </div>
                 <div class="wb-tile">
                     <div class="wb-tile-label">Total Kategori</div>
-                    <div class="wb-tile-val"><?= number_format($totalKategori, 0, ',', '.') ?></div>
+                    <div class="wb-tile-val" id="tileTotalKategori"><?= number_format($totalKategori, 0, ',', '.') ?></div>
                     <div class="wb-tile-unit">Klasifikasi barang</div>
                 </div>
                 <div class="wb-tile">
                     <div class="wb-tile-label">Batch Kadaluwarsa</div>
-                    <div class="wb-tile-val" style="color:var(--red)"><?= number_format($countExpired, 0, ',', '.') ?></div>
+                    <div class="wb-tile-val" id="tileBatchKadaluwarsa" style="color:var(--red)"><?= number_format($countExpired, 0, ',', '.') ?></div>
                     <div class="wb-tile-unit">Sudah melewati tanggal</div>
                 </div>
                 <div class="wb-tile">
                     <div class="wb-tile-label">Hampir Kadaluwarsa</div>
-                    <div class="wb-tile-val" style="color:var(--amber)"><?= number_format($countHampirExpired, 0, ',', '.') ?></div>
+                    <div class="wb-tile-val" id="tileHampirKadaluwarsa" style="color:var(--amber)"><?= number_format($countHampirExpired, 0, ',', '.') ?></div>
                     <div class="wb-tile-unit">≤ 30 hari tersisa</div>
                 </div>
             </div>
@@ -535,7 +536,7 @@
                         <i class="bi bi-x-circle"></i>
                     </div>
                     <div>
-                        <div class="wb-exp-num" style="color:var(--red)"><?= number_format($countExpired, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
+                        <div class="wb-exp-num" id="expTileExpired" style="color:var(--red)"><?= number_format($countExpired, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
                         <div class="wb-exp-lbl">Sudah Expired</div>
                     </div>
                 </div>
@@ -544,7 +545,7 @@
                         <i class="bi bi-hourglass-split"></i>
                     </div>
                     <div>
-                        <div class="wb-exp-num" style="color:var(--amber)"><?= number_format($countHampirExpired, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
+                        <div class="wb-exp-num" id="expTileHampirExpired" style="color:var(--amber)"><?= number_format($countHampirExpired, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
                         <div class="wb-exp-lbl">Hampir Expired (≤ 30 Hari)</div>
                     </div>
                 </div>
@@ -553,7 +554,7 @@
                         <i class="bi bi-check-circle"></i>
                     </div>
                     <div>
-                        <div class="wb-exp-num" style="color:var(--green)"><?= number_format($countAman, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
+                        <div class="wb-exp-num" id="expTileAman" style="color:var(--green)"><?= number_format($countAman, 0, ',', '.') ?> <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small></div>
                         <div class="wb-exp-lbl">Aman (&gt; 30 Hari)</div>
                     </div>
                 </div>
@@ -569,7 +570,7 @@
                             <th>Sisa Hari</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tbodyHampirExpired">
                         <?php if(empty($hampirExpiredList)): ?>
                         <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted)">Tidak ada data barang yang akan kedaluwarsa.</td></tr>
                         <?php else: ?>
@@ -631,7 +632,7 @@
                                 <th style="text-align:right">Total Berat</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tbodyTopBarang">
                             <?php if(empty($topBarang)): ?>
                             <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Belum ada stok.</td></tr>
                             <?php else: ?>
@@ -701,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tickColor  = '#9CA3AF';
 
     /* ── Donasi Chart ──────────────────────────────────── */
-    new Chart(document.getElementById('donasiChart'), {
+    const donasiChartObj = new Chart(document.getElementById('donasiChart'), {
         type: 'line',
         data: {
             labels: <?= $grafikLabels ?>,
@@ -732,7 +733,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     /* ── Penyaluran Chart ──────────────────────────────── */
-    new Chart(document.getElementById('penyaluranChart'), {
+    const penyaluranChartObj = new Chart(document.getElementById('penyaluranChart'), {
         type: 'line',
         data: {
             labels: <?= $grafikLabels ?>,
@@ -763,7 +764,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     /* ── Kategori Donut ────────────────────────────────── */
-    new Chart(document.getElementById('kategoriChart'), {
+    const kategoriChartObj = new Chart(document.getElementById('kategoriChart'), {
         type: 'doughnut',
         data: {
             labels: <?= $kategoriLabels ?>,
@@ -793,6 +794,125 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             }
+        }
+    });
+
+    /* ── LIVE SYNC AUTO REFRESH DYNAMIC DATA ──────────── */
+    function fetchLiveData() {
+        fetch('<?= site_url("api/dashboard/live-data") ?>')
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    const m = res.metrics;
+                    
+                    const elJenis = document.getElementById('kpiTotalJenisBarang');
+                    if (elJenis) elJenis.textContent = m.totalJenisBarang;
+
+                    const elBatch = document.getElementById('kpiTotalBatch');
+                    if (elBatch) elBatch.textContent = m.totalBatch;
+
+                    const elDonasi = document.getElementById('kpiDonasiBulanIni');
+                    if (elDonasi) elDonasi.textContent = m.donasiBulanIni;
+
+                    const elPenyaluran = document.getElementById('kpiPenyaluranBulanIni');
+                    if (elPenyaluran) elPenyaluran.textContent = m.penyaluranBulanIni;
+
+                    const elBerat = document.getElementById('tileTotalBeratGudang');
+                    if (elBerat) elBerat.textContent = m.totalBeratGudang;
+
+                    const elDonatur = document.getElementById('tileTotalDonatur');
+                    if (elDonatur) elDonatur.textContent = m.totalDonatur;
+
+                    const elWilayah = document.getElementById('tileTotalWilayah');
+                    if (elWilayah) elWilayah.textContent = m.totalWilayah;
+
+                    const elKategori = document.getElementById('tileTotalKategori');
+                    if (elKategori) elKategori.textContent = m.totalKategori;
+
+                    const elExpCount = document.getElementById('expTileExpired');
+                    if (elExpCount) elExpCount.innerHTML = m.countExpired + ' <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small>';
+
+                    const elHampirExpCount = document.getElementById('expTileHampirExpired');
+                    if (elHampirExpCount) elHampirExpCount.innerHTML = m.countHampirExpired + ' <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small>';
+
+                    const elAmanCount = document.getElementById('expTileAman');
+                    if (elAmanCount) elAmanCount.innerHTML = m.countAman + ' <small style="font-size:.75rem;font-weight:400;color:var(--muted)">Batch</small>';
+
+                    if (kategoriChartObj && res.kategoriLabels && res.kategoriData) {
+                        kategoriChartObj.data.labels = res.kategoriLabels;
+                        kategoriChartObj.data.datasets[0].data = res.kategoriData;
+                        kategoriChartObj.update('none');
+                    }
+
+                    if (donasiChartObj && res.grafikLabels && res.grafikDonasiData) {
+                        donasiChartObj.data.labels = res.grafikLabels;
+                        donasiChartObj.data.datasets[0].data = res.grafikDonasiData;
+                        donasiChartObj.update('none');
+                    }
+
+                    if (penyaluranChartObj && res.grafikLabels && res.grafikPenyaluranData) {
+                        penyaluranChartObj.data.labels = res.grafikLabels;
+                        penyaluranChartObj.data.datasets[0].data = res.grafikPenyaluranData;
+                        penyaluranChartObj.update('none');
+                    }
+
+                    const tbodyTop = document.getElementById('tbodyTopBarang');
+                    if (tbodyTop && res.topBarang) {
+                        if (res.topBarang.length === 0) {
+                            tbodyTop.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Belum ada stok.</td></tr>';
+                        } else {
+                            let html = '';
+                            res.topBarang.forEach((b, idx) => {
+                                html += `<tr>
+                                    <td style="color:var(--muted);font-weight:600">${idx + 1}</td>
+                                    <td class="fw">${b.nama_barang}</td>
+                                    <td><span class="wb-badge blue">${b.total_stok}</span></td>
+                                    <td style="color:var(--muted)">${b.satuan}</td>
+                                    <td style="text-align:right;font-weight:500">${b.total_berat}</td>
+                                </tr>`;
+                            });
+                            tbodyTop.innerHTML = html;
+                        }
+                    }
+
+                    const tbodyExp = document.getElementById('tbodyHampirExpired');
+                    if (tbodyExp && res.hampirExpiredList) {
+                        if (res.hampirExpiredList.length === 0) {
+                            tbodyExp.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted)">Tidak ada data barang yang akan kedaluwarsa.</td></tr>';
+                        } else {
+                            let html = '';
+                            res.hampirExpiredList.forEach(item => {
+                                const badgeHtml = item.status_badge || item.badge || '';
+                                html += `<tr>
+                                    <td>${badgeHtml}</td>
+                                    <td class="fw">${item.nama_barang}</td>
+                                    <td style="color:var(--muted)">${item.tanggal_kedaluwarsa}</td>
+                                    <td>${item.sisa_hari_html || ''}</td>
+                                </tr>`;
+                            });
+                            tbodyExp.innerHTML = html;
+                        }
+                    }
+
+                    const syncIcon = document.getElementById('liveSyncIcon');
+                    if (syncIcon) {
+                        syncIcon.style.transform = 'rotate(180deg)';
+                        syncIcon.style.transition = 'transform 0.4s ease';
+                        setTimeout(() => { syncIcon.style.transform = 'rotate(0deg)'; }, 400);
+                    }
+                }
+            })
+            .catch(err => console.log('Dashboard Sync:', err));
+    }
+
+    // Run initial sync & set polling interval every 10 seconds
+    setInterval(fetchLiveData, 10000);
+
+    // Instant refresh when user returns focus to Dashboard tab
+    window.addEventListener('focus', fetchLiveData);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            fetchLiveData();
         }
     });
 

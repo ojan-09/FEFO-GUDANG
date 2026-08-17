@@ -481,8 +481,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-warning"
-                        onclick="return confirm('Apakah Anda yakin ingin menggabungkan barang ini? Tindakan ini tidak dapat dibatalkan.')">
+                        <button type="submit" class="btn btn-warning btn-sm px-3 font-semibold rounded-lg btn-delete-swal" data-confirm-text="Apakah Anda yakin ingin menggabungkan barang ini? Tindakan ini tidak dapat dibatalkan.">
                         <i class="fa-solid fa-code-merge me-1"></i> Proses Merge
                     </button>
                 </div>

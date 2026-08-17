@@ -112,7 +112,7 @@ class LaporanStokGudang extends BaseController
                 $weightInKg = (float) $stok['stok_saat_ini'];
             } else {
                 $totalBeratRow = $stok['stok_saat_ini'] * $beratPerSatuan;
-                $weightInKg = (strtolower($stok['satuan_berat']) === 'gram') ? ($totalBeratRow / 1000) : $totalBeratRow;
+                $weightInKg = (in_array(strtolower(trim($stok['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) ? ($totalBeratRow / 1000) : $totalBeratRow;
             }
             $totalBerat += $weightInKg;
         }
@@ -134,18 +134,139 @@ class LaporanStokGudang extends BaseController
     public function index()
     {
         $db = \Config\Database::connect();
-        $result = $this->_getFilteredData();
         
         $kategoriList = $db->table('kategori')->select('nama_kategori')->orderBy('nama_kategori', 'ASC')->get()->getResultArray();
 
+        $filters = [
+            'search'     => $this->request->getGet('search') ?? '',
+            'donatur'    => $this->request->getGet('donatur') ?? '',
+            'kategori'   => $this->request->getGet('kategori') ?? '',
+            'status'     => $this->request->getGet('status') ?? '',
+            'start_date' => $this->request->getGet('start_date') ?? '',
+            'end_date'   => $this->request->getGet('end_date') ?? ''
+        ];
+
         $data = [
-            'title'      => 'Laporan Stok Gudang',
-            'laporan'    => $result['data'],
-            'filters'    => $result['filters'],
-            'kategori'   => $kategoriList
+            'title'    => 'Laporan Stok Gudang',
+            'kategori' => $kategoriList,
+            'filters'  => $filters
         ];
         
         return view('App\Modules\Reports\Views\laporan_stok\index', $data);
+    }
+
+    public function ajaxData()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403)->setBody('Direct access not allowed');
+        }
+
+        try {
+            $postData = $this->request->getPost();
+            $model = new \App\Modules\Reports\Models\LaporanStokGudangModel();
+            
+            $list = $model->getDatatables($postData);
+            $data = [];
+            $no = $postData['start'] ?? 0;
+            
+            foreach ($list as $stok) {
+                $no++;
+                $row = [];
+                
+                $row[] = '<div class="text-center">' . $no . '</div>';
+                
+                // Status
+                $days = (int)$stok['sisa_hari'];
+                $statusHtml = '';
+                if ($days < 0) {
+                    $statusHtml = '<span class="wh-badge expired"><i class="fa-solid fa-ban"></i>Expired</span>';
+                } elseif ($days <= 30) {
+                    $statusHtml = '<span class="wh-badge hampir"><i class="fa-solid fa-triangle-exclamation"></i>Hampir Expired</span>';
+                } else {
+                    $statusHtml = '<span class="wh-badge aman"><i class="fa-solid fa-circle-check"></i>Aman</span>';
+                }
+                $row[] = '<div class="text-center">' . $statusHtml . '</div>';
+                
+                // Donatur
+                $row[] = esc($stok['donatur'] ?? '-');
+                // Kategori
+                $row[] = esc($stok['kategori']);
+                
+                // Kedaluwarsa
+                $expiredHtml = '-';
+                if ($stok['tanggal_kedaluwarsa']) {
+                    $tglFormatted = date('d M Y', strtotime($stok['tanggal_kedaluwarsa']));
+                    $diffDays = $days;
+                    if ($diffDays < 0)       $expiredHtml = '<span class="wh-expired-over">Expired</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
+                    elseif ($diffDays === 0) $expiredHtml = '<span class="wh-expired-soon">Hari Ini</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
+                    elseif ($diffDays === 1) $expiredHtml = '<span class="wh-expired-soon">Besok</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
+                    elseif ($diffDays <= 7)  $expiredHtml = '<span class="wh-expired-soon">' . $diffDays . ' Hari Lagi</span><span class="wh-expired-date">' . $tglFormatted . '</span>';
+                    else                     $expiredHtml = '<span class="wh-expired-ok">' . $tglFormatted . '</span>';
+                }
+                $row[] = '<div class="text-center">' . $expiredHtml . '</div>';
+                
+                // Nama Barang
+                $namaBarang = '<strong>' . esc($stok['nama_barang']) . '</strong>';
+                $row[] = $namaBarang;
+                
+                // Jumlah Stok
+                $row[] = '<div class="text-center" style="font-weight:700;">' . number_format($stok['stok_saat_ini'], 0, ',', '.') . '</div>';
+                
+                // Satuan
+                $row[] = '<div class="text-center">' . esc($stok['satuan']) . '</div>';
+                
+                // Berat / Satuan
+                $bisaDipecah = (int) ($stok['bisa_dipecah'] ?? 0);
+                $beratPerSatuan = (float) $stok['berat_per_satuan'];
+                
+                $row[] = '<div class="text-end">' . ($beratPerSatuan > 0 ? $beratPerSatuan . ' ' . esc($stok['satuan_berat']) : '-') . '</div>';
+                
+                // Total Berat
+                helper('format');
+                $totalBeratRow = 0;
+                if ($bisaDipecah === 1) {
+                    $totalBeratRow = (float) $stok['stok_saat_ini'];
+                    if (in_array(strtolower(trim($stok['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
+                        $totalBeratRow *= 1000;
+                    }
+                } else {
+                    $totalBeratRow = $stok['stok_saat_ini'] * $beratPerSatuan;
+                }
+                $row[] = '<div class="text-end" style="font-weight:500;">' . ($totalBeratRow > 0 ? format_berat($totalBeratRow, $stok['satuan_berat']) : '-') . '</div>';
+                
+                // Jumlah CTN
+                $row[] = '<div class="text-center">' . (!empty($stok['jumlah_ctn']) ? esc($stok['jumlah_ctn']) : '-') . '</div>';
+                
+                // Catatan
+                $row[] = '<div style="color:var(--wh-text-soft);"><small>' . esc($stok['catatan'] ?? '-') . '</small></div>';
+                
+                $data[] = $row;
+            }
+            
+            $summary = $model->getSummaryData($postData);
+
+            $output = [
+                "draw" => $postData['draw'] ?? 0,
+                "recordsTotal" => $model->countAllData(),
+                "recordsFiltered" => $model->countFiltered($postData),
+                "data" => $data,
+                "summary" => $summary,
+                "csrf_hash" => csrf_hash()
+            ];
+            
+            return $this->response->setJSON($output);
+        } catch (\Exception $e) {
+            log_message('error', '[LaporanStokGudang::ajaxData] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'draw' => $this->request->getPost('draw') ?? 0,
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'summary' => ['total_berat' => 0],
+                'csrf_hash' => csrf_hash(),
+                'error' => 'Terjadi kesalahan saat memuat data.'
+            ]);
+        }
     }
 
     public function pdf()
@@ -166,7 +287,7 @@ class LaporanStokGudang extends BaseController
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
-        $dompdf->stream("Laporan_Stok_Gudang_" . date('Ymd_His') . ".pdf", ["Attachment" => true]);
+        $dompdf->stream("Laporan_Stok_Gudang_" . date('Ymd_His') . ".pdf", ["Attachment" => false]);
     }
 
     public function excel()
@@ -233,7 +354,7 @@ class LaporanStokGudang extends BaseController
             $beratPerSatuan = (float) $item['berat_per_satuan'];
             if ($bisaDipecah === 1) {
                 $totalBeratRow = (float) $item['stok_saat_ini'];
-                if (strtolower($item['satuan_berat']) === 'gram') {
+                if (in_array(strtolower(trim($item['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
                     $totalBeratRow *= 1000; // convert Kg back to gram if format_berat expects base units?
                 }
             } else {
