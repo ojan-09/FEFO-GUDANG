@@ -376,6 +376,27 @@
         $('#filterJenis').on('change', function() {
             table.ajax.reload();
         });
-    });
-</script>
+
+        // Delegate Swal confirmation for delete form submission inside DataTables
+        $(document).on('submit', '.form-delete-swal', function(e) {
+            e.preventDefault();
+            var form = this;
+            var confirmText = $(form).data('confirm-text') || 'Apakah Anda yakin ingin menghapus data ini?';
+
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: confirmText,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });</script>
 <?= $this->endSection() ?>

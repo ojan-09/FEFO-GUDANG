@@ -298,6 +298,7 @@ class BarangKeluar extends BaseController
             'penerima_relawan'  => $penerimaRelawan,
             'unit_internal'     => $unitInternal,
             'id_user'           => user()->id,
+            'divisi_petugas'    => user()->divisi ?? null,
             'id_wilayah'        => $this->request->getPost('id_wilayah'),
             'tanggal_keluar'    => $this->request->getPost('tanggal_keluar'),
             'tujuan_penyaluran' => $this->request->getPost('tujuan_penyaluran'),
@@ -695,7 +696,7 @@ class BarangKeluar extends BaseController
     public function downloadBeritaAcara($id)
     {
         $barangKeluar = $this->barangKeluarModel
-            ->select('barang_keluar.*, wilayah.nama_wilayah, users.username as petugas')
+            ->select('barang_keluar.*, wilayah.nama_wilayah, users.username as petugas, users.divisi as divisi_petugas')
             ->join('wilayah', 'wilayah.id = barang_keluar.id_wilayah', 'left')
             ->join('users', 'users.id = barang_keluar.id_user')
             ->find($id);
@@ -748,7 +749,7 @@ class BarangKeluar extends BaseController
     public function downloadBeritaAcaraWord($id)
     {
         $barangKeluar = $this->barangKeluarModel
-            ->select('barang_keluar.*, wilayah.nama_wilayah, users.username as petugas')
+            ->select('barang_keluar.*, wilayah.nama_wilayah, users.username as petugas, users.divisi as divisi_petugas')
             ->join('wilayah', 'wilayah.id = barang_keluar.id_wilayah', 'left')
             ->join('users', 'users.id = barang_keluar.id_user')
             ->find($id);
@@ -765,10 +766,11 @@ class BarangKeluar extends BaseController
             ->findAll();
 
         $data = [
-            'title'        => 'Berita Acara Pendistribusian Donasi',
-            'barangKeluar' => $barangKeluar,
-            'details'      => $details,
-            'isWord'       => true,
+            'title'           => 'Berita Acara Pendistribusian Donasi',
+            'barangKeluar'    => $barangKeluar,
+            'details'         => $details,
+            'document_number' => $barangKeluar['nomor_transaksi'],
+            'isWord'          => true,
         ];
 
         $html = view('laporan/berita_acara_penyaluran', $data);

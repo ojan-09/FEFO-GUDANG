@@ -136,6 +136,7 @@
       <span class="id-status"><span class="id-dot"></span>Akun Aktif</span>
       <hr class="id-hr">
       <div class="id-meta"><strong>Email</strong><?= esc($user->email) ?></div>
+      <div class="id-meta mt-2"><strong>Divisi / Department</strong><?= esc($user->divisi ?? '-') ?></div>
     </div>
 
     <!-- RIGHT: form -->
@@ -159,7 +160,7 @@
             <p class="fhint">Email digunakan untuk login dan tidak dapat diubah.</p>
           </div>
 
-          <!-- nama + role side by side -->
+          <!-- nama, divisi + role grid -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div class="frow">
               <label class="flbl" for="fu">
@@ -172,6 +173,16 @@
               </div>
             </div>
             <div class="frow">
+              <label class="flbl" for="fdiv">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Divisi / Department
+              </label>
+              <div class="iw">
+                <svg class="ii" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                <input id="fdiv" type="text" name="divisi" class="pi" value="<?= old('divisi', $user->divisi ?? '') ?>" placeholder="Misal: Gudang / Logistik / Program">
+              </div>
+            </div>
+            <div class="frow" style="grid-column: 1 / -1;">
               <label class="flbl">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Role (Hak Akses)

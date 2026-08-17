@@ -13,7 +13,7 @@ class BarangKeluarModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'nomor_transaksi', 'jenis_penyaluran', 'penerima_relawan', 'unit_internal', 'id_user', 'id_wilayah', 'tanggal_keluar', 'tujuan_penyaluran', 'keterangan'
+        'nomor_transaksi', 'jenis_penyaluran', 'penerima_relawan', 'unit_internal', 'id_user', 'divisi_petugas', 'id_wilayah', 'tanggal_keluar', 'tujuan_penyaluran', 'keterangan'
     ];
 
     protected $useTimestamps = true;

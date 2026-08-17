@@ -23,7 +23,7 @@ class ManajemenUser extends BaseController
         $db = \Config\Database::connect();
         
         $builder = $db->table('users');
-        $builder->select('users.id, users.username, users.email, users.active, users.created_at, users.id_gudang_wilayah, (SELECT MAX(date) FROM auth_logins WHERE email = users.email AND success = 1) as last_login_at');
+        $builder->select('users.id, users.username, users.email, users.divisi, users.active, users.created_at, users.id_gudang_wilayah, (SELECT MAX(date) FROM auth_logins WHERE email = users.email AND success = 1) as last_login_at');
         $builder->select('auth_groups.name as role_name');
         $builder->join('auth_groups_users', 'auth_groups_users.user_id = users.id', 'left');
         $builder->join('auth_groups', 'auth_groups.id = auth_groups_users.group_id', 'left');
@@ -69,12 +69,14 @@ class ManajemenUser extends BaseController
         $this->userModel->save($user);
         $newUserId = $this->userModel->getInsertID();
 
-        // Update id_gudang_wilayah via query builder
+        // Update id_gudang_wilayah & divisi via query builder
         $idGudangWilayah = $this->request->getPost('id_gudang_wilayah') ?: null;
-        if ($idGudangWilayah) {
-            $db = \Config\Database::connect();
-            $db->table('users')->where('id', $newUserId)->update(['id_gudang_wilayah' => $idGudangWilayah]);
-        }
+        $divisi          = $this->request->getPost('divisi') ?: null;
+        $db = \Config\Database::connect();
+        $db->table('users')->where('id', $newUserId)->update([
+            'id_gudang_wilayah' => $idGudangWilayah,
+            'divisi'            => $divisi
+        ]);
 
         // Tambahkan Role
         $roleId = $this->request->getPost('role');
@@ -118,10 +120,14 @@ class ManajemenUser extends BaseController
             $this->userModel->skipValidation(true)->save($user);
         }
 
-        // Update id_gudang_wilayah
+        // Update id_gudang_wilayah & divisi
         $idGudangWilayah = $this->request->getPost('id_gudang_wilayah') ?: null;
+        $divisi          = $this->request->getPost('divisi') ?: null;
         $db = \Config\Database::connect();
-        $db->table('users')->where('id', $id)->update(['id_gudang_wilayah' => $idGudangWilayah]);
+        $db->table('users')->where('id', $id)->update([
+            'id_gudang_wilayah' => $idGudangWilayah,
+            'divisi'            => $divisi
+        ]);
 
         // Update Role
         $roleId = $this->request->getPost('role');

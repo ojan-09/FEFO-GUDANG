@@ -33,23 +33,24 @@ class Profil extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $userModel = new UserModel();
+        $db = \Config\Database::connect();
+        $updateData = [
+            'username' => $this->request->getPost('username'),
+            'divisi'   => $this->request->getPost('divisi') ?: null,
+        ];
 
-        $user->username = $this->request->getPost('username');
-        
         if ($this->request->getPost('password')) {
             $user->setPassword($this->request->getPost('password'));
+            $updateData['password_hash'] = $user->password_hash;
         }
-        
-        if ($user->hasChanged()) {
-            $userModel->skipValidation(true)->save($user);
-            
-            \App\Libraries\ActivityLogger::log(
-                'Ubah Profil',
-                'Profil',
-                "Mengubah data profil / password sendiri."
-            );
-        }
+
+        $db->table('users')->where('id', $user->id)->update($updateData);
+
+        \App\Libraries\ActivityLogger::log(
+            'Ubah Profil',
+            'Profil',
+            "Mengubah data profil / password sendiri."
+        );
 
         helper('format'); clear_dashboard_cache();
         return redirect()->to('profil')->with('success', 'Profil berhasil diperbarui.');
