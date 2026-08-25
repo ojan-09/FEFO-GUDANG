@@ -1,3 +1,21 @@
+<?php
+/**
+ * Sidebar – Foodbank of Indonesia Warehouse Management
+ * Fix: sidebar ngegantung (height tidak full)
+ */
+?>
+<script>
+(function() {
+    var collapsed = localStorage.getItem('wms-sidebar-collapsed') === 'true';
+    var html = document.documentElement;
+    html.classList.add('sb-preload');
+    if (collapsed) html.classList.add('sb-pre-collapsed');
+    window.addEventListener('DOMContentLoaded', function() {
+        html.classList.remove('sb-preload');
+        html.classList.remove('sb-pre-collapsed');
+    });
+})();
+</script>
 <style>
 /* ─── Variables ─────────────────────────────────────────── */
 :root {
@@ -65,21 +83,29 @@ html.sb-preload .sb-logo-text {
 }
 
 /* ─── Body offset ───────────────────────────────────────── */
-html { overflow-x: hidden; }
+/* FIX: tambah height: 100% di html & body agar sidebar tahu seberapa tinggi harus stretch */
+html {
+    overflow-x: hidden;
+    height: 100%;
+}
 
 body {
     margin-left: var(--sb-w-expanded);
     transition: margin-left 200ms ease;
+    min-height: 100%;
 }
 body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
 
 /* ─── Sidebar shell ─────────────────────────────────────── */
+/* FIX: gunakan height: 100vh + min-height: 100% + fallback 100dvh */
 .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     width: var(--sb-w-expanded);
     height: 100vh;
+    height: 100dvh; /* dynamic viewport height – fix mobile browser chrome bar */
+    min-height: 100%;
     background: var(--sb-bg);
     border-right: 1px solid var(--sb-border);
     display: flex;
@@ -548,6 +574,9 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
 
     .sidebar {
         width: 280px !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        min-height: 100% !important;
         transform: translateX(-100%);
         transition: transform 220ms cubic-bezier(.4,0,.2,1) !important;
         will-change: transform;
@@ -934,10 +963,14 @@ body.sb-drawer-open {
     var overlay   = document.getElementById('sidebarOverlay');
 
     function renderIcons() {
-        if (window.lucide) lucide.createIcons();
-    }
+    if (window.lucide) lucide.createIcons();
+}
+renderIcons();
+document.addEventListener('DOMContentLoaded', function() {
     renderIcons();
-    document.addEventListener('DOMContentLoaded', renderIcons);
+    // FIX: aktifkan visibility sidebar setelah DOM siap
+    sidebar.classList.add('sb-ready');
+});
 
     <?php
         $isWilayahActiveJs = isset($wilayahActive) && $wilayahActive ? 'true' : 'false';
@@ -1037,4 +1070,4 @@ function toggleWilayahDropdown() {
     trigger.classList.toggle('open', !isOpen);
     body.classList.toggle('open', !isOpen);
 }
-</script>   
+</script>

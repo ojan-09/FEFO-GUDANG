@@ -75,6 +75,42 @@
 }
 
 /* ═══════════════════════════════════════════════
+   TABLE LOADING SPINNER
+═══════════════════════════════════════════════ */
+.dm-table-wrap {
+    position: relative;
+    min-height: 260px;
+}
+.dm-table-spinner {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+    z-index: 50;
+    color: #6b7280;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: opacity 0.3s ease;
+}
+.dm-table-spinner i {
+    font-size: 1.9rem;
+    color: #2563eb;
+}
+.dm-table-wrap.loaded .dm-table-spinner {
+    opacity: 0;
+    pointer-events: none;
+}
+.dm-table-wrap:not(.loaded) #tabelBarangKeluar,
+.dm-table-wrap:not(.loaded) .dataTables_wrapper {
+    opacity: 0;
+}
+
+/* ═══════════════════════════════════════════════
    DATATABLE OVERRIDES
 ═══════════════════════════════════════════════ */
 .dataTables_wrapper .dataTables_length,
@@ -234,10 +270,10 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,.10);
 }
-.dm-btn-action.pdf  { color: #dc2626; border-color: #ef4444; background: #fff5f5; }
-.dm-btn-action.pdf:hover  { background: #fee2e2; border-color: #dc2626; }
-.dm-btn-action.word { color: #2563eb; border-color: #3b82f6; background: #eff6ff; }
-.dm-btn-action.word:hover { background: #dbeafe; border-color: #2563eb; }
+.dm-btn-action.pdf   { color: #dc2626; border-color: #ef4444; background: #fff5f5; }
+.dm-btn-action.pdf:hover   { background: #fee2e2; border-color: #dc2626; }
+.dm-btn-action.word  { color: #2563eb; border-color: #3b82f6; background: #eff6ff; }
+.dm-btn-action.word:hover  { background: #dbeafe; border-color: #2563eb; }
 .dm-btn-action.view  { color: #0284c7; border-color: #bae6fd; }
 .dm-btn-action.view:hover  { background: #e0f2fe; }
 .dm-btn-action.edit  { color: #d97706; border-color: #fde68a; }
@@ -245,79 +281,98 @@
 .dm-btn-action.del   { color: #dc2626; border-color: #fecaca; }
 .dm-btn-action.del:hover   { background: #fee2e2; }
 
-/* ═══════════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════════ */
-@media (max-width: 767px) {
-    .dm-page { padding: 10px 10px; }
-    .dm-topbar { padding: 12px 14px; }
-    .dm-topbar__title { font-size: 16px; }
+/* ── Processing Overlay ── */
+div.dataTables_wrapper { position: relative; }
+div.dataTables_wrapper div.dataTables_processing {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 28px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1);
+    z-index: 10;
+    margin: 0;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 768px) {
+    .dm-page { padding: 12px 12px 40px 12px; }
     .dataTables_wrapper .dataTables_filter input { width: 160px; }
 }
 </style>
 
 <div class="dm-page">
 
-<!-- ── Topbar ── -->
-<div class="dm-topbar">
-    <div>
-        <h1 class="dm-topbar__title">
-            <i class="fa-solid fa-arrow-up"></i><?= esc($title) ?>
-        </h1>
-        <p class="dm-topbar__sub">Daftar seluruh transaksi pengeluaran barang (metode FEFO)</p>
+    <!-- ── Topbar ── -->
+    <div class="dm-topbar">
+        <div>
+            <h1 class="dm-topbar__title">
+                <i class="fa-solid fa-arrow-up"></i><?= esc($title) ?>
+            </h1>
+            <p class="dm-topbar__sub">Daftar seluruh transaksi pengeluaran barang (metode FEFO)</p>
+        </div>
+        <a href="<?= site_url('transaksi/barang-keluar/create') ?>" class="btn btn-primary dm-btn-add">
+            <i class="fa-solid fa-plus"></i> Tambah Barang Keluar
+        </a>
     </div>
-    <a href="<?= site_url('transaksi/barang-keluar/create') ?>" class="btn btn-primary dm-btn-add">
-        <i class="fa-solid fa-plus"></i> Tambah Barang Keluar
-    </a>
-</div>
 
-<!-- ── Flash Messages ── -->
-<?php if (session()->getFlashdata('success')) : ?>
-    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
-        <i class="fa-solid fa-circle-check me-2"></i><?= session()->getFlashdata('success') ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- ── Flash Messages ── -->
+    <?php if (session()->getFlashdata('success')) : ?>
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
+            <i class="fa-solid fa-circle-check me-2"></i><?= session()->getFlashdata('success') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+    <?php if (session()->getFlashdata('error')) : ?>
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i><?= session()->getFlashdata('error') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- ── Filter ── -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <label for="filterJenis" class="fw-semibold text-secondary mb-0" style="font-size:12.5px;">
+                <i class="fa-solid fa-filter me-1"></i>Filter Jenis:
+            </label>
+            <select id="filterJenis" class="form-select form-select-sm rounded-pill" style="width: auto; min-width: 170px; font-size:12.5px;">
+                <option value="">Semua Penyaluran</option>
+                <option value="Penyaluran Relawan">Penyaluran Relawan</option>
+                <option value="Penyaluran Internal">Penyaluran Internal</option>
+            </select>
+        </div>
     </div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')) : ?>
-    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
-        <i class="fa-solid fa-triangle-exclamation me-2"></i><?= session()->getFlashdata('error') ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+
+    <!-- ── Data Card ── -->
+    <div class="dm-card">
+        <!-- Wrapper spinner hanya di area tabel -->
+        <div class="dm-table-wrap">
+            <div class="dm-table-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <div>Memuat data barang keluar...</div>
+            </div>
+            <table class="table mb-0" id="tabelBarangKeluar" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th class="col-no text-center">No</th>
+                        <th class="col-notrx">No. Transaksi</th>
+                        <th class="col-tujuan">Tujuan Penyaluran</th>
+                        <th class="col-wilayah">Wilayah Tujuan</th>
+                        <th class="col-tgl">Tgl Keluar</th>
+                        <th class="col-item text-center">Item</th>
+                        <th class="col-petugas">Petugas</th>
+                        <th class="col-aksi text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- DataTables populate via AJAX -->
+                </tbody>
+            </table>
+        </div>
     </div>
-<?php endif; ?>
-
-<!-- ── Filter & Search Section ── -->
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div class="d-flex align-items-center gap-2">
-        <label for="filterJenis" class="fw-semibold text-secondary mb-0" style="font-size:12.5px;"><i class="fa-solid fa-filter me-1"></i>Filter Jenis:</label>
-        <select id="filterJenis" class="form-select form-select-sm rounded-pill" style="width: auto; min-width: 170px; font-size:12.5px;">
-            <option value="">Semua Penyaluran</option>
-            <option value="Penyaluran Relawan">Penyaluran Relawan</option>
-            <option value="Penyaluran Internal">Penyaluran Internal</option>
-        </select>
-    </div>
-</div>
-
-<!-- ── Data Card ── -->
-<div class="dm-card">
-    <table class="table mb-0" id="tabelBarangKeluar" style="width: 100%;">
-            <thead>
-                <tr>
-                    <th class="col-no text-center">No</th>
-                    <th class="col-notrx">No. Transaksi</th>
-                    <th class="col-tujuan">Tujuan Penyaluran</th>
-                    <th class="col-wilayah">Wilayah Tujuan</th>
-                    <th class="col-tgl">Tgl Keluar</th>
-                    <th class="col-item text-center">Item</th>
-                    <th class="col-petugas">Petugas</th>
-                    <th class="col-aksi text-center">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- DataTables will populate this tbody via AJAX -->
-            </tbody>
-        </table>
-
-</div>
 
 </div><!-- /.dm-page -->
 
@@ -345,40 +400,49 @@
                 if (response && response[csrfName]) {
                     csrfHash = response[csrfName];
                 }
+                // Spinner hilang setelah data selesai dimuat
+                $('#tabelBarangKeluar').closest('.dm-table-wrap').addClass('loaded');
             },
             language: {
-                emptyTable: "Tidak ada data",
-                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                emptyTable:   "Tidak ada data",
+                info:         "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty:    "Menampilkan 0 sampai 0 dari 0 data",
                 infoFiltered: "(disaring dari _MAX_ total data)",
-                lengthMenu: "Tampilkan _MENU_ data",
+                lengthMenu:   "Tampilkan _MENU_ data",
                 loadingRecords: "Memuat...",
-                processing: "Memproses...",
-                search: "Cari:",
-                zeroRecords: "Tidak ditemukan data yang sesuai",
-                paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+                processing:   "Memproses...",
+                search:       "Cari:",
+                zeroRecords:  "Tidak ditemukan data yang sesuai",
+                paginate: {
+                    first:    "Pertama",
+                    last:     "Terakhir",
+                    next:     "Selanjutnya",
+                    previous: "Sebelumnya"
+                }
             },
-            order: [[1, 'desc']], // Default order on No. Transaksi
+            order: [[1, 'desc']],
             columnDefs: [
                 { orderable: false, targets: [0, 7] },
                 { className: "col-no text-center", targets: [0] },
-                { className: "col-notrx", targets: [1] },
-                { className: "col-tujuan", targets: [2] },
-                { className: "col-wilayah", targets: [3] },
-                { className: "col-tgl", targets: [4] },
+                { className: "col-notrx",          targets: [1] },
+                { className: "col-tujuan",         targets: [2] },
+                { className: "col-wilayah",        targets: [3] },
+                { className: "col-tgl",            targets: [4] },
                 { className: "col-item text-center", targets: [5] },
-                { className: "col-petugas", targets: [6] },
+                { className: "col-petugas",        targets: [6] },
                 { className: "col-aksi text-center", targets: [7] }
             ],
             dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
         });
 
-        $('#filterJenis').on('change', function() {
+        // Spinner muncul lagi saat filter berubah
+        $('#filterJenis').on('change', function () {
+            $('#tabelBarangKeluar').closest('.dm-table-wrap').removeClass('loaded');
             table.ajax.reload();
         });
 
-        // Delegate Swal confirmation for delete form submission inside DataTables
-        $(document).on('submit', '.form-delete-swal', function(e) {
+        // Konfirmasi hapus dengan SweetAlert2
+        $(document).on('submit', '.form-delete-swal', function (e) {
             e.preventDefault();
             var form = this;
             var confirmText = $(form).data('confirm-text') || 'Apakah Anda yakin ingin menghapus data ini?';
@@ -398,5 +462,6 @@
                 }
             });
         });
-    });</script>
+    });
+</script>
 <?= $this->endSection() ?>

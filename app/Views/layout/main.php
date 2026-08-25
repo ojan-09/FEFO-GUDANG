@@ -7,13 +7,14 @@
     <meta name="csrf-token-name" content="<?= csrf_token() ?>">
     <meta name="csrf-token"      content="<?= csrf_hash() ?>">
     
-    <!-- SEO Best Practices -->
     <meta name="description" content="Sistem Manajemen Stok Donasi Foodbank Indonesia berbasis FEFO (First Expired First Out).">
     
-    <!-- Performance Optimization (Lighthouse) -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <title><?= $title ?? 'WMS Foodbank Indonesia' ?></title>
 
@@ -50,8 +51,6 @@
                 init: function(isWilayahActive) {
                     var sidebar = document.getElementById('sidebar');
                     var body = document.body;
-                    var wilTrigger = document.getElementById('wilayahTrigger');
-                    var wilBody = document.getElementById('wilayahBody');
 
                     if (window.innerWidth > 768) {
                         if (localStorage.getItem(KEY_SIDEBAR) === 'true') {
@@ -78,10 +77,7 @@
                     var wilBody = document.getElementById('wilayahBody');
                     
                     if (!wilTrigger || !wilBody) return;
-                    
-                    if (sidebar && sidebar.classList.contains('collapsed')) {
-                        return false;
-                    }
+                    if (sidebar && sidebar.classList.contains('collapsed')) return false;
                     
                     var isOpen = wilTrigger.classList.toggle('open');
                     wilBody.classList.toggle('open');
@@ -100,32 +96,35 @@
     <?= $this->renderSection('styles') ?>
 
     <style>
-        :root {
-            --primary: #2563EB;
-            --primary-soft: #eff6ff;
-            --success: #16A34A;
-            --warning: #F59E0B;
-            --danger: #DC2626;
-            --dark: #0F172A;
-            --muted: #64748B;
-            --border: #E2E8F0;
-            --bg: #F8FAFC;
-            /* Sidebar layout variables (harus ada di head agar tidak blink) */
-            --sb-w-expanded:  220px;
-            --sb-w-collapsed:  62px;
-        }
+        html {
+    zoom: 0.85;
+}
+
+:root {
+    --primary: #2563EB;
+    --primary-soft: #eff6ff;
+    --success: #16A34A;
+    --warning: #F59E0B;
+    --danger: #DC2626;
+    --dark: #0F172A;
+    --muted: #64748B;
+    --border: #E2E8F0;
+    --bg: #F8FAFC;
+    --sb-w-expanded:  220px;
+    --sb-w-collapsed:  62px;
+}
 
         body {
             background: var(--bg);
             color: var(--dark);
-            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            font-family: 'Inter', "Segoe UI", Roboto, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             margin-left: var(--sb-w-expanded);
             transition: margin-left 200ms ease;
         }
         body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
 
-        /* ── Sidebar FOUC Prevention (head-level) ── */
         html.sb-preload body,
         html.sb-preload .sidebar { transition: none !important; }
         html.sb-pre-collapsed body { margin-left: var(--sb-w-collapsed) !important; transition: none !important; }
@@ -248,7 +247,6 @@
         .dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link { background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important; }
         .dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link { opacity: .45; cursor: default; }
 
-        /* DataTables Sorting Icons */
         table.dataTable thead > tr > th.sorting,
         table.dataTable thead > tr > th.sorting_asc,
         table.dataTable thead > tr > th.sorting_desc {
@@ -276,19 +274,17 @@
         table.dataTable thead > tr > th.sorting_asc::before,
         table.dataTable thead > tr > th.sorting_desc::before {
             right: 1em;
-            content: "\f0de"; /* fa-caret-up */
+            content: "\f0de";
         }
         table.dataTable thead > tr > th.sorting::after,
         table.dataTable thead > tr > th.sorting_asc::after,
         table.dataTable thead > tr > th.sorting_desc::after {
             right: 0.5em;
-            content: "\f0dd"; /* fa-caret-down */
+            content: "\f0dd";
         }
         table.dataTable thead > tr > th.sorting_asc::before { opacity: 1; color: var(--primary); }
         table.dataTable thead > tr > th.sorting_desc::after { opacity: 1; color: var(--primary); }
 
-
-        /* Modal fix */
         .modal-backdrop {
             position: fixed !important;
             top: 0 !important; left: 0 !important;
@@ -297,7 +293,6 @@
         }
         .modal { z-index: 1075 !important; }
 
-        /* ── Notif Bell Button ────────────────────────────── */
         .notif-bell-btn {
             position: relative;
             width: 36px;
@@ -313,14 +308,8 @@
             transition: background 0.13s, border-color 0.13s;
             flex-shrink: 0;
         }
-        .notif-bell-btn:hover {
-            background: #F3F4F6;
-            border-color: #D1D5DB;
-        }
-        .notif-bell-btn i {
-            font-size: 15px;
-            color: #6B7280;
-        }
+        .notif-bell-btn:hover { background: #F3F4F6; border-color: #D1D5DB; }
+        .notif-bell-btn i { font-size: 15px; color: #6B7280; }
         .notif-bell-badge {
             position: absolute;
             top: -5px;
@@ -341,7 +330,6 @@
         .notif-bell-badge.danger  { background: #DC2626; color: #fff; }
         .notif-bell-badge.warning { background: #D97706; color: #fff; }
 
-        /* ── Notif Dropdown ───────────────────────────────── */
         .notif-dropdown {
             width: 320px !important;
             border: 1px solid #E5E7EB !important;
@@ -369,10 +357,7 @@
             gap: 6px;
             margin: 0;
         }
-        .notif-dd-title i {
-            color: #6366F1;
-            font-size: 15px;
-        }
+        .notif-dd-title i { color: #6366F1; font-size: 15px; }
         .notif-dd-count {
             font-size: 11px;
             font-weight: 600;
@@ -383,12 +368,7 @@
             display: none;
         }
 
-        /* ── Notif List & Items ───────────────────────────── */
-        .notif-list {
-            max-height: 340px;
-            overflow-y: auto;
-            background: #fff;
-        }
+        .notif-list { max-height: 340px; overflow-y: auto; background: #fff; }
         .notif-list::-webkit-scrollbar { width: 4px; }
         .notif-list::-webkit-scrollbar-track { background: transparent; }
         .notif-list::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
@@ -406,12 +386,9 @@
         .notif-item:hover { background: #FAFAFA; }
 
         .notif-item-icon {
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
             font-size: 13px;
         }
@@ -420,128 +397,225 @@
         .notif-item-icon.warning  { background: #FEF3C7; color: #D97706; }
         .notif-item-icon.info     { background: #EFF6FF; color: #2563EB; }
 
-        .notif-item-body {
-            flex: 1;
-            min-width: 0;
-        }
+        .notif-item-body { flex: 1; min-width: 0; }
         .notif-item-name {
-            font-size: 12.5px;
-            font-weight: 500;
-            color: #111827;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-decoration: none;
-            display: block;
+            font-size: 12.5px; font-weight: 500; color: #111827;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            text-decoration: none; display: block;
         }
         .notif-item-name:hover { color: #111827; }
         .notif-item-meta {
-            font-size: 11px;
-            color: #9CA3AF;
-            margin-top: 3px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex-wrap: wrap;
+            font-size: 11px; color: #9CA3AF; margin-top: 3px;
+            display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
         }
         .notif-status-pill {
-            font-size: 10.5px;
-            font-weight: 500;
-            padding: 1px 7px;
-            border-radius: 999px;
-            white-space: nowrap;
+            font-size: 10.5px; font-weight: 500;
+            padding: 1px 7px; border-radius: 999px; white-space: nowrap;
         }
         .notif-status-pill.danger  { background: #FEE2E2; color: #991B1B; }
         .notif-status-pill.warning { background: #FEF3C7; color: #92400E; }
 
         .notif-dismiss-btn {
-            width: 22px;
-            height: 22px;
+            width: 22px; height: 22px;
             border-radius: 6px;
             border: 1px solid #E5E7EB;
             background: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0;
             color: #9CA3AF;
             transition: background 0.12s, border-color 0.12s, color 0.12s;
-            font-size: 12px;
-            padding: 0;
+            font-size: 12px; padding: 0;
         }
-        .notif-dismiss-btn:hover {
-            background: #F3F4F6;
-            border-color: #D1D5DB;
-            color: #374151;
-        }
+        .notif-dismiss-btn:hover { background: #F3F4F6; border-color: #D1D5DB; color: #374151; }
 
-        /* ── Empty State ──────────────────────────────────── */
-        .notif-empty {
-            padding: 28px 16px;
-            text-align: center;
-            background: #fff;
-        }
+        .notif-empty { padding: 28px 16px; text-align: center; background: #fff; }
         .notif-empty-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: #ECFDF5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px;
-            font-size: 16px;
-            color: #16A34A;
+            width: 36px; height: 36px; border-radius: 10px;
+            background: #ECFDF5; display: flex; align-items: center;
+            justify-content: center; margin: 0 auto 10px;
+            font-size: 16px; color: #16A34A;
         }
-        .notif-empty-title {
-            font-size: 13px;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 4px;
-        }
-        .notif-empty-sub {
-            font-size: 11.5px;
-            color: #9CA3AF;
-        }
+        .notif-empty-title { font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+        .notif-empty-sub   { font-size: 11.5px; color: #9CA3AF; }
 
-        /* ── Loading ──────────────────────────────────────── */
         .notif-loading {
-            padding: 24px 16px;
-            text-align: center;
-            background: #fff;
-            color: #9CA3AF;
-            font-size: 12.5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            padding: 24px 16px; text-align: center; background: #fff;
+            color: #9CA3AF; font-size: 12.5px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .notif-loading .spinner-border {
-            width: 16px;
-            height: 16px;
-            border-width: 2px;
-        }
+        .notif-loading .spinner-border { width: 16px; height: 16px; border-width: 2px; }
 
-        /* ── Footer ───────────────────────────────────────── */
         .notif-dd-footer {
             padding: 10px 16px;
             border-top: 1px solid #F3F4F6;
             background: #FAFAFA;
-            display: flex;
-            justify-content: center;
+            display: flex; justify-content: center;
         }
         .notif-dd-footer a {
-            font-size: 12px;
-            font-weight: 500;
-            color: #6366F1;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            font-size: 12px; font-weight: 500; color: #6366F1;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
         }
         .notif-dd-footer a:hover { color: #4F46E5; }
         .notif-dd-footer a i { font-size: 12px; }
+
+        /* =============================================
+           CUSTOM SWEETALERT2 — Soft & Friendly
+           ============================================= */
+
+        /* Popup container */
+        .swal2-popup {
+            border-radius: 24px !important;
+            padding: 2.2rem 2rem 1.8rem !important;
+            font-family: 'Inter', "Segoe UI", Roboto, Arial, sans-serif !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10) !important;
+        }
+
+        /* Overlay backdrop */
+        .swal2-backdrop-show {
+            backdrop-filter: blur(2px) !important;
+            background: rgba(30, 30, 50, 0.28) !important;
+        }
+
+        /* Icon — bulat dengan warna pastel */
+        .swal2-icon {
+            border-radius: 50% !important;
+            width: 76px !important;
+            height: 76px !important;
+            margin: 0 auto 1.2rem !important;
+        }
+        .swal2-icon.swal2-success {
+            background: #e8faf3 !important;
+            border-color: #a7f3d0 !important;
+        }
+        .swal2-icon.swal2-success .swal2-success-ring {
+            border-color: #a7f3d0 !important;
+        }
+        .swal2-icon.swal2-success [class^='swal2-success-line'] {
+            background-color: #2dbe80 !important;
+        }
+        .swal2-icon.swal2-error {
+            background: #fdecea !important;
+            border-color: #fca5a5 !important;
+        }
+        .swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+            background-color: #f4645f !important;
+        }
+        .swal2-icon.swal2-warning {
+            background: #fef6e4 !important;
+            border-color: #fde68a !important;
+            color: #f5a623 !important;
+        }
+        .swal2-icon.swal2-warning .swal2-icon-content {
+            color: #f5a623 !important;
+        }
+        .swal2-icon.swal2-info {
+            background: #eef1fe !important;
+            border-color: #c7d2fe !important;
+            color: #6c8ef7 !important;
+        }
+        .swal2-icon.swal2-info .swal2-icon-content {
+            color: #6c8ef7 !important;
+        }
+        .swal2-icon.swal2-question {
+            background: #eef1fe !important;
+            border-color: #c7d2fe !important;
+            color: #6c8ef7 !important;
+        }
+        .swal2-icon.swal2-question .swal2-icon-content {
+            color: #6c8ef7 !important;
+        }
+
+        /* Judul */
+        .swal2-title {
+            font-size: 18px !important;
+            font-weight: 600 !important;
+            padding: 0 !important;
+            margin-bottom: 8px !important;
+            color: #111827 !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        /* Teks isi */
+        .swal2-html-container,
+        .swal2-content {
+            font-size: 14px !important;
+            color: #6b7280 !important;
+            line-height: 1.65 !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        /* Tombol confirm */
+        .swal2-confirm {
+            border-radius: 50px !important;
+            padding: 10px 28px !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+            border: none !important;
+            font-family: 'Inter', sans-serif !important;
+            transition: opacity 0.15s, transform 0.1s !important;
+        }
+        .swal2-confirm:hover {
+            opacity: 0.88 !important;
+            transform: translateY(-1px) !important;
+        }
+
+        /* Tombol cancel */
+        .swal2-cancel {
+            border-radius: 50px !important;
+            padding: 10px 28px !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+            background: #f3f4f6 !important;
+            color: #6b7280 !important;
+            border: 1px solid #e5e7eb !important;
+            font-family: 'Inter', sans-serif !important;
+            transition: opacity 0.15s !important;
+        }
+        .swal2-cancel:hover {
+            opacity: 0.80 !important;
+        }
+
+        /* Tombol close (×) */
+        .swal2-close {
+            border-radius: 50% !important;
+            width: 30px !important;
+            height: 30px !important;
+            background: #f3f4f6 !important;
+            border: 1px solid #e5e7eb !important;
+            color: #9ca3af !important;
+            font-size: 16px !important;
+            top: 14px !important;
+            right: 14px !important;
+        }
+        .swal2-close:hover {
+            background: #e5e7eb !important;
+            color: #374151 !important;
+        }
+
+        /* Actions gap */
+        .swal2-actions {
+            gap: 10px !important;
+            margin-top: 0 !important;
+        }
+
+        /* Animasi popup — bounce masuk */
+        .swal2-show {
+            animation: swalBounceIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        @keyframes swalBounceIn {
+            from { opacity: 0; transform: scale(0.88) translateY(10px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .swal2-hide {
+            animation: swalFadeOut 0.15s ease forwards !important;
+        }
+        @keyframes swalFadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to   { opacity: 0; transform: scale(0.94); }
+        }
     </style>
 </head>
 
@@ -554,7 +628,6 @@
             <div class="d-flex justify-content-end align-items-center mb-4 pb-2 border-bottom">
 
                 <?php if (in_groups(['Administrator', 'Petugas Gudang'])): ?>
-                <!-- Notification Bell -->
                 <div class="dropdown me-2" id="notificationDropdownContainer">
                     <button class="notif-bell-btn"
                             type="button"
@@ -569,7 +642,6 @@
 
                     <div class="dropdown-menu dropdown-menu-end notif-dropdown"
                          aria-labelledby="notificationBellBtn">
-
                         <div class="notif-dd-header">
                             <p class="notif-dd-title">
                                 <i class="fa-solid fa-bell"></i>
@@ -577,7 +649,6 @@
                             </p>
                             <span id="notifCountBadge" class="notif-dd-count"></span>
                         </div>
-
                         <div id="notifList" class="notif-list">
                             <div class="notif-loading">
                                 <div class="spinner-border text-primary" role="status">
@@ -586,7 +657,6 @@
                                 Memuat...
                             </div>
                         </div>
-
                         <div class="notif-dd-footer">
                             <a href="<?= site_url('transaksi/monitoring-expired') ?>">
                                 Lihat monitoring expired
@@ -632,9 +702,13 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>
+        if (window.lucide) lucide.createIcons();
+    </script>
+
     <script>
         $(document).ready(function () {
-            // 1. Handlers for .form-delete-swal or forms with onsubmit containing confirm
             $(document).on('submit', '.form-delete-swal, form[onsubmit*="confirm"]', function (e) {
                 e.preventDefault();
                 var form = this;
@@ -644,20 +718,16 @@
                     var m = rawAttr.match(/confirm\((['"])(.*?)\1\)/);
                     text = m ? m[2] : 'Apakah Anda yakin ingin menghapus data ini?';
                 }
-
                 Swal.fire({
-                    title: 'Konfirmasi Hapus',
+                    title: 'Hapus data ini?',
                     text: text,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#EF4444',
+                    confirmButtonColor: '#f4645f',
                     cancelButtonColor: '#6B7280',
                     confirmButtonText: '<i class="fa-solid fa-trash me-1"></i> Ya, Hapus!',
                     cancelButtonText: 'Batal',
-                    customClass: {
-                        confirmButton: 'btn btn-danger rounded-pill px-4',
-                        cancelButton: 'btn btn-secondary rounded-pill px-4 ms-2'
-                    }
+                    showCloseButton: true,
                 }).then(function (result) {
                     if (result.isConfirmed) {
                         if (typeof showOverlay === 'function') showOverlay();
@@ -666,7 +736,6 @@
                 });
             });
 
-            // 2. Handlers for .btn-delete-swal or elements with onclick containing confirm
             $(document).on('click', '.btn-delete-swal, [onclick*="confirm"]', function (e) {
                 e.preventDefault();
                 var $btn = $(this);
@@ -676,20 +745,16 @@
                     var m = rawAttr.match(/confirm\((['"])(.*?)\1\)/);
                     text = m ? m[2] : 'Apakah Anda yakin ingin melanjutkan?';
                 }
-
                 Swal.fire({
                     title: 'Konfirmasi',
                     text: text,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#EF4444',
+                    confirmButtonColor: '#f4645f',
                     cancelButtonColor: '#6B7280',
                     confirmButtonText: 'Ya, Lanjutkan!',
                     cancelButtonText: 'Batal',
-                    customClass: {
-                        confirmButton: 'btn btn-danger rounded-pill px-4',
-                        cancelButton: 'btn btn-secondary rounded-pill px-4 ms-2'
-                    }
+                    showCloseButton: true,
                 }).then(function (result) {
                     if (!result.isConfirmed) return;
                     if (typeof showOverlay === 'function') showOverlay();
@@ -704,7 +769,6 @@
         });
     </script>
 
-    <!-- Navigasi langsung, tanpa transisi, tanpa delay -->
     <script>
         (function () {
             document.addEventListener('click', function (e) {
@@ -720,13 +784,11 @@
                     || a.hasAttribute('data-bs-toggle')
                     || a.classList.contains('btn-delete-swal')
                 ) return;
-
                 window.location.href = href;
             });
         })();
     </script>
 
-    <!-- Teleport modal ke body -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.modal').forEach(function (m) {
@@ -735,27 +797,22 @@
         });
     </script>
 
-    <!-- NProgress JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
-    <!-- Loading System JS -->
     <script src="<?= base_url('assets/js/loading.js') ?>"></script>
 
     <?php if (in_groups(['Administrator', 'Petugas Gudang'])): ?>
     <script>
         $(document).ready(function () {
-
             var $badge      = $('#notifBadge');
             var $countBadge = $('#notifCountBadge');
             var $list       = $('#notifList');
 
-            /* ── Render helpers ─────────────────────────── */
             function renderLoading() {
                 $list.html(
                     '<div class="notif-loading">' +
                     '<div class="spinner-border text-primary" role="status">' +
                     '<span class="visually-hidden">Memuat...</span></div>' +
-                    'Memuat...' +
-                    '</div>'
+                    'Memuat...</div>'
                 );
             }
 
@@ -787,7 +844,6 @@
 
             function renderItems(items) {
                 if (!items || items.length === 0) { renderEmpty(); return; }
-
                 var html  = '';
                 var limit = Math.min(items.length, 10);
                 for (var i = 0; i < limit; i++) {
@@ -821,7 +877,6 @@
                 $list.html(html);
             }
 
-            /* ── Load from API ──────────────────────────── */
             function loadNotifications() {
                 renderLoading();
                 $.ajax({
@@ -831,7 +886,6 @@
                     success: function (res) {
                         var count = res.count || 0;
                         var items = res.items || [];
-
                         if (count > 0) {
                             var hasCritical = items.some(function (i) {
                                 return i.priority === 'CRITICAL' || i.priority === 'HIGH';
@@ -845,7 +899,6 @@
                             $badge.addClass('d-none').removeClass('danger warning');
                             $countBadge.hide();
                         }
-
                         renderItems(items);
                     },
                     error: function () {
@@ -858,7 +911,6 @@
                 });
             }
 
-            /* ── Init & refresh on open ─────────────────── */
             if ('requestIdleCallback' in window) {
                 requestIdleCallback(function () { loadNotifications(); });
             } else {
@@ -869,17 +921,13 @@
                 loadNotifications();
             });
 
-            /* ── Dismiss ────────────────────────────────── */
             $(document).on('click', '.btn-dismiss-notif', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
-
                 var $btn     = $(this);
                 var batchId  = $btn.data('id');
                 var priority = $btn.data('priority');
-
                 $btn.html('<i class="fa-solid fa-spinner fa-spin"></i>');
-
                 $.post(
                     '<?= site_url('api/notifications/read') ?>',
                     {
@@ -889,10 +937,8 @@
                     },
                     function (res) {
                         if (res.status !== 'success') return;
-
                         $btn.closest('.notif-item').slideUp(160, function () {
                             $(this).remove();
-
                             var remaining = $list.find('.notif-item').length;
                             if (remaining === 0) {
                                 renderEmpty();
@@ -900,7 +946,6 @@
                                 $countBadge.hide();
                                 return;
                             }
-
                             var cur = parseInt($badge.text()) || 0;
                             if (cur > 1) {
                                 $badge.text(cur - 1);

@@ -144,16 +144,45 @@
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 14px;
-    overflow: hidden;          /* agar border-radius terapply ke tabel */
+    overflow: hidden;
     box-shadow: 0 6px 18px rgba(15,23,42,.05);
 }
 
 /* ═══════════════════════════════════════════
-   TABLE WRAPPER — horizontal scroll
+   TABLE LOADING SPINNER
 ═══════════════════════════════════════════ */
 .dm-table-wrap {
+    position: relative;
+    min-height: 260px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}
+.dm-table-spinner {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+    z-index: 50;
+    color: #6b7280;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+.dm-table-spinner i {
+    font-size: 1.9rem;
+    color: #2563eb;
+}
+.dm-table-wrap.loaded .dm-table-spinner {
+    opacity: 0;
+    pointer-events: none;
+}
+.dm-table-wrap:not(.loaded) .dataTables_wrapper,
+.dm-table-wrap:not(.loaded) #tabelStokGudang {
+    opacity: 0;
 }
 
 /* ═══════════════════════════════════════════
@@ -186,17 +215,16 @@
 #tabelStokGudang thead th:first-child { border-left: 1px solid #e5e7eb; }
 #tabelStokGudang thead th:last-child  { border-right: 1px solid #e5e7eb; }
 
-/* Sortable header: cursor pointer */
+/* Sortable header */
 #tabelStokGudang thead th.sorting,
 #tabelStokGudang thead th.sorting_asc,
 #tabelStokGudang thead th.sorting_desc {
     cursor: pointer;
-    padding-right: 26px;   /* ruang untuk ikon sort */
+    padding-right: 26px;
     position: relative;
 }
 
-/* ── SORT ICONS — ganti bawaan DataTables ── */
-/* Hapus bawaan DataTables */
+/* ── SORT ICONS ── */
 #tabelStokGudang thead th.sorting::after,
 #tabelStokGudang thead th.sorting_asc::after,
 #tabelStokGudang thead th.sorting_desc::after,
@@ -205,8 +233,6 @@
 #tabelStokGudang thead th.sorting_desc::before {
     display: none !important;
 }
-
-/* Wrapper ikon — dua segitiga ditumpuk */
 #tabelStokGudang thead th.sorting .dt-sort-icon,
 #tabelStokGudang thead th.sorting_asc .dt-sort-icon,
 #tabelStokGudang thead th.sorting_desc .dt-sort-icon {
@@ -219,47 +245,26 @@
     gap: 2px;
     align-items: center;
 }
-
-/* Segitiga atas (ASC) */
 #tabelStokGudang thead th .dt-sort-icon::before {
     content: '';
     display: block;
-    width: 0;
-    height: 0;
+    width: 0; height: 0;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
-    border-bottom: 5px solid #cbd5e1;   /* abu default */
+    border-bottom: 5px solid #cbd5e1;
 }
-/* Segitiga bawah (DESC) */
 #tabelStokGudang thead th .dt-sort-icon::after {
     content: '';
     display: block;
-    width: 0;
-    height: 0;
+    width: 0; height: 0;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
-    border-top: 5px solid #cbd5e1;   /* abu default */
+    border-top: 5px solid #cbd5e1;
 }
-
-/* Aktif ASC → panah atas biru, bawah pudar */
-#tabelStokGudang thead th.sorting_asc .dt-sort-icon::before {
-    border-bottom-color: #2563eb;
-}
-#tabelStokGudang thead th.sorting_asc .dt-sort-icon::after {
-    border-top-color: #cbd5e1;
-    opacity: .35;
-}
-
-/* Aktif DESC → panah bawah biru, atas pudar */
-#tabelStokGudang thead th.sorting_desc .dt-sort-icon::after {
-    border-top-color: #2563eb;
-}
-#tabelStokGudang thead th.sorting_desc .dt-sort-icon::before {
-    border-bottom-color: #cbd5e1;
-    opacity: .35;
-}
-
-/* Hover efek ringan di header sortable */
+#tabelStokGudang thead th.sorting_asc .dt-sort-icon::before  { border-bottom-color: #2563eb; }
+#tabelStokGudang thead th.sorting_asc .dt-sort-icon::after   { border-top-color: #cbd5e1; opacity: .35; }
+#tabelStokGudang thead th.sorting_desc .dt-sort-icon::after  { border-top-color: #2563eb; }
+#tabelStokGudang thead th.sorting_desc .dt-sort-icon::before { border-bottom-color: #cbd5e1; opacity: .35; }
 #tabelStokGudang thead th.sorting:hover,
 #tabelStokGudang thead th.sorting_asc:hover,
 #tabelStokGudang thead th.sorting_desc:hover {
@@ -267,24 +272,11 @@
     color: #334155;
 }
 
-/* ── BODY ROWS — zebra striping ── */
-#tabelStokGudang tbody tr:nth-child(even) td {
-    background: #f8fafc;
-}
-#tabelStokGudang tbody tr:nth-child(odd) td {
-    background: #ffffff;
-}
-
-/* Hover row */
-#tabelStokGudang tbody tr:hover td {
-    background: #eff6ff !important;
-    transition: background .08s;
-}
-
-/* Selected row (DataTables) */
-#tabelStokGudang tbody tr.selected td {
-    background: #dbeafe !important;
-}
+/* ── BODY ROWS ── */
+#tabelStokGudang tbody tr:nth-child(even) td { background: #f8fafc; }
+#tabelStokGudang tbody tr:nth-child(odd)  td { background: #ffffff; }
+#tabelStokGudang tbody tr:hover td { background: #eff6ff !important; transition: background .08s; }
+#tabelStokGudang tbody tr.selected td { background: #dbeafe !important; }
 
 /* ── CELLS ── */
 #tabelStokGudang tbody td {
@@ -292,11 +284,9 @@
     vertical-align: middle;
     color: #1e293b;
     border: none;
-    border-bottom: 1px solid #f1f5f9;   /* garis pemisah tipis tiap baris */
+    border-bottom: 1px solid #f1f5f9;
 }
-#tabelStokGudang tbody tr:last-child td {
-    border-bottom: none;
-}
+#tabelStokGudang tbody tr:last-child td { border-bottom: none; }
 
 /* ── KOLOM ALIGNMENT ── */
 #tabelStokGudang .col-center { text-align: center; }
@@ -382,7 +372,7 @@
 .wh-item-sub  { font-size: 11px; color: #94a3b8; margin-top: 1px; }
 
 /* ═══════════════════════════════════════════
-   STOCK & BERAT BAR (3-LAYER REDESIGN)
+   STOCK & BERAT BAR
 ═══════════════════════════════════════════ */
 .wh-stock-wrap {
     min-width: 140px;
@@ -399,23 +389,11 @@
     font-size: 13px;
     line-height: 1.2;
 }
-.wh-stok-val {
-    font-weight: 700;
-    color: #0f172a;
-}
-.wh-stok-sat {
-    font-weight: 500;
-    font-size: 12px;
-    color: #64748b;
-}
-.wh-stok-max {
-    font-size: 12px;
-    color: #94a3b8;
-    font-weight: 400;
-}
+.wh-stok-val  { font-weight: 700; color: #0f172a; }
+.wh-stok-sat  { font-weight: 500; font-size: 12px; color: #64748b; }
+.wh-stok-max  { font-size: 12px; color: #94a3b8; font-weight: 400; }
 .wh-bar-track {
-    width: 100%;
-    height: 7px;
+    width: 100%; height: 7px;
     background: #e2e8f0;
     border-radius: 999px;
     overflow: hidden;
@@ -429,7 +407,6 @@
 .wh-bar-fill.green { background: #22c55e; }
 .wh-bar-fill.amber { background: #f59e0b; }
 .wh-bar-fill.red   { background: #ef4444; }
-
 .wh-berat-row {
     display: flex;
     align-items: center;
@@ -437,10 +414,7 @@
     gap: 6px;
     font-size: 12px;
 }
-.wh-berat-val {
-    font-weight: 600;
-    color: #334155;
-}
+.wh-berat-val { font-weight: 600; color: #334155; }
 .wh-pill {
     display: inline-flex;
     align-items: center;
@@ -452,21 +426,9 @@
     line-height: 1.3;
     white-space: nowrap;
 }
-.wh-pill.pill-green {
-    background: #dcfce7;
-    color: #15803d;
-    border: 1px solid #bbf7d0;
-}
-.wh-pill.pill-amber {
-    background: #fef3c7;
-    color: #b45309;
-    border: 1px solid #fde68a;
-}
-.wh-pill.pill-red {
-    background: #fee2e2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
-}
+.wh-pill.pill-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.wh-pill.pill-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.wh-pill.pill-red   { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 
 /* ═══════════════════════════════════════════
    ACTION BUTTONS
@@ -478,8 +440,7 @@
     gap: 5px;
 }
 .dm-btn-action {
-    width: 30px;
-    height: 30px;
+    width: 30px; height: 30px;
     border-radius: 7px;
     display: inline-flex;
     align-items: center;
@@ -492,37 +453,32 @@
     text-decoration: none;
     flex-shrink: 0;
 }
-.dm-btn-action:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,.10);
-}
+.dm-btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.10); }
 .dm-btn-action.view { color: #0284c7; border-color: #bae6fd; }
 .dm-btn-action.view:hover { background: #e0f2fe; }
 
 /* ═══════════════════════════════════════════
    DATATABLES OVERRIDES
 ═══════════════════════════════════════════ */
-/* Hapus outline bawaan DT saat klik header */
 #tabelStokGudang thead th:focus { outline: none; }
+.dataTables_wrapper .dataTables_paginate .paginate_button { border-radius: 7px !important; font-size: 12.5px !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #2563eb !important; border-color: #2563eb !important; color: #fff !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current) { background: #f1f5f9 !important; border-color: #e2e8f0 !important; color: #1e293b !important; }
+.dataTables_wrapper .dataTables_info { font-size: 12px; color: #64748b; }
 
-/* Paginasi & info */
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-    border-radius: 7px !important;
-    font-size: 12.5px !important;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button.current {
-    background: #2563eb !important;
-    border-color: #2563eb !important;
-    color: #fff !important;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current) {
-    background: #f1f5f9 !important;
-    border-color: #e2e8f0 !important;
-    color: #1e293b !important;
-}
-.dataTables_wrapper .dataTables_info {
-    font-size: 12px;
-    color: #64748b;
+/* ── Processing Overlay ── */
+div.dataTables_wrapper { position: relative; }
+div.dataTables_wrapper div.dataTables_processing {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,.96);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 28px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1);
+    z-index: 10;
+    margin: 0;
 }
 
 /* ═══════════════════════════════════════════
@@ -593,7 +549,8 @@
                     <button type="submit" class="dm-btn-filter flex-fill">
                         <i class="fa-solid fa-filter"></i> Terapkan
                     </button>
-                    <button type="button" id="btnResetFilter" class="dm-btn-reset flex-shrink-0" style="width:36px;height:36px;padding:0;min-width:unset;">
+                    <button type="button" id="btnResetFilter" class="dm-btn-reset flex-shrink-0"
+                            style="width:36px;height:36px;padding:0;min-width:unset;">
                         <i class="fa-solid fa-rotate-left"></i>
                     </button>
                 </div>
@@ -604,6 +561,10 @@
     <!-- Data Card -->
     <div class="dm-card">
         <div class="dm-table-wrap">
+            <div class="dm-table-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <div>Memuat data stok gudang...</div>
+            </div>
             <table id="tabelStokGudang" class="table mb-0" style="width:100%;">
                 <thead>
                     <tr>
@@ -644,9 +605,7 @@
                             Kemasan Awal
                             <span class="dt-sort-icon" aria-hidden="true"></span>
                         </th>
-                        <th style="min-width:130px;">
-                            Stok &amp; Berat
-                        </th>
+                        <th style="min-width:130px;">Stok &amp; Berat</th>
                         <th style="min-width:200px;">Catatan</th>
                         <th class="col-center text-center" style="width:60px;">Aksi</th>
                     </tr>
@@ -687,8 +646,10 @@ $(document).ready(function () {
             var json = settings.json;
             if (json && json[csrfName]) csrfHash = json[csrfName];
 
+            // Spinner hilang setelah data selesai dimuat
+            $('#tabelStokGudang').closest('.dm-table-wrap').addClass('loaded');
+
             // Injeksi ulang .dt-sort-icon setelah setiap draw
-            // (DataTables kadang rebuild thead)
             injectSortIcons();
         },
         language: {
@@ -708,7 +669,7 @@ $(document).ready(function () {
                 previous : 'Sebelumnya'
             }
         },
-        order      : [[4, 'asc']],   // default: Kedaluwarsa ASC
+        order      : [[4, 'asc']],
         autoWidth  : false,
         columnDefs : [
             { orderable: false, targets: [0, 10, 11, 12] },
@@ -716,7 +677,7 @@ $(document).ready(function () {
             { className: 'col-right text-end',     targets: [8] }
         ],
         dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 px-3 pt-3"l>'
-           + '<"dm-table-wrap"rt>'
+           + 'rt'
            + '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 px-3 pb-3"ip>'
     });
 
@@ -734,15 +695,17 @@ $(document).ready(function () {
         injectSortIcons();
     });
 
-    // Apply filters
+    // Apply filters — spinner muncul lagi saat filter diubah
     $('#formFilterStok').on('submit', function (e) {
         e.preventDefault();
+        $('#tabelStokGudang').closest('.dm-table-wrap').removeClass('loaded');
         table.ajax.reload();
     });
 
     // Reset filters
     $('#btnResetFilter').on('click', function () {
         $('#formFilterStok')[0].reset();
+        $('#tabelStokGudang').closest('.dm-table-wrap').removeClass('loaded');
         table.ajax.reload();
     });
 

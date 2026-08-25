@@ -23,7 +23,6 @@ class BatchModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
-    // --- DataTables Variables ---
     protected $column_order  = [null, null, 'donatur.nama_donatur', 'batch.kategori', 'batch.tanggal_kedaluwarsa', 'umur_stok_hari', 'barang.nama_barang', null, null, null, 'batch.stok_saat_ini', 'barang_masuk.keterangan', null];
     protected $column_search = ['batch.nama_barang', 'barang.nama_barang', 'donatur.nama_donatur', 'batch.kategori', 'barang_masuk.keterangan'];
     protected $order         = ['batch.tanggal_kedaluwarsa' => 'ASC'];
@@ -56,7 +55,6 @@ class BatchModel extends Model
         $builder->join('donatur', 'donatur.id = barang_masuk.id_donatur', 'left');
         $builder->where('batch.stok_saat_ini >', 0);
 
-        // Custom Filters
         if (!empty($postData['kategori'])) {
             $builder->where('batch.kategori', $postData['kategori']);
         }
@@ -76,7 +74,6 @@ class BatchModel extends Model
             }
         }
 
-        // DataTables Search
         $i = 0;
         if (isset($postData['search']['value']) && $postData['search']['value']) {
             foreach ($this->column_search as $item) {
@@ -126,5 +123,29 @@ class BatchModel extends Model
         $builder = $this->db->table($this->table)->where('stok_saat_ini >', 0);
         return $builder->countAllResults();
     }
-}
 
+    public function getRiwayatPenyaluranByBarang(int $idBarang): array
+    {
+        return $this->db->table('detail_barang_keluar dkl')
+            ->select('
+                bk.id AS id_barang_keluar,
+                bk.nomor_transaksi,
+                bk.tanggal_keluar,
+                bk.tujuan_penyaluran,
+                bk.jenis_penyaluran,
+                bk.penerima_relawan,
+                bk.unit_internal,
+                b.nomor_batch,
+                b.tanggal_kedaluwarsa,
+                b.satuan,
+                b.bisa_dipecah,
+                dkl.jumlah_keluar
+            ')
+            ->join('batch b', 'b.id = dkl.id_batch')
+            ->join('barang_keluar bk', 'bk.id = dkl.id_barang_keluar')
+            ->where('b.id_barang', $idBarang)
+            ->orderBy('bk.tanggal_keluar', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+}

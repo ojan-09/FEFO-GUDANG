@@ -102,11 +102,47 @@
     .wh-btn-danger:hover { background: #B91C1C; color: #fff; }
     .wh-btn-danger:active { transform: scale(0.98); }
 
-    /* ── Table ── */
+    /* ── Table Card ── */
     .wh-table-card {
         background: var(--wh-card); border: 1px solid var(--wh-border);
         border-radius: 16px; padding: 8px 8px 4px 8px; overflow: hidden;
     }
+
+    /* ── Table Loading Spinner ── */
+    .dm-table-wrap {
+        position: relative;
+        min-height: 260px;
+    }
+    .dm-table-spinner {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: var(--wh-card);
+        z-index: 50;
+        color: var(--wh-text-soft);
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: opacity 0.3s ease;
+    }
+    .dm-table-spinner i {
+        font-size: 1.9rem;
+        color: var(--wh-primary);
+    }
+    .dm-table-wrap.loaded .dm-table-spinner {
+        opacity: 0;
+        pointer-events: none;
+    }
+    .dm-table-wrap:not(.loaded) .dataTables_wrapper,
+    .dm-table-wrap:not(.loaded) #tableExpired {
+        opacity: 0;
+    }
+
+    /* ── Table ── */
     #tableExpired { border-collapse: separate; border-spacing: 0; }
     #tableExpired thead th {
         background: var(--wh-bg); color: var(--wh-text-soft);
@@ -122,7 +158,6 @@
     #tableExpired, #tableExpired th, #tableExpired td {
         border-left: none; border-right: none;
     }
-    .wh-table-card { position: relative; min-height: 300px; }
     #tableExpired tbody tr { transition: background 120ms ease; }
     #tableExpired tbody tr:hover { background: #F3F4F6; }
 
@@ -175,6 +210,21 @@
     }
     .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current) {
         background: var(--wh-dark-soft) !important; color: var(--wh-text) !important;
+    }
+
+    /* ── Processing Overlay ── */
+    div.dataTables_wrapper { position: relative; }
+    div.dataTables_wrapper div.dataTables_processing {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid var(--wh-border);
+        border-radius: 12px;
+        padding: 16px 28px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1);
+        z-index: 10;
+        margin: 0;
     }
 
     /* ── Mobile ── */
@@ -234,22 +284,28 @@
 
     <!-- Table -->
     <div class="wh-table-card">
-        <table class="table table-hover align-middle mb-0 w-100" id="tableExpired">
-            <thead>
-                <tr>
-                    <th width="30" class="text-center">No</th>
-                    <th>Nomor Batch</th>
-                    <th style="min-width:150px;">Nama Barang</th>
-                    <th>Kategori</th>
-                    <th class="text-center">Stok Saat Ini</th>
-                    <th class="text-center">Tgl Kedaluwarsa</th>
-                    <th class="text-center">Sisa Waktu</th>
-                    <th class="text-center">Prioritas</th>
-                    <th class="text-end">Aksi</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="dm-table-wrap">
+            <div class="dm-table-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <div>Memuat data monitoring expired...</div>
+            </div>
+            <table class="table table-hover align-middle mb-0 w-100" id="tableExpired">
+                <thead>
+                    <tr>
+                        <th width="30" class="text-center">No</th>
+                        <th>Nomor Batch</th>
+                        <th style="min-width:150px;">Nama Barang</th>
+                        <th>Kategori</th>
+                        <th class="text-center">Stok Saat Ini</th>
+                        <th class="text-center">Tgl Kedaluwarsa</th>
+                        <th class="text-center">Sisa Waktu</th>
+                        <th class="text-center">Prioritas</th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
 </div>
@@ -271,6 +327,10 @@ $(document).ready(function () {
                 d.<?= csrf_token() ?> = $('meta[name="csrf-token"]').attr('content');
             }
         },
+        drawCallback: function () {
+            // Spinner hilang setelah data selesai dimuat
+            $('#tableExpired').closest('.dm-table-wrap').addClass('loaded');
+        },
         columns: [
             { orderable: false, className: "text-center" },
             null,
@@ -289,7 +349,9 @@ $(document).ready(function () {
         }
     });
 
+    // Spinner muncul lagi saat filter berubah
     $('#filterPriority, #filterKategori').on('change', function () {
+        $('#tableExpired').closest('.dm-table-wrap').removeClass('loaded');
         table.draw();
     });
 

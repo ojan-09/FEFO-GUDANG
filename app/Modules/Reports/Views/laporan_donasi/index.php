@@ -366,7 +366,7 @@
                 <tr>
                     <th width="30" class="text-center">No</th>
                     <th class="text-center">Tanggal Masuk</th>
-                    <th class="text-center">Nomor Donasi</th>
+                    <th class="text-center" style="min-width:185px;">Nomor Donasi</th>
                     <th style="min-width:150px;">Donatur</th>
                     <th style="min-width:150px;">Nama Barang</th>
                     <th>Kategori</th>
@@ -461,7 +461,7 @@ $(document).ready(function () {
         columns: [
             { data: 'no', orderable: false, className: 'text-center' },
             { data: 'tanggal_masuk', className: 'text-center' },
-            { data: 'nomor_transaksi', className: 'text-center fw-medium' },
+            { data: 'nomor_transaksi', className: 'text-center fw-medium text-nowrap', width: '185px' },
             { data: 'nama_donatur' },
             { data: 'nama_barang' },
             { data: 'kategori_batch' },

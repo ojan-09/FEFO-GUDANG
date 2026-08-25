@@ -75,6 +75,42 @@
 }
 
 /* ═══════════════════════════════════════════════
+   TABLE LOADING SPINNER
+═══════════════════════════════════════════════ */
+.dm-table-wrap {
+    position: relative;
+    min-height: 260px;
+}
+.dm-table-spinner {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+    z-index: 50;
+    color: #6b7280;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: opacity 0.3s ease;
+}
+.dm-table-spinner i {
+    font-size: 1.9rem;
+    color: #2563eb;
+}
+.dm-table-wrap.loaded .dm-table-spinner {
+    opacity: 0;
+    pointer-events: none;
+}
+.dm-table-wrap:not(.loaded) .dataTables_wrapper,
+.dm-table-wrap:not(.loaded) #tablePenyesuaian {
+    opacity: 0;
+}
+
+/* ═══════════════════════════════════════════════
    DATATABLE OVERRIDES
 ═══════════════════════════════════════════════ */
 .dataTables_wrapper .dataTables_length,
@@ -130,6 +166,21 @@
 .dataTables_wrapper .dataTables_paginate .paginate_button:not(.disabled):hover .page-link { background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important; }
 .dataTables_wrapper .dataTables_paginate .paginate_button.disabled .page-link { opacity: .45; cursor: default; }
 
+/* ── Processing Overlay ── */
+div.dataTables_wrapper { position: relative; }
+div.dataTables_wrapper div.dataTables_processing {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 28px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1);
+    z-index: 10;
+    margin: 0;
+}
+
 /* ═══════════════════════════════════════════════
    TABLE
 ═══════════════════════════════════════════════ */
@@ -169,14 +220,14 @@
 }
 
 /* column widths */
-#tablePenyesuaian .col-no     { width: 50px;  text-align: center; }
-#tablePenyesuaian .col-nomor  { width: 190px; }
-#tablePenyesuaian .col-tgl    { width: 130px; }
-#tablePenyesuaian .col-jenis  { width: 150px; }
-#tablePenyesuaian .col-ket    { /* auto */ }
-#tablePenyesuaian .col-item   { width: 100px; text-align: center; }
-#tablePenyesuaian .col-petugas{ width: 140px; }
-#tablePenyesuaian .col-aksi   { width: 90px;  text-align: center; }
+#tablePenyesuaian .col-no      { width: 50px;  text-align: center; }
+#tablePenyesuaian .col-nomor   { width: 190px; }
+#tablePenyesuaian .col-tgl     { width: 130px; }
+#tablePenyesuaian .col-jenis   { width: 150px; }
+#tablePenyesuaian .col-ket     { /* auto */ }
+#tablePenyesuaian .col-item    { width: 100px; text-align: center; }
+#tablePenyesuaian .col-petugas { width: 140px; }
+#tablePenyesuaian .col-aksi    { width: 90px;  text-align: center; }
 
 /* ═══════════════════════════════════════════════
    BADGES — JENIS PENYESUAIAN
@@ -269,54 +320,59 @@
 
 <div class="dm-page">
 
-<!-- ── Topbar ── -->
-<div class="dm-topbar">
-    <div>
-        <h1 class="dm-topbar__title">
-            <i class="fa-solid fa-scale-balanced"></i><?= esc($title) ?>
-        </h1>
-        <p class="dm-topbar__sub">Histori penyesuaian stok di luar penyaluran — rusak, hilang, opname &amp; koreksi</p>
+    <!-- ── Topbar ── -->
+    <div class="dm-topbar">
+        <div>
+            <h1 class="dm-topbar__title">
+                <i class="fa-solid fa-scale-balanced"></i><?= esc($title) ?>
+            </h1>
+            <p class="dm-topbar__sub">Histori penyesuaian stok di luar penyaluran — rusak, hilang, opname &amp; koreksi</p>
+        </div>
+        <a href="<?= site_url('transaksi/penyesuaian/create') ?>" class="btn btn-primary dm-btn-add">
+            <i class="fa-solid fa-plus"></i> Tambah Penyesuaian
+        </a>
     </div>
-    <a href="<?= site_url('transaksi/penyesuaian/create') ?>" class="btn btn-primary dm-btn-add">
-        <i class="fa-solid fa-plus"></i> Tambah Penyesuaian
-    </a>
-</div>
 
-<!-- ── Flash Messages ── -->
-<?php if (session()->getFlashdata('success')) : ?>
-    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
-        <i class="fa-solid fa-circle-check me-2"></i><?= session()->getFlashdata('success') ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- ── Flash Messages ── -->
+    <?php if (session()->getFlashdata('success')) : ?>
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
+            <i class="fa-solid fa-circle-check me-2"></i><?= session()->getFlashdata('success') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+    <?php if (session()->getFlashdata('error')) : ?>
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i><?= session()->getFlashdata('error') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- ── Data Card ── -->
+    <div class="dm-card">
+        <div class="dm-table-wrap">
+            <div class="dm-table-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <div>Memuat data penyesuaian...</div>
+            </div>
+            <table class="table mb-0" id="tablePenyesuaian" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th class="col-no text-center">No</th>
+                        <th class="col-nomor">Nomor Penyesuaian</th>
+                        <th class="col-tgl">Tanggal</th>
+                        <th class="col-jenis">Jenis</th>
+                        <th class="col-ket">Keterangan</th>
+                        <th class="col-item text-center">Total Item</th>
+                        <th class="col-petugas">Petugas</th>
+                        <th class="col-aksi text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- DataTables will populate this tbody via AJAX -->
+                </tbody>
+            </table>
+        </div>
     </div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')) : ?>
-    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-3" role="alert" style="font-size:13px;">
-        <i class="fa-solid fa-triangle-exclamation me-2"></i><?= session()->getFlashdata('error') ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-<?php endif; ?>
-
-<!-- ── Data Card ── -->
-<div class="dm-card">
-    <table class="table mb-0" id="tablePenyesuaian" style="width: 100%;">
-            <thead>
-                <tr>
-                    <th class="col-no text-center">No</th>
-                    <th class="col-nomor">Nomor Penyesuaian</th>
-                    <th class="col-tgl">Tanggal</th>
-                    <th class="col-jenis">Jenis</th>
-                    <th class="col-ket">Keterangan</th>
-                    <th class="col-item text-center">Total Item</th>
-                    <th class="col-petugas">Petugas</th>
-                    <th class="col-aksi text-center">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- DataTables will populate this tbody via AJAX -->
-            </tbody>
-        </table>
-
-</div>
 
 </div><!-- /.dm-page -->
 
@@ -343,31 +399,38 @@ $(document).ready(function () {
             if (response && response[csrfName]) {
                 csrfHash = response[csrfName];
             }
+            // Spinner hilang setelah data selesai dimuat
+            $('#tablePenyesuaian').closest('.dm-table-wrap').addClass('loaded');
         },
         language: {
-            emptyTable: "Tidak ada data",
-            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-            infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
-            infoFiltered: "(disaring dari _MAX_ total data)",
-            lengthMenu: "Tampilkan _MENU_ data",
+            emptyTable:     "Tidak ada data",
+            info:           "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty:      "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered:   "(disaring dari _MAX_ total data)",
+            lengthMenu:     "Tampilkan _MENU_ data",
             loadingRecords: "Memuat...",
-            processing: "Memproses...",
-            search: "Cari:",
-            zeroRecords: "Tidak ditemukan data yang sesuai",
-            paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+            processing:     "Memproses...",
+            search:         "Cari:",
+            zeroRecords:    "Tidak ditemukan data yang sesuai",
+            paginate: {
+                first:    "Pertama",
+                last:     "Terakhir",
+                next:     "Selanjutnya",
+                previous: "Sebelumnya"
+            }
         },
-        order: [[2, 'desc']], // Default order by Tanggal DESC
+        order: [[2, 'desc']],
         autoWidth: false,
         columnDefs: [
             { orderable: false, targets: [0, 7] },
-            { className: "col-no text-center", targets: [0] },
-            { className: "col-nomor", targets: [1] },
-            { className: "col-tgl", targets: [2] },
-            { className: "col-jenis", targets: [3] },
-            { className: "col-ket", targets: [4] },
-            { className: "col-item text-center", targets: [5] },
-            { className: "col-petugas", targets: [6] },
-            { className: "col-aksi text-center", targets: [7] }
+            { className: "col-no text-center",   targets: [0] },
+            { className: "col-nomor",             targets: [1] },
+            { className: "col-tgl",               targets: [2] },
+            { className: "col-jenis",             targets: [3] },
+            { className: "col-ket",               targets: [4] },
+            { className: "col-item text-center",  targets: [5] },
+            { className: "col-petugas",           targets: [6] },
+            { className: "col-aksi text-center",  targets: [7] }
         ],
         dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
     });

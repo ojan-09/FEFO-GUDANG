@@ -17,9 +17,6 @@ class StokGudang extends BaseController
         $this->barangModel = new BarangModel();
     }
 
-    /**
-     * Tampilkan halaman Monitoring Stok Gudang
-     */
     public function index()
     {
         helper('format');
@@ -38,9 +35,6 @@ class StokGudang extends BaseController
         return view('App\Modules\Transactions\Views\stok_gudang\index', $data);
     }
 
-    /**
-     * Tampilkan daftar lengkap batch untuk suatu barang (Read-Only)
-     */
     public function detail($idBarang)
     {
         $barang = $this->barangModel->find($idBarang);
@@ -68,25 +62,25 @@ class StokGudang extends BaseController
                 $diff        = $today->diff($expiredDate);
                 $days        = (int) $diff->format('%R%a');
 
-                if ($days < 0)      $batchStatus = 'Expired';
+                if ($days < 0)       $batchStatus = 'Expired';
                 elseif ($days <= 30) $batchStatus = 'Hampir Expired';
             }
 
             $batch['status_dinamis'] = $batchStatus;
         }
 
+        $riwayatPenyaluran = $this->batchModel->getRiwayatPenyaluranByBarang((int) $idBarang);
+
         $data = [
-            'title'   => 'Detail Stok: ' . $barang['nama_barang'],
-            'barang'  => $barang,
-            'batches' => $batches,
+            'title'              => 'Detail Stok: ' . $barang['nama_barang'],
+            'barang'             => $barang,
+            'batches'            => $batches,
+            'riwayat_penyaluran' => $riwayatPenyaluran,
         ];
 
         return view('App\Modules\Transactions\Views\stok_gudang\detail', $data);
     }
 
-    /**
-     * AJAX endpoint untuk DataTables server-side
-     */
     public function ajaxData()
     {
         if (!$this->request->isAJAX()) {
@@ -105,7 +99,6 @@ class StokGudang extends BaseController
             $no++;
             $row = [];
 
-            // ── STATUS & KEDALUWARSA ──────────────────────────────────────
             $status      = 'Aman';
             $diffDays    = 0;
             $expiredHtml = '-';
@@ -137,7 +130,6 @@ class StokGudang extends BaseController
                 }
             }
 
-            // ── UMUR STOK (STOCK AGING) ───────────────────────────────────
             $umurStokHari = 0;
             if (isset($stok['umur_stok_hari']) && $stok['umur_stok_hari'] !== null) {
                 $umurStokHari = max(0, (int) $stok['umur_stok_hari']);
@@ -161,7 +153,6 @@ class StokGudang extends BaseController
                           . '<i class="fa-solid ' . $ageBadgeIcon . ' me-1"></i>'
                           . $umurStokHari . ' Hari</span>';
 
-            // ── HITUNG BERAT & KEMASAN ────────────────────────────────────
             $bisaDipecah    = (int)   $stok['bisa_dipecah'];
             $beratPerSatuan = (float) $stok['berat_per_satuan'];
             $stokAktual     = (float) $stok['stok_saat_ini'];
@@ -187,7 +178,6 @@ class StokGudang extends BaseController
                 $satuanStok  = esc($stok['satuan']);
             }
 
-            // ── PROGRESS BAR PERCENTAGE ───────────────────────────────────
             $pctStok   = null;
             $barColor  = 'green';
             $pillClass = 'pill-green';
@@ -202,7 +192,6 @@ class StokGudang extends BaseController
 
             if ($maxAwal !== null && $maxAwal > 0) {
                 $pctStok = max(0, min(100, ($stokAktual / $maxAwal) * 100));
-
                 if ($pctStok < 30) {
                     $barColor  = 'red';
                     $pillClass = 'pill-red';
@@ -217,10 +206,8 @@ class StokGudang extends BaseController
                     $beratAwalKg = $stok['jumlah_ctn'] * $beratPerSatuan;
                     $satB = strtolower(trim($stok['satuan_berat'] ?? ''));
                     if (in_array($satB, ['gram', 'g', 'gr', 'ml'])) $beratAwalKg /= 1000;
-
                     if ($beratAwalKg > 0) {
                         $pctStok = max(0, min(100, ($totalBerat / $beratAwalKg) * 100));
-
                         if ($pctStok < 30) {
                             $barColor  = 'red';
                             $pillClass = 'pill-red';
@@ -236,7 +223,6 @@ class StokGudang extends BaseController
 
             $pctRound = $pctStok !== null ? round($pctStok) : 0;
 
-            // ── STATUS BADGE ──────────────────────────────────────────────
             $badgeClass = 'default';
             $badgeIcon  = 'fa-circle';
             if ($status === 'Aman') {
@@ -250,82 +236,46 @@ class StokGudang extends BaseController
                 $badgeIcon  = 'fa-ban';
             }
 
-            // ── BUILD ROW ─────────────────────────────────────────────────
-
-            // [0] No
             $row[] = '<div class="text-center text-secondary">' . $no . '</div>';
-
-            // [1] Status
-            $row[] = '<div class="text-center">'
-                   . '<span class="wh-badge ' . $badgeClass . '">'
-                   . '<i class="fa-solid ' . $badgeIcon . '"></i>' . esc($status)
-                   . '</span></div>';
-
-            // [2] Donatur
+            $row[] = '<div class="text-center"><span class="wh-badge ' . $badgeClass . '"><i class="fa-solid ' . $badgeIcon . '"></i>' . esc($status) . '</span></div>';
             $row[] = '<div style="color:#475569;">' . esc($stok['donatur'] ?: '-') . '</div>';
-
-            // [3] Kategori
             $row[] = '<div style="color:#475569;">' . esc($stok['kategori']) . '</div>';
-
-            // [4] Kedaluwarsa
             $row[] = '<div class="text-center">' . $expiredHtml . '</div>';
-
-            // [5] Umur Stok
             $row[] = '<div class="text-center">' . $umurStokHtml . '</div>';
-
-            // [6] Nama Barang
             $row[] = '<span class="fw-semibold" style="color:#0f172a;">' . esc($stok['nama_barang']) . '</span>';
 
-            // [7] Kemasan / Satuan
             $satDisplay = esc($stok['satuan']);
             if ($bisaDipecah === 1) $satDisplay .= '<br><small class="text-success">(Repack)</small>';
             $row[] = '<div class="text-center" style="color:#475569;">' . $satDisplay . '</div>';
 
-            // [8] Berat per Kemasan
             $beratPerSatuanHtml = $beratPerSatuan > 0
                 ? number_format($beratPerSatuan, 2, ',', '.') . ' ' . esc($stok['satuan_berat'])
                 : '-';
             $row[] = '<div class="text-end" style="color:#475569;">' . $beratPerSatuanHtml . '</div>';
-
-            // [9] Kemasan Awal
             $row[] = '<div class="text-center" style="color:#475569;">' . $kemasanAwal . '</div>';
 
-            // [10] Stok & Berat — redesign (3 Lapisan)
             $totalBeratHtml = $totalBerat > 0 ? format_berat($totalBerat, 'Kg') : '-';
-
             $stockHtml  = '<div class="wh-stock-wrap">';
-
-            // Lapisan 1: Angka / Max (misal: 120 Karung / 200)
             $stockHtml .= '<div class="wh-stok-row">';
             $stockHtml .= '<span class="wh-stok-val">' . $stokSaatIni . ' <span class="wh-stok-sat">' . $satuanStok . '</span></span>';
             if ($maxAwal !== null && $maxAwal > 0) {
                 $stockHtml .= '<span class="wh-stok-max">/ ' . number_format($maxAwal, 0, ',', '.') . '</span>';
             }
             $stockHtml .= '</div>';
-
-            // Lapisan 2: Progress Bar
             if ($pctStok !== null) {
-                $stockHtml .= '<div class="wh-bar-track">'
-                            . '<div class="wh-bar-fill ' . $barColor . '" style="width:' . $pctRound . '%"></div>'
-                            . '</div>';
+                $stockHtml .= '<div class="wh-bar-track"><div class="wh-bar-fill ' . $barColor . '" style="width:' . $pctRound . '%"></div></div>';
             }
-
-            // Lapisan 3: Total Berat + Pill Persentase
             $stockHtml .= '<div class="wh-berat-row">';
             $stockHtml .= '<span class="wh-berat-val">' . $totalBeratHtml . '</span>';
             if ($pctStok !== null) {
-                $stockHtml .= '<span class="wh-pill ' . $pillClass . '">'
-                            . '<i class="fa-solid ' . $pillIcon . ' me-1"></i>'
-                            . $pctRound . '%'
-                            . '</span>';
+                $stockHtml .= '<span class="wh-pill ' . $pillClass . '"><i class="fa-solid ' . $pillIcon . ' me-1"></i>' . $pctRound . '%</span>';
             }
             $stockHtml .= '</div>';
 
             if (!empty($stok['isi_per_ctn']) && (int)$stok['isi_per_ctn'] > 0) {
-                $isiCtn   = (int)$stok['isi_per_ctn'];
-                $ctnSisa  = floor($stokAktual / $isiCtn);
-                $pcsSisa  = fmod($stokAktual, $isiCtn);
-
+                $isiCtn  = (int)$stok['isi_per_ctn'];
+                $ctnSisa = floor($stokAktual / $isiCtn);
+                $pcsSisa = fmod($stokAktual, $isiCtn);
                 if ($ctnSisa > 0 && $pcsSisa > 0) {
                     $sisaText = number_format($ctnSisa, 0, ',', '.') . ' CTN + ' . number_format($pcsSisa, 0, ',', '.') . ' ' . esc($stok['satuan']);
                 } elseif ($ctnSisa > 0) {
@@ -341,18 +291,13 @@ class StokGudang extends BaseController
             $stockHtml .= '</div>';
             $row[] = $stockHtml;
 
-            // [11] Catatan
-            $row[] = '<div style="min-width:180px;white-space:normal;">'
-                   . '<small style="color:#6b7280;">' . esc($stok['catatan'] ?: '-') . '</small>'
-                   . '</div>';
+            $row[] = '<div style="min-width:180px;white-space:normal;"><small style="color:#6b7280;">' . esc($stok['catatan'] ?: '-') . '</small></div>';
 
-            // [12] Aksi
             $aksi  = '<div class="dm-action-group">'
                    . '<a href="' . site_url('transaksi/stok-gudang/detail/' . $stok['id_barang']) . '" '
                    . 'class="dm-btn-action view" title="Lihat Detail">'
                    . '<i class="fa-solid fa-list"></i>'
-                   . '</a>'
-                   . '</div>';
+                   . '</a></div>';
             $row[] = '<div class="text-center">' . $aksi . '</div>';
 
             $data[] = $row;
