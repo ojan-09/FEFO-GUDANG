@@ -148,9 +148,9 @@
     /* ── Action buttons row ── */
     .act-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 
-    /* ── Loading Overlay ── */
     .restore-overlay {
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        position: fixed; top: 0; left: 0;
+        width: calc(100vw / 0.75); height: calc(100vh / 0.75);
         background: rgba(15,23,42,0.85); z-index: 9999;
         display: none; align-items: center; justify-content: center;
         flex-direction: column; color: #fff; padding: 24px; text-align: center;

@@ -53,7 +53,11 @@
         </div>
 
         <!-- TABLE -->
-        <div>
+        <div class="dm-table-wrap">
+            <div class="dm-table-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <div>Memuat data wilayah...</div>
+            </div>
             <table class="wil-table" id="tabelWilayah" style="width: 100%;">
                 <thead>
                     <tr>
@@ -186,6 +190,40 @@
     transition: width .2s ease, border-color .15s, box-shadow .15s;
 }
 
+/* ── TABLE LOADING SPINNER ── */
+.dm-table-wrap {
+    position: relative;
+    min-height: 260px;
+}
+.dm-table-spinner {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+    z-index: 50;
+    color: #64748B;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: opacity 0.3s ease;
+}
+.dm-table-spinner i {
+    font-size: 1.9rem;
+    color: #2563EB;
+}
+.dm-table-wrap.loaded .dm-table-spinner {
+    opacity: 0;
+    pointer-events: none;
+}
+.dm-table-wrap:not(.loaded) .dataTables_wrapper,
+.dm-table-wrap:not(.loaded) #tabelWilayah {
+    opacity: 0;
+}
+
 /* TABLE */
 .wil-table { width: 100%; border-collapse: collapse; }
 .wil-table thead tr {
@@ -279,6 +317,8 @@
             if (response && response[csrfName]) {
                 csrfHash = response[csrfName];
             }
+            // Spinner hilang setelah data selesai dimuat
+            $('#tabelWilayah').closest('.dm-table-wrap').addClass('loaded');
         },
         language: {
             emptyTable: "Tidak ada data",
@@ -292,7 +332,7 @@
             zeroRecords: "Tidak ditemukan data yang sesuai",
             paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
         },
-        order: [[1, 'asc']], // Default by Nama Wilayah
+        order: [[1, 'asc']],
         columnDefs: [
             { orderable: false, targets: [0, 3] },
             { className: "text-center", targets: [0, 3] }

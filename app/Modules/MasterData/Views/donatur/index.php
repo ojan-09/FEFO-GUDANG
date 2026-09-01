@@ -34,7 +34,7 @@
     color: #fff; font-size: 16px; flex-shrink: 0;
     box-shadow: 0 4px 12px rgba(37,99,235,.25);
 }
-.don-title  { font-size: 20px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.2; }
+.don-title    { font-size: 20px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.2; }
 .don-subtitle { font-size: 13px; color: #64748B; display: block; margin-top: 2px; }
 
 .don-btn-add {
@@ -45,7 +45,8 @@
     background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
     color: #fff; cursor: pointer; text-decoration: none;
     box-shadow: 0 4px 12px rgba(37,99,235,.22);
-    transition: background-color .18s ease, border-color .18s ease, color .18s ease, opacity .18s ease, transform .18s ease; white-space: nowrap;
+    transition: background-color .18s ease, opacity .18s ease, transform .18s ease;
+    white-space: nowrap;
 }
 .don-btn-add:hover {
     transform: translateY(-2px);
@@ -71,13 +72,45 @@
     padding: 20px;
 }
 
+/* ── TABLE LOADING SPINNER ── */
+.dm-table-wrap {
+    position: relative;
+    min-height: 260px;
+}
+.dm-table-spinner {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+    z-index: 50;
+    color: #64748B;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: opacity 0.3s ease;
+}
+.dm-table-spinner i {
+    font-size: 1.9rem;
+    color: #2563EB;
+}
+.dm-table-wrap.loaded .dm-table-spinner {
+    opacity: 0;
+    pointer-events: none;
+}
+.dm-table-wrap:not(.loaded) .dataTables_wrapper,
+.dm-table-wrap:not(.loaded) #tabelDonatur {
+    opacity: 0;
+}
+
 /* ── DATATABLES TOOLBAR ── */
 .don-card .dataTables_wrapper .dataTables_length,
 .don-card .dataTables_wrapper .dataTables_filter {
     margin-bottom: 16px;
 }
-
-/* Length label */
 .don-card .dataTables_wrapper .dataTables_length label {
     display: flex; align-items: center; gap: 8px;
     font-size: 13px; color: #475569; font-weight: 500; margin: 0;
@@ -95,8 +128,6 @@
     border-color: #2563EB; background: #fff;
     box-shadow: 0 0 0 3px rgba(37,99,235,.10);
 }
-
-/* Filter / search */
 .don-card .dataTables_wrapper .dataTables_filter label {
     display: flex; align-items: center; gap: 8px;
     font-size: 13px; color: #475569; font-weight: 500; margin: 0;
@@ -125,8 +156,6 @@
     box-shadow: 0 0 0 3px rgba(37,99,235,.10);
     width: 280px;
 }
-
-/* Info */
 .don-card .dataTables_wrapper .dataTables_info {
     font-size: 12px; color: #94A3B8; padding-top: 14px;
 }
@@ -146,7 +175,6 @@
     color: #64748B !important; white-space: nowrap;
     border: none !important;
 }
-
 #tabelDonatur tbody tr {
     height: 54px; border-bottom: 1px solid #F1F5F9;
     transition: background .1s;
@@ -184,7 +212,7 @@
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: 10px; border: none; font-size: 13px;
     cursor: pointer; text-decoration: none;
-    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease;
+    transition: background-color .15s ease, color .15s ease, transform .15s ease;
 }
 .don-action-edit   { background: #EFF6FF; color: #2563EB; }
 .don-action-edit:hover   { background: #2563EB; color: #fff; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(37,99,235,.25); }
@@ -238,7 +266,11 @@
 
     <!-- CARD -->
     <div class="don-card">
-        <div>
+        <div class="dm-table-wrap">
+            <div class="dm-table-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <div>Memuat data donatur...</div>
+            </div>
             <table class="table mb-0" id="tabelDonatur" style="width: 100%;">
                 <thead>
                     <tr>
@@ -251,7 +283,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                <!-- DataTables will populate this tbody via AJAX -->
+                    <!-- DataTables will populate this tbody via AJAX -->
                 </tbody>
             </table>
         </div>
@@ -282,18 +314,25 @@
                 if (response && response[csrfName]) {
                     csrfHash = response[csrfName];
                 }
+                // Spinner hilang setelah data selesai dimuat
+                $('#tabelDonatur').closest('.dm-table-wrap').addClass('loaded');
             },
             language: {
-                emptyTable: "Tidak ada data",
-                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
-                infoFiltered: "(disaring dari _MAX_ total data)",
-                lengthMenu: "Tampilkan _MENU_ data",
+                emptyTable:     "Tidak ada data",
+                info:           "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty:      "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered:   "(disaring dari _MAX_ total data)",
+                lengthMenu:     "Tampilkan _MENU_ data",
                 loadingRecords: "Memuat...",
-                processing: "Memproses...",
-                search: "Cari:",
-                zeroRecords: "Tidak ditemukan data yang sesuai",
-                paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+                processing:     "Memproses...",
+                search:         "Cari:",
+                zeroRecords:    "Tidak ditemukan data yang sesuai",
+                paginate: {
+                    first:    "Pertama",
+                    last:     "Terakhir",
+                    next:     "Selanjutnya",
+                    previous: "Sebelumnya"
+                }
             },
             order: [],
             columnDefs: [

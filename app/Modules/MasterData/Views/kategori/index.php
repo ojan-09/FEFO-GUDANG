@@ -71,6 +71,40 @@
     padding: 20px;
 }
 
+/* ── TABLE LOADING SPINNER ── */
+.dm-table-wrap {
+    position: relative;
+    min-height: 260px;
+}
+.dm-table-spinner {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+    z-index: 50;
+    color: #64748B;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: opacity 0.3s ease;
+}
+.dm-table-spinner i {
+    font-size: 1.9rem;
+    color: #2563EB;
+}
+.dm-table-wrap.loaded .dm-table-spinner {
+    opacity: 0;
+    pointer-events: none;
+}
+.dm-table-wrap:not(.loaded) .dataTables_wrapper,
+.dm-table-wrap:not(.loaded) #tabelKategori {
+    opacity: 0;
+}
+
 /* DATATABLES OVERRIDE */
 .kat-card .dataTables_wrapper .dataTables_length,
 .kat-card .dataTables_wrapper .dataTables_filter {
@@ -112,6 +146,7 @@
     color: #94A3B8;
     padding-top: 10px;
 }
+
 /* TABLE */
 #tabelKategori {
     width: 100% !important;
@@ -220,7 +255,11 @@
 
     <!-- CARD -->
     <div class="kat-card">
-        <div>
+        <div class="dm-table-wrap">
+            <div class="dm-table-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <div>Memuat data kategori...</div>
+            </div>
             <table class="table mb-0" id="tabelKategori" style="width: 100%;">
                 <thead>
                     <tr>
@@ -262,6 +301,8 @@
                 if (response && response[csrfName]) {
                     csrfHash = response[csrfName];
                 }
+                // Spinner hilang setelah data selesai dimuat
+                $('#tabelKategori').closest('.dm-table-wrap').addClass('loaded');
             },
             language: {
                 emptyTable: "Tidak ada data",

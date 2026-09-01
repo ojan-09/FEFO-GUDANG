@@ -30,10 +30,9 @@ class LaporanWilayah extends BaseController
         
         if ($allGudang === null) {
             $allGudang = $this->gudangModel->findAll();
-            cache()->save($cacheKey, $allGudang, 3600); // Cache all reference data for 1 hour
+            cache()->save($cacheKey, $allGudang, 3600);
         }
 
-        // Filter in PHP if not admin to prevent dynamic cache keys
         if (!$isAdmin && $userGudangId) {
             $gudang = array_filter($allGudang, function($g) use ($userGudangId) {
                 return $g['id'] == $userGudangId;
@@ -43,9 +42,9 @@ class LaporanWilayah extends BaseController
         }
 
         $data = [
-            'title' => 'Laporan Gudang Wilayah',
-            'gudang' => $gudang,
-            'isAdmin' => $isAdmin,
+            'title'        => 'Laporan Gudang Wilayah',
+            'gudang'       => $gudang,
+            'isAdmin'      => $isAdmin,
             'userGudangId' => $userGudangId
         ];
         return view('App\Modules\Wilayah\Views\laporan\index', $data);
@@ -55,7 +54,7 @@ class LaporanWilayah extends BaseController
     {
         $idGudang  = $this->request->getVar('id_gudang');
         $provinsi  = $this->request->getVar('provinsi');
-        $jenis     = $this->request->getVar('jenis'); // masuk / keluar / stok
+        $jenis     = $this->request->getVar('jenis');
         $startDate = $this->request->getVar('start_date');
         $endDate   = $this->request->getVar('end_date');
 
@@ -64,14 +63,14 @@ class LaporanWilayah extends BaseController
         }
 
         $db = \Config\Database::connect();
-        
+
         if ($jenis == 'stok') {
             $builder = $db->table("stok_gudang_wilayah s");
             $builder->select('s.*, m.nama as nama_gudang, m.kota, m.provinsi, brg.nama_barang, brg.kode_barang, kat.nama_kategori as kategori, brg.satuan, brg.berat_per_satuan as berat');
             $builder->join('master_gudang_wilayah m', 'm.id = s.id_gudang');
             $builder->join('master_barang_wilayah brg', 'brg.id = s.id_barang');
             $builder->join('kategori kat', 'kat.id = brg.id_kategori', 'left');
-            
+
             if (!empty($idGudang)) {
                 $builder->where('s.id_gudang', $idGudang);
             }
@@ -83,24 +82,45 @@ class LaporanWilayah extends BaseController
             return $builder;
         }
 
-        $table       = ($jenis == 'keluar') ? 'barang_keluar_wilayah' : 'barang_masuk_wilayah';
+        $table       = ($jenis == 'keluar') ? 'barang_keluar_wilayah'        : 'barang_masuk_wilayah';
         $detailTable = ($jenis == 'keluar') ? 'detail_barang_keluar_wilayah' : 'detail_barang_masuk_wilayah';
-        $foreignKey  = ($jenis == 'keluar') ? 'id_keluar' : 'id_masuk';
+        $foreignKey  = ($jenis == 'keluar') ? 'id_keluar'                    : 'id_masuk';
 
         $builder = $db->table("$table t");
+
         if ($jenis == 'keluar') {
-            $builder->select('t.*, d.jumlah, d.satuan, COALESCE(d.berat_per_satuan, s.berat_per_satuan, 0) as berat_referensi, COALESCE(d.satuan_berat, s.satuan_berat, "Kg") as satuan_berat, m.nama as nama_gudang, m.kota, m.provinsi, brg.nama_barang, brg.kode_barang, kat.nama_kategori as kategori, u.username as nama_user');
-            $builder->join('stok_gudang_wilayah s', 's.id_gudang = t.id_gudang AND s.id_barang = d.id_barang', 'left');
+            $builder->select('t.*, d.jumlah, d.satuan,
+                COALESCE(d.berat_per_satuan, s.berat_per_satuan, 0) as berat_referensi,
+                COALESCE(d.satuan_berat, s.satuan_berat, "Kg") as satuan_berat,
+                m.nama as nama_gudang, m.kota, m.provinsi,
+                brg.nama_barang, brg.kode_barang,
+                kat.nama_kategori as kategori,
+                u.username as nama_user');
             $builder->join('users u', 'u.id = t.created_by', 'left');
         } else {
-            $builder->select('t.*, dn.nama_donatur as donatur, d.jumlah, d.satuan, d.berat_per_satuan, COALESCE(d.satuan_berat, "Kg") as satuan_berat, d.harga_satuan, d.subtotal_nilai, m.nama as nama_gudang, m.kota, m.provinsi, brg.nama_barang, brg.kode_barang, kat.nama_kategori as kategori, u.username as nama_user');
+            $builder->select('t.*, dn.nama_donatur as donatur,
+                d.jumlah, d.satuan, d.berat_per_satuan,
+                COALESCE(d.satuan_berat, "Kg") as satuan_berat,
+                d.harga_satuan, d.subtotal_nilai,
+                m.nama as nama_gudang, m.kota, m.provinsi,
+                brg.nama_barang, brg.kode_barang,
+                kat.nama_kategori as kategori,
+                u.username as nama_user');
             $builder->join('donatur dn', 'dn.id = t.id_donatur', 'left');
             $builder->join('users u', 'u.id = t.created_by', 'left');
         }
+
+        // JOIN utama — d harus didefinisikan sebelum stok
         $builder->join('master_gudang_wilayah m', 'm.id = t.id_gudang');
         $builder->join("$detailTable d", "d.$foreignKey = t.id");
         $builder->join('master_barang_wilayah brg', 'brg.id = d.id_barang');
         $builder->join('kategori kat', 'kat.id = brg.id_kategori', 'left');
+
+        // JOIN stok SETELAH d didefinisikan — fix bug "Unknown column d.id_barang in on clause"
+        if ($jenis == 'keluar') {
+            $builder->join('stok_gudang_wilayah s', 's.id_gudang = t.id_gudang AND s.id_barang = d.id_barang', 'left');
+        }
+
         $builder->where('t.deleted_at', null);
 
         if (!empty($idGudang)) {
@@ -115,7 +135,7 @@ class LaporanWilayah extends BaseController
         }
 
         $builder->orderBy('t.tanggal', 'DESC');
-        
+
         return $builder;
     }
 
@@ -123,14 +143,14 @@ class LaporanWilayah extends BaseController
     {
         $idGudang  = $this->request->getVar('id_gudang');
         $provinsi  = $this->request->getVar('provinsi');
-        $jenis     = $this->request->getVar('jenis'); // masuk / keluar / stok
+        $jenis     = $this->request->getVar('jenis');
 
         if (!in_groups('Administrator')) {
             $idGudang = user()->id_gudang_wilayah;
         }
 
         $db = \Config\Database::connect();
-        
+
         if ($jenis == 'stok') {
             $builder = $db->table("stok_gudang_wilayah s");
             if (!empty($provinsi)) {
@@ -143,13 +163,13 @@ class LaporanWilayah extends BaseController
             return $builder;
         }
 
-        $table       = ($jenis == 'keluar') ? 'barang_keluar_wilayah' : 'barang_masuk_wilayah';
+        $table       = ($jenis == 'keluar') ? 'barang_keluar_wilayah'        : 'barang_masuk_wilayah';
         $detailTable = ($jenis == 'keluar') ? 'detail_barang_keluar_wilayah' : 'detail_barang_masuk_wilayah';
-        $foreignKey  = ($jenis == 'keluar') ? 'id_keluar' : 'id_masuk';
+        $foreignKey  = ($jenis == 'keluar') ? 'id_keluar'                    : 'id_masuk';
 
         $builder = $db->table("$table t");
         $builder->join("$detailTable d", "d.$foreignKey = t.id");
-        
+
         if (!empty($provinsi)) {
             $builder->join('master_gudang_wilayah m', 'm.id = t.id_gudang');
             $builder->like('m.provinsi', $provinsi);
@@ -159,7 +179,7 @@ class LaporanWilayah extends BaseController
         if (!empty($idGudang)) {
             $builder->where('t.id_gudang', $idGudang);
         }
-        
+
         $startDate = $this->request->getVar('start_date');
         $endDate   = $this->request->getVar('end_date');
         if (!empty($startDate) && !empty($endDate)) {
@@ -173,18 +193,15 @@ class LaporanWilayah extends BaseController
     public function ajaxData()
     {
         try {
-            // Use the optimized count query for total count
             $countBuilder = $this->buildCountQuery();
             $totalRecords = $countBuilder->countAllResults(false);
-            
+
             $length = $this->request->getPost('length') ?? 10;
-            $start  = $this->request->getPost('start') ?? 0;
+            $start  = $this->request->getPost('start')  ?? 0;
             $search = $this->request->getPost('search')['value'] ?? '';
             $jenis  = $this->request->getVar('jenis');
-            
+
             if (!empty($search)) {
-                // If there's a search term, we need the join fields for filtering
-                // So we use buildQuery() which has all the joins
                 $builder = $this->buildQuery();
                 $builder->groupStart();
                 if ($jenis == 'stok') {
@@ -200,38 +217,42 @@ class LaporanWilayah extends BaseController
                 $filteredBuilder = clone $builder;
                 $filteredRecords = $filteredBuilder->countAllResults(false);
             } else {
-                // If no search, filtered count is the same as total count
                 $filteredRecords = $totalRecords;
                 $builder = $this->buildQuery();
             }
+
             // Dynamic Sorting
             $orderParam = $this->request->getPost('order');
             if (!empty($orderParam) && isset($orderParam[0]['column'])) {
                 $colIdx = (int)$orderParam[0]['column'];
-                $dir = strtoupper($orderParam[0]['dir']) === 'DESC' ? 'DESC' : 'ASC';
+                $dir    = strtoupper($orderParam[0]['dir']) === 'DESC' ? 'DESC' : 'ASC';
                 if ($jenis == 'stok') {
-                    $stokMap = [1 => 'm.nama', 2 => 'brg.nama_barang', 3 => 'kat.nama_kategori', 4 => 's.jumlah', 5 => 'brg.satuan', 6 => 'brg.berat_per_satuan'];
+                    $stokMap = [
+                        1 => 'm.nama', 2 => 'brg.nama_barang',
+                        3 => 'kat.nama_kategori', 4 => 's.jumlah',
+                        5 => 'brg.satuan', 6 => 'brg.berat_per_satuan'
+                    ];
                     if (isset($stokMap[$colIdx])) $builder->orderBy($stokMap[$colIdx], $dir);
                 } else {
-                    $txMap = [1 => 't.tanggal', 2 => 't.nomor_dokumen', 3 => 'm.nama', 5 => 'brg.nama_barang', 7 => 'd.jumlah'];
+                    $txMap = [
+                        1 => 't.tanggal', 2 => 't.nomor_dokumen',
+                        3 => 'm.nama',    5 => 'brg.nama_barang', 7 => 'd.jumlah'
+                    ];
                     if (isset($txMap[$colIdx])) $builder->orderBy($txMap[$colIdx], $dir);
                 }
             }
 
             $builder->limit($length, $start);
             $data = $builder->get()->getResultArray();
-            
+
             $resultData = [];
             $no = $start + 1;
             foreach ($data as $row) {
                 if ($jenis == 'stok') {
-                    $statusHtml = '';
-                    if ($row['jumlah'] > 0) {
-                        $statusHtml = '<span class="wh-badge aman"><i class="fa-solid fa-check-circle"></i>Tersedia</span>';
-                    } else {
-                        $statusHtml = '<span class="wh-badge expired"><i class="fa-solid fa-times-circle"></i>Habis</span>';
-                    }
-                    
+                    $statusHtml = $row['jumlah'] > 0
+                        ? '<span class="wh-badge aman"><i class="fa-solid fa-check-circle"></i>Tersedia</span>'
+                        : '<span class="wh-badge expired"><i class="fa-solid fa-times-circle"></i>Habis</span>';
+
                     $resultData[] = [
                         $no++,
                         esc($row['nama_gudang']),
@@ -248,11 +269,8 @@ class LaporanWilayah extends BaseController
                     $beratInKg   = strtolower($satuanBerat) === 'gram' ? ($beratPerSat / 1000) : $beratPerSat;
                     $totalBerat  = (float)$row['jumlah'] * $beratInKg;
 
-                    $hargaSatuan = (float) ($row['harga_satuan'] ?? 0);
-                    $subtotalVal = (float) ($row['subtotal_nilai'] ?? ($row['jumlah'] * $hargaSatuan));
-
-                    $hargaSatuanFmt = $hargaSatuan > 0 ? 'Rp ' . number_format($hargaSatuan, 0, ',', '.') : '-';
-                    $subtotalFmt    = $subtotalVal > 0 ? 'Rp ' . number_format($subtotalVal, 0, ',', '.') : '-';
+                    $hargaSatuan = (float)($row['harga_satuan'] ?? 0);
+                    $subtotalVal = (float)($row['subtotal_nilai'] ?? ($row['jumlah'] * $hargaSatuan));
 
                     $resultData[] = [
                         $no++,
@@ -265,7 +283,7 @@ class LaporanWilayah extends BaseController
                         number_format($row['jumlah'], 0, ',', '.'),
                         esc($row['satuan']),
                         $beratPerSat > 0 ? number_format($beratPerSat, 2, ',', '.') . ' ' . $satuanBerat : '-',
-                        $totalBerat > 0 ? number_format($totalBerat, 2, ',', '.') . ' Kg' : '-',
+                        $totalBerat  > 0 ? number_format($totalBerat,  2, ',', '.') . ' Kg'              : '-',
                         esc($row['nama_user'])
                     ];
                 } elseif ($jenis == 'keluar') {
@@ -284,24 +302,24 @@ class LaporanWilayah extends BaseController
                         esc($row['kategori']),
                         number_format($row['jumlah'], 0, ',', '.'),
                         esc($row['satuan']),
-                        $beratRef > 0 ? number_format($beratRef, 2, ',', '.') . ' ' . $satuanBerat : '-',
-                        $totalBerat > 0 ? number_format($totalBerat, 2, ',', '.') . ' Kg' : '-',
+                        $beratRef   > 0 ? number_format($beratRef,   2, ',', '.') . ' ' . $satuanBerat : '-',
+                        $totalBerat > 0 ? number_format($totalBerat, 2, ',', '.') . ' Kg'              : '-',
                         esc($row['nama_user'])
                     ];
                 }
             }
 
             return $this->response->setJSON([
-                "draw" => intval($this->request->getPost('draw')),
-                "recordsTotal" => $totalRecords,
-                "recordsFiltered" => $filteredRecords,
-                "data" => $resultData,
-                csrf_token() => csrf_hash()
+                'draw'            => intval($this->request->getPost('draw')),
+                'recordsTotal'    => $totalRecords,
+                'recordsFiltered' => $filteredRecords,
+                'data'            => $resultData,
+                csrf_token()      => csrf_hash()
             ]);
         } catch (\Exception $e) {
             log_message('error', '[LaporanWilayah] ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return $this->response->setStatusCode(500)->setJSON([
-                'error' => 'Internal Server Error',
+                'error'   => 'Internal Server Error',
                 'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Terjadi kesalahan sistem saat memuat laporan.'
             ]);
         }
@@ -311,7 +329,7 @@ class LaporanWilayah extends BaseController
     {
         $idGudang = $this->request->getVar('id_gudang');
         $jenisStr = strtoupper(str_replace('_', ' ', $this->request->getVar('jenis')));
-        
+
         if (!in_groups('Administrator')) {
             $idGudang = user()->id_gudang_wilayah;
         }
@@ -319,7 +337,7 @@ class LaporanWilayah extends BaseController
         if (empty($idGudang)) {
             return "LAPORAN BARANG $jenisStr - SELURUH GUDANG WILAYAH";
         } else {
-            $gudang = $this->gudangModel->find($idGudang);
+            $gudang     = $this->gudangModel->find($idGudang);
             $namaGudang = strtoupper($gudang['nama'] ?? 'GUDANG');
             return "LAPORAN BARANG $jenisStr - $namaGudang";
         }
@@ -327,11 +345,11 @@ class LaporanWilayah extends BaseController
 
     public function pdf()
     {
-        $builder = $this->buildQuery();
+        $builder     = $this->buildQuery();
         $dataLaporan = $builder->get()->getResultArray();
-        $jenis = $this->request->getVar('jenis');
-        $title = $this->getLaporanTitle();
-        
+        $jenis       = $this->request->getVar('jenis');
+        $title       = $this->getLaporanTitle();
+
         $data = [
             'title'   => $title,
             'laporan' => $dataLaporan,
@@ -345,29 +363,28 @@ class LaporanWilayah extends BaseController
         $options->set('isRemoteEnabled', true);
         $options->set('chroot', [FCPATH, ROOTPATH]);
         $options->set('defaultFont', 'Helvetica');
-        
+
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
-
         $dompdf->stream("Laporan_Wilayah_{$jenis}_" . date('Ymd_His') . ".pdf", ["Attachment" => false]);
     }
 
     public function excel()
     {
-        $builder = $this->buildQuery();
+        $builder     = $this->buildQuery();
         $dataLaporan = $builder->get()->getResultArray();
-        $jenis = $this->request->getVar('jenis');
-        $title = $this->getLaporanTitle();
-        
+        $jenis       = $this->request->getVar('jenis');
+        $title       = $this->getLaporanTitle();
+
         $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        
+        $sheet       = $spreadsheet->getActiveSheet();
+
         $sheet->setCellValue('A1', $title);
         $sheet->mergeCells('A1:L1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        
+
         if ($jenis == 'stok') {
             $headers = ['No', 'Gudang', 'Barang', 'Kategori', 'Jumlah', 'Satuan', 'Berat'];
         } elseif ($jenis == 'masuk') {
@@ -384,10 +401,10 @@ class LaporanWilayah extends BaseController
         }
 
         $row = 4;
-        $no = 1;
+        $no  = 1;
         foreach ($dataLaporan as $item) {
             $sheet->setCellValue('A' . $row, $no++);
-            
+
             if ($jenis == 'stok') {
                 $sheet->setCellValue('B' . $row, $item['nama_gudang']);
                 $sheet->setCellValue('C' . $row, $item['kode_barang'] . ' - ' . $item['nama_barang']);
@@ -400,9 +417,8 @@ class LaporanWilayah extends BaseController
                 $satuanBerat = $item['satuan_berat'] ?? 'Kg';
                 $beratInKg   = strtolower($satuanBerat) === 'gram' ? ($beratPerSat / 1000) : $beratPerSat;
                 $totalBerat  = (float)$item['jumlah'] * $beratInKg;
-
-                $hargaSatuan = (float) ($item['harga_satuan'] ?? 0);
-                $subtotalVal = (float) ($item['subtotal_nilai'] ?? ($item['jumlah'] * $hargaSatuan));
+                $hargaSatuan = (float)($item['harga_satuan'] ?? 0);
+                $subtotalVal = (float)($item['subtotal_nilai'] ?? ($item['jumlah'] * $hargaSatuan));
 
                 $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($item['tanggal'])));
                 $sheet->setCellValue('C' . $row, $item['nomor_dokumen']);
@@ -448,14 +464,11 @@ class LaporanWilayah extends BaseController
             $sheet->mergeCells("A{$row}:G{$row}");
             $sheet->getStyle("A{$row}")->getFont()->setBold(true);
             $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
-            
             $sheet->setCellValue('H' . $row, "=SUM(H4:H{$lastDataRow})");
             $sheet->getStyle('H' . $row)->getFont()->setBold(true);
-            
             $sheet->setCellValue('K' . $row, "=SUM(K4:K{$lastDataRow})");
             $sheet->getStyle('K' . $row)->getFont()->setBold(true);
             $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0.00" Kg"');
-
             $sheet->setCellValue('M' . $row, "=SUM(M4:M{$lastDataRow})");
             $sheet->getStyle('M' . $row)->getFont()->setBold(true);
             $sheet->getStyle('M' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0');
@@ -465,10 +478,8 @@ class LaporanWilayah extends BaseController
             $sheet->mergeCells("A{$row}:G{$row}");
             $sheet->getStyle("A{$row}")->getFont()->setBold(true);
             $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
-            
             $sheet->setCellValue('H' . $row, "=SUM(H4:H{$lastDataRow})");
             $sheet->getStyle('H' . $row)->getFont()->setBold(true);
-            
             $sheet->setCellValue('K' . $row, "=SUM(K4:K{$lastDataRow})");
             $sheet->getStyle('K' . $row)->getFont()->setBold(true);
             $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0.00" Kg"');
@@ -478,13 +489,13 @@ class LaporanWilayah extends BaseController
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
 
-        $writer = new Xlsx($spreadsheet);
+        $writer   = new Xlsx($spreadsheet);
         $filename = "Laporan_Wilayah_{$jenis}_" . date('Ymd_His') . ".xlsx";
-        
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
-        
+
         $writer->save('php://output');
         exit;
     }

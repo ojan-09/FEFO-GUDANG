@@ -4,200 +4,246 @@
 <?php helper('format'); ?>
 
 <style>
-/* ── Topbar ── */
-.topbar { padding: 12px 18px; }
-.topbar .page-title { font-size: 1.15rem; font-weight: 600; color: #1e293b; }
-.topbar .subtle { font-size: 0.8rem; color: #94a3b8; }
+*{box-sizing:border-box}
 
-/* ── Panel card ── */
-.panel-card { padding: 16px 18px; }
-.panel-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #64748b;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-bottom: 0 !important;
+.det-wrap{
+    max-width:1500px;margin:0 auto;padding:20px 28px;
+    display:flex;flex-direction:column;gap:16px;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 
-/* ── KPI cards ── */
-.kpi-card {
-    background: #fff;
-    border-radius: 12px;
-    border: 1px solid #f1f5f9;
-    border-top: 3px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    padding: 14px 16px;
-    min-height: 84px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
+/* ── TOPBAR ── */
+.det-topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    background:#fff;border:0.5px solid #E2E8F0;border-radius:14px;
+    padding:16px 20px;gap:12px;
 }
-.kpi-card.blue  { border-top-color: #3b82f6; }
-.kpi-card.green { border-top-color: #22c55e; }
-.kpi-card.amber { border-top-color: #f59e0b; }
-.kpi-icon {
-    width: 40px; height: 40px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+.det-topbar-left{display:flex;align-items:center;gap:12px}
+.det-icon-box{
+    width:38px;height:38px;background:#2563EB;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:15px;flex-shrink:0;
 }
-.kpi-card.blue  .kpi-icon { background: #eff6ff; color: #2563eb; }
-.kpi-card.green .kpi-icon { background: #f0fdf4; color: #16a34a; }
-.kpi-card.amber .kpi-icon { background: #fffbeb; color: #d97706; }
-.kpi-icon i { font-size: 1rem; }
-.kpi-body { display: flex; flex-direction: column; gap: 2px; }
-.kpi-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
-.kpi-value { font-size: 1.4rem; font-weight: 700; color: #0f172a; line-height: 1.2; }
-.kpi-value.blue  { color: #2563eb; }
-.kpi-value.green { color: #16a34a; }
-.kpi-value.amber { color: #d97706; }
-.kpi-unit { font-size: 0.78rem; font-weight: 400; margin-left: 2px; opacity: 0.7; }
+.det-title{font-size:17px;font-weight:500;color:#0F172A;margin:0;line-height:1.2}
+.det-subtitle{font-size:12px;color:#64748B;display:block;margin-top:2px}
+.det-subtitle strong{color:#334155;font-weight:500}
+.det-btn-back{
+    display:inline-flex;align-items:center;gap:6px;
+    height:34px;padding:0 14px;font-size:12px;font-weight:500;
+    border-radius:999px;background:#F8FAFC;color:#64748B;
+    border:0.5px solid #CBD5E1;text-decoration:none;
+    transition:background .12s,color .12s;
+}
+.det-btn-back:hover{background:#F1F5F9;color:#1E293B}
 
-/* ── Tabel batch ── */
+/* ── KPI ── */
+.det-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.det-kpi{
+    background:#fff;border:0.5px solid #E2E8F0;border-radius:12px;
+    padding:14px 16px;display:flex;align-items:center;gap:12px;
+}
+.det-kpi-icon{
+    width:36px;height:36px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;font-size:14px;
+}
+.det-kpi.blue  .det-kpi-icon{background:#EFF6FF;color:#2563EB}
+.det-kpi.green .det-kpi-icon{background:#F0FDF4;color:#16A34A}
+.det-kpi.amber .det-kpi-icon{background:#FFFBEB;color:#D97706}
+.det-kpi.red   .det-kpi-icon{background:#FEF2F2;color:#DC2626}
+.det-kpi-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:#94A3B8;display:block;margin-bottom:3px}
+.det-kpi-value{font-size:20px;font-weight:500;line-height:1;color:#0F172A}
+.det-kpi.blue  .det-kpi-value{color:#2563EB}
+.det-kpi.green .det-kpi-value{color:#16A34A}
+.det-kpi.amber .det-kpi-value{color:#D97706}
+.det-kpi.red   .det-kpi-value{color:#DC2626}
+.det-kpi-unit{font-size:11px;font-weight:400;color:#94A3B8;margin-left:2px}
+
+/* ── CARD ── */
+.det-card{background:#fff;border:0.5px solid #E2E8F0;border-radius:14px;overflow:hidden}
+.det-card-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;border-bottom:0.5px solid #E2E8F0;background:#F8FAFC;
+}
+.det-card-title{
+    font-size:11px;font-weight:500;text-transform:uppercase;
+    letter-spacing:.06em;color:#64748B;display:flex;align-items:center;gap:7px;
+}
+.det-card-badge{
+    display:inline-flex;align-items:center;height:22px;padding:0 9px;
+    font-size:11px;font-weight:500;border-radius:999px;border:0.5px solid;
+}
+.det-card-badge.blue{background:#EFF6FF;color:#2563EB;border-color:#BFDBFE}
+.det-card-badge.red {background:#FEF2F2;color:#DC2626;border-color:#FECACA}
+
+/* ── TABLES — tanpa scrollbar ── */
+#tabelBatch,
+#tabelRiwayatPenyaluran{width:100%;border-collapse:collapse;margin:0}
+
+#tabelBatch thead tr,
+#tabelRiwayatPenyaluran thead tr{background:#F8FAFC}
+
 #tabelBatch thead th,
-#tabelRiwayatPenyaluran thead th {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
-    background: #f8fafc;
-    padding: 10px 12px;
-    border-bottom: 2px solid #e2e8f0;
-    white-space: nowrap;
-    vertical-align: middle;
+#tabelRiwayatPenyaluran thead th{
+    padding:10px 14px;font-size:11px;font-weight:500;
+    letter-spacing:.04em;text-transform:uppercase;color:#94A3B8;
+    white-space:nowrap;border:none;border-bottom:0.5px solid #E2E8F0;
+    vertical-align:middle;
 }
-#tabelBatch tbody td,
-#tabelRiwayatPenyaluran tbody td {
-    font-size: 13px;
-    padding: 10px 12px;
-    vertical-align: middle;
-    color: #334155;
-    border-bottom: 1px solid #f1f5f9;
-}
+#tabelBatch tbody tr,
+#tabelRiwayatPenyaluran tbody tr{border-bottom:0.5px solid #F1F5F9;transition:background .1s}
+#tabelBatch tbody tr:last-child,
+#tabelRiwayatPenyaluran tbody tr:last-child{border-bottom:none}
 #tabelBatch tbody tr:hover td,
-#tabelRiwayatPenyaluran tbody tr:hover td { background: #f8fafc; }
+#tabelRiwayatPenyaluran tbody tr:hover td{background:#F8FAFC}
+#tabelBatch tbody td,
+#tabelRiwayatPenyaluran tbody td{
+    padding:10px 14px;font-size:13px;color:#334155;
+    vertical-align:middle;border:none;
+}
 
-/* ── Section divider ── */
-.section-divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 24px 0 16px;
+/* ── CELL HELPERS ── */
+.det-no{color:#CBD5E1;font-size:12px}
+.det-batch-no{
+    display:inline-flex;align-items:center;height:20px;padding:0 8px;
+    background:#F1F5F9;color:#475569;font-size:11px;font-weight:500;
+    border-radius:5px;border:0.5px solid #CBD5E1;letter-spacing:.02em;
 }
-.section-divider hr {
-    flex: 1;
-    border-color: #e2e8f0;
-    margin: 0;
+.det-stok-val{font-size:14px;font-weight:500;color:#0F172A}
+.det-stok-unit{font-size:11px;font-weight:400;color:#94A3B8;margin-left:2px}
+.det-ctn-meta{font-size:11px;color:#94A3B8;margin-top:3px;line-height:1.5}
+.det-status{
+    display:inline-flex;align-items:center;height:22px;padding:0 9px;
+    font-size:11px;font-weight:500;border-radius:999px;
 }
-.section-divider-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    white-space: nowrap;
+.det-status-aman   {background:#F0FDF4;color:#15803D}
+.det-status-hampir {background:#FFFBEB;color:#B45309}
+.det-status-expired{background:#FEF2F2;color:#DC2626}
+.det-status-default{background:#F1F5F9;color:#64748B}
+.det-trx-link{
+    display:inline-flex;align-items:center;height:20px;padding:0 8px;
+    background:#EFF6FF;color:#2563EB;font-size:11px;font-weight:500;
+    border-radius:999px;text-decoration:none;border:0.5px solid #BFDBFE;
+    transition:background .1s,color .1s;
+}
+.det-trx-link:hover{background:#DBEAFE;color:#1D4ED8}
+.det-jenis{
+    display:inline-flex;align-items:center;height:20px;padding:0 8px;
+    font-size:11px;font-weight:500;border-radius:999px;
+}
+.det-jenis-internal{background:#F3E8FF;color:#7E22CE}
+.det-jenis-relawan {background:#EFF6FF;color:#1D4ED8}
+.det-keluar-val{font-size:13px;font-weight:500;color:#DC2626}
+
+/* ── DIVIDER ── */
+.det-divider{display:flex;align-items:center;gap:10px}
+.det-divider hr{flex:1;border:none;border-top:0.5px solid #E2E8F0;margin:0}
+.det-divider-label{
+    font-size:11px;font-weight:500;text-transform:uppercase;
+    letter-spacing:.07em;color:#94A3B8;white-space:nowrap;
+    display:flex;align-items:center;gap:6px;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1024px){.det-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){
+    .det-kpi-grid{grid-template-columns:repeat(2,1fr)}
+    .det-topbar{flex-direction:column;align-items:flex-start}
+    .det-wrap{padding:14px 16px}
 }
 </style>
 
-<!-- Topbar -->
-<div class="topbar d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h1 class="page-title">
-            <i class="fa-solid fa-layer-group me-2 text-primary"></i><?= esc($title) ?>
-        </h1>
-        <span class="subtle">
-            Rincian batch &amp; riwayat penyaluran &middot;
-            <strong class="text-slate-700"><?= esc($barang['nama_barang']) ?></strong>
-        </span>
-    </div>
-    <a href="<?= site_url('transaksi/stok-gudang') ?>" class="btn btn-outline-secondary rounded-pill px-4" style="font-size:13px; height:38px; display:inline-flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-arrow-left"></i> Kembali
-    </a>
-</div>
+<div class="det-wrap">
 
-<!-- KPI -->
-<?php
-    $totalBatch      = count($batches);
-    $totalStok       = array_sum(array_column($batches, 'stok_saat_ini'));
-    $totalPenyaluran = count($riwayat_penyaluran);
-    $totalKeluar     = array_sum(array_column($riwayat_penyaluran, 'jumlah_keluar'));
-?>
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="kpi-card blue">
-            <div class="kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-            <div class="kpi-body">
-                <span class="kpi-label">Batch Aktif</span>
-                <span class="kpi-value blue"><?= $totalBatch ?></span>
+    <!-- TOPBAR -->
+    <div class="det-topbar">
+        <div class="det-topbar-left">
+            <div class="det-icon-box">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+                <h1 class="det-title"><?= esc($title) ?></h1>
+                <span class="det-subtitle">
+                    Rincian batch &amp; riwayat penyaluran &middot;
+                    <strong><?= esc($barang['nama_barang']) ?></strong>
+                </span>
             </div>
         </div>
+        <a href="<?= site_url('transaksi/stok-gudang') ?>" class="det-btn-back">
+            <i class="fa-solid fa-arrow-left"></i> Kembali
+        </a>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="kpi-card green">
-            <div class="kpi-icon"><i class="fa-solid fa-warehouse"></i></div>
-            <div class="kpi-body">
-                <span class="kpi-label">Total Stok</span>
-                <span class="kpi-value green">
+
+    <!-- KPI -->
+    <?php
+        $totalBatch      = count($batches);
+        $totalStok       = array_sum(array_column($batches, 'stok_saat_ini'));
+        $totalPenyaluran = count($riwayat_penyaluran);
+        $totalKeluar     = array_sum(array_column($riwayat_penyaluran, 'jumlah_keluar'));
+    ?>
+    <div class="det-kpi-grid">
+        <div class="det-kpi blue">
+            <div class="det-kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <div>
+                <span class="det-kpi-label">Batch Aktif</span>
+                <div class="det-kpi-value"><?= $totalBatch ?></div>
+            </div>
+        </div>
+        <div class="det-kpi green">
+            <div class="det-kpi-icon"><i class="fa-solid fa-warehouse"></i></div>
+            <div>
+                <span class="det-kpi-label">Total Stok</span>
+                <div class="det-kpi-value">
                     <?= number_format($totalStok, 0, ',', '.') ?>
-                    <span class="kpi-unit"><?= esc($batches[0]['satuan'] ?? '') ?></span>
-                </span>
+                    <span class="det-kpi-unit"><?= esc($batches[0]['satuan'] ?? '') ?></span>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="kpi-card amber">
-            <div class="kpi-icon"><i class="fa-solid fa-arrow-up-from-line"></i></div>
-            <div class="kpi-body">
-                <span class="kpi-label">Transaksi Keluar</span>
-                <span class="kpi-value amber"><?= $totalPenyaluran ?></span>
+        <div class="det-kpi amber">
+    <div class="det-kpi-icon"><i class="fa-solid fa-right-from-bracket"></i></div>
+            <div>
+                <span class="det-kpi-label">Transaksi Keluar</span>
+                <div class="det-kpi-value"><?= $totalPenyaluran ?></div>
             </div>
         </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="kpi-card" style="border-top-color:#ef4444;">
-            <div class="kpi-icon" style="background:#fef2f2; color:#dc2626;"><i class="fa-solid fa-weight-hanging"></i></div>
-            <div class="kpi-body">
-                <span class="kpi-label">Total Disalurkan</span>
-                <span class="kpi-value" style="color:#dc2626;">
+        <div class="det-kpi red">
+            <div class="det-kpi-icon"><i class="fa-solid fa-weight-hanging"></i></div>
+            <div>
+                <span class="det-kpi-label">Total Disalurkan</span>
+                <div class="det-kpi-value">
                     <?= number_format($totalKeluar, 0, ',', '.') ?>
-                    <span class="kpi-unit"><?= esc($batches[0]['satuan'] ?? '') ?></span>
-                </span>
+                    <span class="det-kpi-unit"><?= esc($batches[0]['satuan'] ?? '') ?></span>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Tabel Batch -->
-<div class="panel-card">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="panel-title">
-            <i class="fa-solid fa-layer-group me-2"></i>Daftar Batch Aktif
-        </h5>
-        <span class="badge rounded-pill px-3 py-2"
-              style="background:#eff6ff; color:#2563eb; font-size:11.5px; border:1px solid #bfdbfe;">
-            <?= $totalBatch ?> Batch
-        </span>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" id="tabelBatch">
-            <thead>
-                <tr>
-                    <th width="45" class="text-center">No</th>
-                    <th>Nomor Batch</th>
-                    <th>Donatur</th>
-                    <th class="text-center">Tgl Masuk</th>
-                    <th class="text-center">Tgl Expired</th>
-                    <th class="text-center">Berat/Satuan</th>
-                    <th class="text-center">Jml Awal</th>
-                    <th class="text-end">Stok Saat Ini</th>
-                    <th class="text-end">Total Berat</th>
-                    <th class="text-center">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php $no = 1; foreach ($batches as $batch) : ?>
+    <!-- TABEL BATCH -->
+    <div class="det-card">
+        <div class="det-card-header">
+            <span class="det-card-title">
+                <i class="fa-solid fa-layer-group"></i> Daftar Batch Aktif
+            </span>
+            <span class="det-card-badge blue"><?= $totalBatch ?> Batch</span>
+        </div>
+        <div>
+            <table id="tabelBatch">
+                <thead>
+                    <tr>
+                        <th width="45" class="text-center">No</th>
+                        <th>Nomor Batch</th>
+                        <th>Donatur</th>
+                        <th class="text-center">Tgl Masuk</th>
+                        <th class="text-center">Tgl Expired</th>
+                        <th class="text-center">Berat/Satuan</th>
+                        <th class="text-center">Jml Awal</th>
+                        <th class="text-end">Stok Saat Ini</th>
+                        <th class="text-end">Total Berat</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $no = 1; foreach ($batches as $batch) : ?>
                     <?php
                         $bisaDipecah    = (int)($batch['bisa_dipecah'] ?? 0);
                         $beratPerSatuan = (float)$batch['berat_per_satuan'];
@@ -206,150 +252,150 @@
 
                         if ($bisaDipecah === 1) {
                             $totalBeratRow = (float)$batch['stok_saat_ini'];
-                            if (in_array(strtolower(trim($batch['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) $totalBeratRow *= 1000;
+                            if (in_array(strtolower(trim($batch['satuan_berat'] ?? '')), ['gram','g','gr','ml']))
+                                $totalBeratRow *= 1000;
                         } else {
                             $totalBeratRow = $batch['stok_saat_ini'] * $beratPerSatuan;
                         }
+
+                        $sd = $batch['status_dinamis'];
+                        $statusClass = match(true) {
+                            $sd === 'Aman'           => 'det-status-aman',
+                            $sd === 'Hampir Expired' => 'det-status-hampir',
+                            $sd === 'Expired'        => 'det-status-expired',
+                            default                  => 'det-status-default',
+                        };
                     ?>
                     <tr>
-                        <td class="text-center text-muted"><?= $no++ ?></td>
-                        <td><span class="badge bg-secondary"><?= esc($batch['nomor_batch']) ?></span></td>
-                        <td><?= esc($batch['nama_donatur'] ?? '-') ?></td>
-                        <td class="text-center"><?= date('d M Y', strtotime($batch['tanggal_masuk'])) ?></td>
-                        <td class="text-center fw-bold text-danger"><?= date('d M Y', strtotime($batch['tanggal_kedaluwarsa'])) ?></td>
-                        <td class="text-center"><?= $beratPerSatuan > 0 ? $beratPerSatuan . ' ' . esc($batch['satuan_berat']) : '-' ?></td>
-                        <td class="text-center"><?= number_format($batch['jumlah_awal'], $decimals, ',', '.') ?> <small class="text-muted"><?= esc($batch['satuan']) ?></small></td>
-                        <td class="text-end fw-bold" style="font-size:1.05rem;">
-                            <?= number_format($batch['stok_saat_ini'], $decimals, ',', '.') ?>
-                            <small class="text-muted fw-normal"><?= esc($batch['satuan']) ?></small>
+                        <td class="text-center"><span class="det-no"><?= $no++ ?></span></td>
+                        <td><span class="det-batch-no"><?= esc($batch['nomor_batch']) ?></span></td>
+                        <td style="color:#475569"><?= esc($batch['nama_donatur'] ?? '-') ?></td>
+                        <td class="text-center" style="color:#64748B;font-size:12px">
+                            <?= !empty($batch['tanggal_masuk']) ? date('d M Y', strtotime($batch['tanggal_masuk'])) : '-' ?>
+                        </td>
+                        <td class="text-center" style="font-size:12px;font-weight:500;color:#DC2626">
+                            <?= !empty($batch['tanggal_kedaluwarsa']) ? date('d M Y', strtotime($batch['tanggal_kedaluwarsa'])) : '-' ?>
+                        </td>
+                        <td class="text-center" style="color:#64748B;font-size:12px">
+                            <?= $beratPerSatuan > 0 ? $beratPerSatuan . ' ' . esc($batch['satuan_berat']) : '-' ?>
+                        </td>
+                        <td class="text-center" style="font-size:13px">
+                            <?= number_format($batch['jumlah_awal'], $decimals, ',', '.') ?>
+                            <small style="color:#94A3B8"><?= esc($batch['satuan']) ?></small>
+                        </td>
+                        <td class="text-end">
+                            <span class="det-stok-val">
+                                <?= number_format($batch['stok_saat_ini'], $decimals, ',', '.') ?>
+                            </span>
+                            <span class="det-stok-unit"><?= esc($batch['satuan']) ?></span>
                             <?php if (!empty($batch['menggunakan_kemasan']) && !empty($batch['jumlah_ctn']) && !empty($batch['isi_per_ctn'])) : ?>
-                                <?php
-                                    $isiCtn  = (int)$batch['isi_per_ctn'];
-                                    $stkAkt  = (float)$batch['stok_saat_ini'];
-                                    $ctnSisa = floor($stkAkt / $isiCtn);
-                                    $pcsSisa = fmod($stkAkt, $isiCtn);
-                                    if ($ctnSisa > 0 && $pcsSisa > 0)     $sisaStr = number_format($ctnSisa,0,',','.') . ' CTN + ' . number_format($pcsSisa,0,',','.') . ' ' . esc($batch['satuan']);
-                                    elseif ($ctnSisa > 0)                  $sisaStr = number_format($ctnSisa,0,',','.') . ' CTN';
-                                    elseif ($pcsSisa > 0)                  $sisaStr = number_format($pcsSisa,0,',','.') . ' ' . esc($batch['satuan']);
-                                    else                                   $sisaStr = '0 CTN';
-                                ?>
-                                <div class="text-secondary fw-normal mt-1" style="font-size:11px;">
-                                    <i class="fa-solid fa-box text-muted me-1"></i>Awal: <?= (int)$batch['jumlah_ctn'] ?> CTN &times; <?= (int)$batch['isi_per_ctn'] ?> <?= esc($batch['satuan']) ?><br>
-                                    <i class="fa-solid fa-box-open text-primary me-1"></i>Sisa: <strong><?= $sisaStr ?></strong>
-                                </div>
+                            <?php
+                                $isiCtn  = (int)$batch['isi_per_ctn'];
+                                $stkAkt  = (float)$batch['stok_saat_ini'];
+                                $ctnSisa = floor($stkAkt / $isiCtn);
+                                $pcsSisa = fmod($stkAkt, $isiCtn);
+                                if ($ctnSisa > 0 && $pcsSisa > 0)
+                                    $sisaStr = number_format($ctnSisa,0,',','.') . ' CTN + ' . number_format($pcsSisa,0,',','.') . ' ' . esc($batch['satuan']);
+                                elseif ($ctnSisa > 0) $sisaStr = number_format($ctnSisa,0,',','.') . ' CTN';
+                                elseif ($pcsSisa > 0) $sisaStr = number_format($pcsSisa,0,',','.') . ' ' . esc($batch['satuan']);
+                                else                  $sisaStr = '0 CTN';
+                            ?>
+                            <div class="det-ctn-meta">
+                                <i class="fa-solid fa-box" style="color:#94A3B8"></i>
+                                Awal: <?= (int)$batch['jumlah_ctn'] ?> CTN &times; <?= (int)$batch['isi_per_ctn'] ?> <?= esc($batch['satuan']) ?><br>
+                                <i class="fa-solid fa-box-open" style="color:#2563EB"></i>
+                                Sisa: <strong style="color:#0F172A"><?= $sisaStr ?></strong>
+                            </div>
                             <?php endif; ?>
                         </td>
-                        <td class="text-end text-muted">
+                        <td class="text-end" style="color:#64748B;font-size:12px">
                             <?= $totalBeratRow > 0 ? format_berat($totalBeratRow, $batch['satuan_berat']) : '-' ?>
                         </td>
                         <td class="text-center">
-                            <?php
-                                $bc = 'bg-secondary';
-                                if ($batch['status_dinamis'] == 'Aman')           $bc = 'bg-success';
-                                elseif ($batch['status_dinamis'] == 'Hampir Expired') $bc = 'bg-warning text-dark';
-                                elseif ($batch['status_dinamis'] == 'Expired')    $bc = 'bg-danger';
-                            ?>
-                            <span class="badge <?= $bc ?> px-3 py-2 rounded-pill" style="font-size:11.5px;">
+                            <span class="det-status <?= $statusClass ?>">
                                 <?= esc($batch['status_dinamis']) ?>
                             </span>
                         </td>
                     </tr>
-                <?php endforeach; ?>
-                <?php if (empty($batches)): ?>
-                <tr>
-                    <td colspan="10" class="text-center py-5 text-muted">
-                        <i class="fa-solid fa-box-open fs-3 mb-2 d-block"></i>
-                        Belum ada batch aktif.
-                    </td>
-                </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
 
-<!-- Divider -->
-<div class="section-divider">
-    <span class="section-divider-label"><i class="fa-solid fa-arrow-up-from-line me-1"></i>Riwayat Penyaluran</span>
-    <hr>
-</div>
-
-<!-- Tabel Riwayat Penyaluran -->
-<div class="panel-card">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="panel-title">
-            <i class="fa-solid fa-clock-rotate-left me-2"></i>Histori Transaksi Keluar
-        </h5>
-        <span class="badge rounded-pill px-3 py-2"
-              style="background:#fef2f2; color:#dc2626; font-size:11.5px; border:1px solid #fecaca;">
-            <?= $totalPenyaluran ?> Transaksi
+    <!-- DIVIDER -->
+    <div class="det-divider">
+        <span class="det-divider-label">
+            <i class="fa-solid fa-arrow-up-from-line"></i> Riwayat Penyaluran
         </span>
+        <hr>
     </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" id="tabelRiwayatPenyaluran">
-            <thead>
-                <tr>
-                    <th width="45" class="text-center">No</th>
-                    <th>No. Transaksi</th>
-                    <th>Tujuan Penyaluran</th>
-                    <th class="text-center">Jenis</th>
-                    <th class="text-center">No. Batch</th>
-                    <th class="text-center">Tgl Expired</th>
-                    <th class="text-center">Tgl Keluar</th>
-                    <th class="text-end">Jumlah Keluar</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($riwayat_penyaluran)): ?>
-                <tr>
-                    <td colspan="8" class="text-center py-5 text-muted">
-                        <i class="fa-solid fa-inbox fs-3 mb-2 d-block"></i>
-                        Belum ada riwayat penyaluran untuk barang ini.
-                    </td>
-                </tr>
-                <?php else: ?>
-                <?php foreach ($riwayat_penyaluran as $i => $r): ?>
-                <tr>
-                    <td class="text-center text-muted"><?= $i + 1 ?></td>
-                    <td>
-                        <a href="<?= site_url('transaksi/barang-keluar/detail/' . $r['id_barang_keluar']) ?>"
-                           style="display:inline-block; background:#EEF4FF; color:#2563eb; font-size:12px;
-                                  padding:3px 10px; border-radius:999px; text-decoration:none; font-weight:600;
-                                  border:1px solid #bfdbfe;">
-                            <?= esc($r['nomor_transaksi']) ?>
-                        </a>
-                    </td>
-                    <td><?= esc($r['tujuan_penyaluran']) ?></td>
-                    <td class="text-center">
-                        <?php if ($r['jenis_penyaluran'] === 'Penyaluran Internal'): ?>
-                            <span class="badge rounded-pill px-2 py-1" style="background:#F3E8FF; color:#7E22CE; font-size:11px;">Internal</span>
-                        <?php else: ?>
-                            <span class="badge rounded-pill px-2 py-1" style="background:#EFF6FF; color:#1D4ED8; font-size:11px;">Relawan</span>
-                        <?php endif; ?>
-                    </td>
-                    <td class="text-center">
-                        <span class="badge bg-secondary" style="font-size:11px;"><?= esc($r['nomor_batch']) ?></span>
-                    </td>
-                    <td class="text-center text-danger fw-bold" style="font-size:12px;">
-                        <?= date('d M Y', strtotime($r['tanggal_kedaluwarsa'])) ?>
-                    </td>
-                    <td class="text-center" style="color:#475569;">
-                        <?= date('d M Y', strtotime($r['tanggal_keluar'])) ?>
-                    </td>
-                    <td class="text-end fw-bold" style="color:#dc2626;">
-                        <?php
-                            $isDesimal = (int)($r['bisa_dipecah'] ?? 0) === 1
-                                || floor($r['jumlah_keluar']) != $r['jumlah_keluar'];
-                        ?>
-                        -<?= number_format($r['jumlah_keluar'], $isDesimal ? 2 : 0, ',', '.') ?>
-                        <small class="text-muted fw-normal"><?= esc($r['satuan']) ?></small>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
+
+    <!-- TABEL RIWAYAT -->
+    <div class="det-card">
+        <div class="det-card-header">
+            <span class="det-card-title">
+                <i class="fa-solid fa-clock-rotate-left"></i> Histori Transaksi Keluar
+            </span>
+            <span class="det-card-badge red"><?= $totalPenyaluran ?> Transaksi</span>
+        </div>
+        <div>
+            <table id="tabelRiwayatPenyaluran">
+                <thead>
+                    <tr>
+                        <th width="45" class="text-center">No</th>
+                        <th>No. Transaksi</th>
+                        <th>Tujuan Penyaluran</th>
+                        <th class="text-center">Jenis</th>
+                        <th class="text-center">No. Batch</th>
+                        <th class="text-center">Tgl Expired</th>
+                        <th class="text-center">Tgl Keluar</th>
+                        <th class="text-end">Jumlah Keluar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($riwayat_penyaluran as $i => $r) : ?>
+                    <tr>
+                        <td class="text-center"><span class="det-no"><?= $i + 1 ?></span></td>
+                        <td>
+                            <a href="<?= site_url('transaksi/barang-keluar/detail/' . $r['id_barang_keluar']) ?>" class="det-trx-link">
+                                <?= esc($r['nomor_transaksi'] ?? '-') ?>
+                            </a>
+                        </td>
+                        <td style="color:#475569"><?= esc($r['tujuan_penyaluran'] ?? '-') ?></td>
+                        <td class="text-center">
+                            <?php if (($r['jenis_penyaluran'] ?? '') === 'Penyaluran Internal') : ?>
+                                <span class="det-jenis det-jenis-internal">Internal</span>
+                            <?php else : ?>
+                                <span class="det-jenis det-jenis-relawan">Relawan</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <span class="det-batch-no"><?= esc($r['nomor_batch'] ?? '-') ?></span>
+                        </td>
+                        <td class="text-center" style="font-size:12px;font-weight:500;color:#DC2626">
+                            <?= !empty($r['tanggal_kedaluwarsa']) ? date('d M Y', strtotime($r['tanggal_kedaluwarsa'])) : '-' ?>
+                        </td>
+                        <td class="text-center" style="font-size:12px;color:#64748B">
+                            <?= !empty($r['tanggal_keluar']) ? date('d M Y', strtotime($r['tanggal_keluar'])) : '-' ?>
+                        </td>
+                        <td class="text-end">
+                            <?php
+                                $jmlKeluar = $r['jumlah_keluar'] ?? 0;
+                                $isDesimal = (int)($r['bisa_dipecah'] ?? 0) === 1 || floor($jmlKeluar) != $jmlKeluar;
+                            ?>
+                            <span class="det-keluar-val">
+                                -<?= number_format($jmlKeluar, $isDesimal ? 2 : 0, ',', '.') ?>
+                            </span>
+                            <small style="color:#94A3B8;font-weight:400"><?= esc($r['satuan'] ?? '') ?></small>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
+
 </div>
 
 <?= $this->endSection() ?>
@@ -358,16 +404,16 @@
 <script>
 $(document).ready(function() {
     var dtLang = {
-        emptyTable:   "Tidak ada data",
-        info:         "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-        infoEmpty:    "Menampilkan 0 sampai 0 dari 0 data",
-        infoFiltered: "(disaring dari _MAX_ total data)",
-        lengthMenu:   "Tampilkan _MENU_ data",
+        emptyTable:     "Tidak ada data",
+        info:           "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+        infoEmpty:      "Menampilkan 0 sampai 0 dari 0 data",
+        infoFiltered:   "(disaring dari _MAX_ total data)",
+        lengthMenu:     "Tampilkan _MENU_ data",
         loadingRecords: "Memuat...",
-        processing:   "Memproses...",
-        search:       "Cari:",
-        zeroRecords:  "Tidak ditemukan data yang sesuai",
-        paginate: { first: "Pertama", last: "Terakhir", next: "Selanjutnya", previous: "Sebelumnya" }
+        processing:     "Memproses...",
+        search:         "Cari:",
+        zeroRecords:    "Tidak ditemukan data yang sesuai",
+        paginate:{ first:"Pertama", last:"Terakhir", next:"Selanjutnya", previous:"Sebelumnya" }
     };
 
     $('#tabelBatch').DataTable({
@@ -375,7 +421,8 @@ $(document).ready(function() {
         order: [[4, "asc"]],
         paging: false,
         info: false,
-        searching: false
+        searching: false,
+        scrollX: false
     });
 
     $('#tabelRiwayatPenyaluran').DataTable({
@@ -383,7 +430,8 @@ $(document).ready(function() {
         order: [[6, "desc"]],
         paging: false,
         info: false,
-        searching: false
+        searching: false,
+        scrollX: false
     });
 });
 </script>

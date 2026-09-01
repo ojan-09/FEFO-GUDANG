@@ -1,213 +1,362 @@
 <?= $this->extend('layout/main') ?>
 
 <?= $this->section('content') ?>
+<?php helper('format'); ?>
 
 <style>
-    /* ── Topbar ── */
-    .topbar { padding: 12px 18px; }
-    .topbar .page-title { font-size: 1.15rem; font-weight: 600; color: #1e293b; }
-    .topbar .subtle { font-size: 0.8rem; color: #94a3b8; }
-    .topbar .btn { font-size: 14px; padding: 0.45rem 1.25rem; height: 42px; display: inline-flex; align-items: center; }
+*{box-sizing:border-box}
 
-    /* ── Panel card ── */
-    .panel-card { padding: 16px 18px; }
-    .panel-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #475569;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        margin-bottom: 18px !important;
-    }
+.det-wrap{
+    max-width:1500px;margin:0 auto;padding:20px 28px;
+    display:flex;flex-direction:column;gap:16px;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
 
-    /* ── Badge nomor transaksi ── */
-    .badge-soft {
-        font-size: 13px;
-        color: #3b82f6;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-        padding: 3px 12px;
-        border-radius: 18px;
-        font-weight: 500;
-    }
+/* ── TOPBAR ── */
+.det-topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    background:#fff;border:0.5px solid #E2E8F0;border-radius:14px;
+    padding:16px 20px;gap:12px;
+}
+.det-topbar-left{display:flex;align-items:center;gap:12px}
+.det-icon-box{
+    width:38px;height:38px;background:#2563EB;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:15px;flex-shrink:0;
+}
+.det-title{font-size:17px;font-weight:500;color:#0F172A;margin:0;line-height:1.2}
+.det-subtitle{font-size:12px;color:#64748B;display:block;margin-top:2px}
+.det-subtitle strong{color:#334155;font-weight:500}
+.det-btn-back{
+    display:inline-flex;align-items:center;gap:6px;
+    height:34px;padding:0 14px;font-size:12px;font-weight:500;
+    border-radius:999px;background:#F8FAFC;color:#64748B;
+    border:0.5px solid #CBD5E1;text-decoration:none;
+    transition:background .12s,color .12s;
+}
+.det-btn-back:hover{background:#F1F5F9;color:#1E293B}
 
-    /* ── Info item (konsisten dengan detail keluar) ── */
-    .info-item small { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
-    .info-item strong { font-size: 0.88rem; color: #1e293b; font-weight: 600; }
+/* ── KPI ── */
+.det-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.det-kpi{
+    background:#fff;border:0.5px solid #E2E8F0;border-radius:12px;
+    padding:14px 16px;display:flex;align-items:center;gap:12px;
+}
+.det-kpi-icon{
+    width:36px;height:36px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;font-size:14px;
+}
+.det-kpi.blue  .det-kpi-icon{background:#EFF6FF;color:#2563EB}
+.det-kpi.green .det-kpi-icon{background:#F0FDF4;color:#16A34A}
+.det-kpi.amber .det-kpi-icon{background:#FFFBEB;color:#D97706}
+.det-kpi.purple .det-kpi-icon{background:#F3E8FF;color:#7E22CE}
+.det-kpi-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:#94A3B8;display:block;margin-bottom:3px}
+.det-kpi-value{font-size:20px;font-weight:500;line-height:1;color:#0F172A}
+.det-kpi.blue   .det-kpi-value{color:#2563EB}
+.det-kpi.green  .det-kpi-value{color:#16A34A}
+.det-kpi.amber  .det-kpi-value{color:#D97706}
+.det-kpi.purple .det-kpi-value{color:#7E22CE}
+.det-kpi-unit{font-size:11px;font-weight:400;color:#94A3B8;margin-left:2px}
 
-    /* ── Keterangan box ── */
-    .keterangan-box {
-        background: #f8fafc;
-        border-left: 3px solid #e2e8f0;
-        border-radius: 0 6px 6px 0;
-        padding: 8px 12px;
-        font-size: 0.82rem;
-        color: #475569;
-    }
-    .keterangan-box small { font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
+/* ── CARD ── */
+.det-card{background:#fff;border:0.5px solid #E2E8F0;border-radius:14px;overflow:hidden}
+.det-card-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;border-bottom:0.5px solid #E2E8F0;background:#F8FAFC;
+}
+.det-card-title{
+    font-size:11px;font-weight:500;text-transform:uppercase;
+    letter-spacing:.06em;color:#64748B;display:flex;align-items:center;gap:7px;
+}
+.det-card-badge{
+    display:inline-flex;align-items:center;height:22px;padding:0 9px;
+    font-size:11px;font-weight:500;border-radius:999px;border:0.5px solid;
+}
+.det-card-badge.blue  {background:#EFF6FF;color:#2563EB;border-color:#BFDBFE}
+.det-card-badge.green {background:#F0FDF4;color:#16A34A;border-color:#BBF7D0}
+.det-card-badge.slate {background:#F1F5F9;color:#475569;border-color:#CBD5E1}
 
-    /* ── Tabel batch ── */
-    #tabelBatch thead th {
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        padding: 0 0.6rem;
-        height: 46px;
-        vertical-align: middle;
-        white-space: nowrap;
-        color: #64748b;
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    #tabelBatch tbody td {
-        font-size: 14px;
-        padding: 10px 0.6rem;
-        height: 48px;
-        vertical-align: middle;
-        color: #334155;
-        border-color: #f1f5f9;
-    }
-    #tabelBatch tbody tr:hover td { background: #f8fafc; }
-    #tabelBatch .badge:not(.badge-soft) {
-        font-size: 12px;
-        padding: 0.3em 12px;
-        font-weight: 500;
-    }
+/* ── META GRID ── */
+.det-meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.det-meta-item{padding:14px 18px;border-right:0.5px solid #F1F5F9;border-bottom:0.5px solid #F1F5F9}
+.det-meta-item:last-child{border-right:none}
+.det-meta-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:#94A3B8;margin-bottom:5px}
+.det-meta-value{font-size:13px;font-weight:500;color:#0F172A}
 
-    /* Lebar kolom proporsional */
-    #tabelBatch th:nth-child(1), #tabelBatch td:nth-child(1) { width: 45px; }
-    #tabelBatch th:nth-child(2), #tabelBatch td:nth-child(2) { width: 110px; }
-    #tabelBatch th:nth-child(3), #tabelBatch td:nth-child(3) { width: 22%; }
-    #tabelBatch th:nth-child(4), #tabelBatch td:nth-child(4) { width: 12%; }
-    #tabelBatch th:nth-child(5), #tabelBatch td:nth-child(5) { width: 110px; text-align: right; }
-    #tabelBatch th:nth-child(6), #tabelBatch td:nth-child(6) { width: 110px; text-align: right; }
-    #tabelBatch th:nth-child(7), #tabelBatch td:nth-child(7) { width: 110px; text-align: right; }
-    #tabelBatch th:nth-child(8), #tabelBatch td:nth-child(8) { width: 120px; }
-    #tabelBatch th:nth-child(9), #tabelBatch td:nth-child(9) { width: 90px; }
-    #tabelBatch th:nth-child(5),
-    #tabelBatch th:nth-child(6),
-    #tabelBatch th:nth-child(7) { text-align: right; }
+/* ── KETERANGAN BOX ── */
+.det-ket-box{
+    margin:0 18px 16px;padding:12px 16px;
+    background:#F8FAFC;border:0.5px solid #E2E8F0;border-radius:10px;
+}
+.det-ket-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:#94A3B8;margin-bottom:6px}
+.det-ket-text{font-size:13px;color:#334155;font-style:italic;line-height:1.6}
 
-    /* Badge jumlah item */
-    .badge-batch-count { font-size: 12px; padding: 0.3em 12px; font-weight: 500; }
+/* ── TABLE ── */
+#tabelBatch{width:100%;border-collapse:collapse;margin:0}
+#tabelBatch thead tr{background:#F8FAFC}
+#tabelBatch thead th{
+    padding:10px 14px;font-size:11px;font-weight:500;
+    letter-spacing:.04em;text-transform:uppercase;color:#94A3B8;
+    white-space:nowrap;border:none;border-bottom:0.5px solid #E2E8F0;
+    vertical-align:middle;
+}
+#tabelBatch tbody tr{border-bottom:0.5px solid #F1F5F9;transition:background .1s}
+#tabelBatch tbody tr:last-child{border-bottom:none}
+#tabelBatch tbody tr:hover td{background:#F8FAFC}
+#tabelBatch tbody td{
+    padding:10px 14px;font-size:13px;color:#334155;
+    vertical-align:middle;border:none;
+}
+
+/* ── CELL HELPERS ── */
+.det-no{color:#CBD5E1;font-size:12px}
+.det-batch-no{
+    display:inline-flex;align-items:center;height:20px;padding:0 8px;
+    background:#F1F5F9;color:#475569;font-size:11px;font-weight:500;
+    border-radius:5px;border:0.5px solid #CBD5E1;letter-spacing:.02em;
+}
+.det-nama{font-size:13px;font-weight:500;color:#0F172A}
+.det-stok-val{font-size:14px;font-weight:500;color:#0F172A}
+.det-stok-unit{font-size:11px;font-weight:400;color:#94A3B8;margin-left:2px}
+.det-stok-warn{font-size:13px;font-weight:600;color:#D97706}
+.det-status{
+    display:inline-flex;align-items:center;height:22px;padding:0 9px;
+    font-size:11px;font-weight:500;border-radius:999px;
+}
+.det-status-aman   {background:#F0FDF4;color:#15803D}
+.det-status-habis  {background:#F1F5F9;color:#475569}
+.det-status-expired{background:#FEF2F2;color:#DC2626}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1024px){
+    .det-kpi-grid{grid-template-columns:repeat(2,1fr)}
+    .det-meta-grid{grid-template-columns:repeat(2,1fr)}
+    .det-meta-item:nth-child(2){border-right:none}
+    .det-meta-item:nth-child(3){border-top:0.5px solid #F1F5F9}
+}
+@media(max-width:640px){
+    .det-kpi-grid{grid-template-columns:repeat(2,1fr)}
+    .det-meta-grid{grid-template-columns:1fr}
+    .det-meta-item{border-right:none}
+    .det-topbar{flex-direction:column;align-items:flex-start}
+    .det-wrap{padding:14px 16px}
+}
 </style>
 
-<!-- Topbar -->
-<div class="topbar d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title"><i class="fa-solid fa-file-lines me-2"></i><?= esc($title) ?></h1>
-        <span class="subtle">Detail transaksi donasi masuk</span>
-    </div>
-    <a href="<?= site_url('transaksi/barang-masuk') ?>" class="btn btn-outline-secondary rounded-pill px-4">
-        <i class="fa-solid fa-arrow-left me-1"></i> Kembali
-    </a>
-</div>
+<div class="det-wrap">
 
-<!-- Header Transaksi -->
-<div class="panel-card mb-3">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-        <h5 class="panel-title mb-0"><i class="fa-solid fa-receipt me-2"></i>Informasi Transaksi</h5>
-        <span class="badge-soft"><?= esc($barangMasuk['nomor_transaksi']) ?></span>
-    </div>
-
-    <div class="row g-3">
-        <div class="col-6 col-md-3 info-item">
-            <small class="text-muted d-block mb-1">Donatur</small>
-            <strong><?= esc($barangMasuk['nama_donatur']) ?></strong>
+    <!-- TOPBAR -->
+    <div class="det-topbar">
+        <div class="det-topbar-left">
+            <div class="det-icon-box">
+                <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div>
+                <h1 class="det-title"><?= esc($title) ?></h1>
+                <span class="det-subtitle">
+                    Detail transaksi donasi masuk &middot;
+                    <strong><?= esc($barangMasuk['nomor_transaksi']) ?></strong>
+                </span>
+            </div>
         </div>
-        <div class="col-6 col-md-3 info-item">
-            <small class="text-muted d-block mb-1">Tanggal Masuk</small>
-            <strong><?= date('d M Y', strtotime($barangMasuk['tanggal_masuk'])) ?></strong>
-        </div>
-        <div class="col-6 col-md-3 info-item">
-            <small class="text-muted d-block mb-1">ETA</small>
-            <strong><?= $barangMasuk['eta'] ? date('d M Y', strtotime($barangMasuk['eta'])) : '-' ?></strong>
-        </div>
-        <div class="col-6 col-md-3 info-item">
-            <small class="text-muted d-block mb-1">Petugas</small>
-            <strong><?= esc($barangMasuk['petugas']) ?></strong>
-        </div>
+        <a href="<?= site_url('transaksi/barang-masuk') ?>" class="det-btn-back">
+            <i class="fa-solid fa-arrow-left"></i> Kembali
+        </a>
     </div>
 
-    <?php if (!empty($barangMasuk['keterangan'])) : ?>
-        <div class="keterangan-box mt-3">
-            <small class="d-block mb-1"><i class="fa-solid fa-note-sticky me-1"></i>Keterangan</small>
-            <?= esc($barangMasuk['keterangan']) ?>
+    <!-- KPI -->
+    <?php
+        $totalBatch     = count($batches);
+        $totalJumlah    = array_sum(array_column($batches, 'jumlah_awal'));
+        $totalStokNow   = array_sum(array_column($batches, 'stok_saat_ini'));
+        $batchAktif     = count(array_filter($batches, fn($b) => $b['status'] === 'Aktif'));
+    ?>
+    <div class="det-kpi-grid">
+        <div class="det-kpi blue">
+            <div class="det-kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <div>
+                <span class="det-kpi-label">Total Batch</span>
+                <div class="det-kpi-value"><?= $totalBatch ?></div>
+            </div>
         </div>
-    <?php endif; ?>
-</div>
-
-<!-- Daftar Batch -->
-<div class="panel-card">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h5 class="panel-title mb-0"><i class="fa-solid fa-boxes-stacked me-2"></i>Daftar Batch</h5>
-        <span class="badge bg-primary rounded-pill badge-batch-count"><?= count($batches) ?> Item</span>
+        <div class="det-kpi green">
+            <div class="det-kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div>
+                <span class="det-kpi-label">Batch Aktif</span>
+                <div class="det-kpi-value"><?= $batchAktif ?></div>
+            </div>
+        </div>
+        <div class="det-kpi amber">
+            <div class="det-kpi-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+            <div>
+                <span class="det-kpi-label">Jumlah Masuk</span>
+                <div class="det-kpi-value">
+                    <?= number_format($totalJumlah, 0, ',', '.') ?>
+                </div>
+            </div>
+        </div>
+        <div class="det-kpi purple">
+            <div class="det-kpi-icon"><i class="fa-solid fa-warehouse"></i></div>
+            <div>
+                <span class="det-kpi-label">Sisa Stok</span>
+                <div class="det-kpi-value">
+                    <?= number_format($totalStokNow, 0, ',', '.') ?>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover table-striped align-middle mb-0" id="tabelBatch">
-            <thead class="table-light">
-                <tr>
-                    <th width="45" class="text-center">No</th>
-                    <th class="text-nowrap">No. Batch</th>
-                    <th class="text-nowrap">Nama Barang</th>
-                    <th class="text-nowrap">Kategori</th>
-                    <th class="text-nowrap">Jumlah</th>
-                    <th class="text-nowrap">Berat Total</th>
-                    <th class="text-nowrap">Stok Saat Ini</th>
-                    <th class="text-center text-nowrap">Tgl Kedaluwarsa</th>
-                    <th class="text-center text-nowrap">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php helper('format'); ?>
-                <?php foreach ($batches as $i => $b) : ?>
-                    <?php
-                        $bisaDipecah = (int)($b['bisa_dipecah'] ?? 0);
-                        $beratPerSatuan = (float) $b['berat_per_satuan'];
+
+    <!-- INFO TRANSAKSI -->
+    <div class="det-card">
+        <div class="det-card-header">
+            <span class="det-card-title">
+                <i class="fa-solid fa-circle-info"></i> Informasi Transaksi
+            </span>
+            <span class="det-card-badge blue"><?= esc($barangMasuk['nomor_transaksi']) ?></span>
+        </div>
+        <div class="det-meta-grid">
+            <div class="det-meta-item">
+                <div class="det-meta-label">Donatur</div>
+                <div class="det-meta-value"><?= esc($barangMasuk['nama_donatur']) ?></div>
+            </div>
+            <div class="det-meta-item">
+                <div class="det-meta-label">Tanggal Masuk</div>
+                <div class="det-meta-value">
+                    <i class="fa-regular fa-calendar" style="color:#94A3B8;margin-right:4px"></i>
+                    <?= date('d M Y', strtotime($barangMasuk['tanggal_masuk'])) ?>
+                </div>
+            </div>
+            <div class="det-meta-item">
+                <div class="det-meta-label">ETA</div>
+                <div class="det-meta-value">
+                    <?= $barangMasuk['eta'] ? '<i class="fa-regular fa-clock" style="color:#94A3B8;margin-right:4px"></i>' . date('d M Y', strtotime($barangMasuk['eta'])) : '-' ?>
+                </div>
+            </div>
+            <div class="det-meta-item">
+                <div class="det-meta-label">Petugas</div>
+                <div class="det-meta-value">
+                    <i class="fa-regular fa-user" style="color:#94A3B8;margin-right:4px"></i>
+                    <?= esc($barangMasuk['petugas']) ?>
+                </div>
+            </div>
+        </div>
+        <?php if (!empty($barangMasuk['keterangan'])) : ?>
+        <div class="det-ket-box">
+            <div class="det-ket-label"><i class="fa-solid fa-note-sticky" style="margin-right:4px"></i>Keterangan</div>
+            <div class="det-ket-text"><?= nl2br(esc($barangMasuk['keterangan'])) ?></div>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- TABEL BATCH -->
+    <div class="det-card">
+        <div class="det-card-header">
+            <span class="det-card-title">
+                <i class="fa-solid fa-boxes-stacked"></i> Daftar Batch
+            </span>
+            <span class="det-card-badge blue"><?= $totalBatch ?> Batch</span>
+        </div>
+        <div>
+            <table id="tabelBatch">
+                <thead>
+                    <tr>
+                        <th width="45" class="text-center">No</th>
+                        <th>No. Batch</th>
+                        <th>Nama Barang</th>
+                        <th>Kategori</th>
+                        <th class="text-end">Jumlah</th>
+                        <th class="text-end">Berat Total</th>
+                        <th class="text-end">Stok Saat Ini</th>
+                        <th class="text-center">Tgl Kedaluwarsa</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($batches as $i => $b) :
+                        $bisaDipecah    = (int)($b['bisa_dipecah'] ?? 0);
+                        $beratPerSatuan = (float)$b['berat_per_satuan'];
 
                         if ($bisaDipecah === 1) {
-                            $beratTotal = (float) $b['jumlah_awal'];
-                            $satuanJumlah = 'Kg';
-                            $jumlahDisplay = number_format($b['jumlah_awal'], 2, ',', '.');
-                            $stokDisplay = number_format($b['stok_saat_ini'], 2, ',', '.');
+                            $beratTotal     = (float)$b['jumlah_awal'];
+                            $satuanJumlah   = 'Kg';
+                            $jumlahDisplay  = number_format($b['jumlah_awal'], 2, ',', '.');
+                            $stokDisplay    = number_format($b['stok_saat_ini'], 2, ',', '.');
                         } else {
                             $beratTotal = $b['jumlah_awal'] * $beratPerSatuan;
-                            if (in_array(strtolower(trim($b['satuan_berat'] ?? '')), ['gram', 'g', 'gr', 'ml'])) {
-                                $beratTotal = $beratTotal / 1000;
-                            }
-                            $satuanJumlah = esc($b['satuan']);
+                            if (in_array(strtolower(trim($b['satuan_berat'] ?? '')), ['gram','g','gr','ml']))
+                                $beratTotal /= 1000;
+                            $satuanJumlah  = esc($b['satuan']);
                             $jumlahDisplay = number_format($b['jumlah_awal'], 0, ',', '.');
-                            $stokDisplay = number_format($b['stok_saat_ini'], 0, ',', '.');
+                            $stokDisplay   = number_format($b['stok_saat_ini'], 0, ',', '.');
                         }
 
                         $statusClass = match($b['status']) {
-                            'Aktif'   => 'bg-success',
-                            'Habis'   => 'bg-secondary',
-                            'Expired' => 'bg-danger',
-                            default   => 'bg-secondary',
+                            'Aktif'   => 'det-status-aman',
+                            'Habis'   => 'det-status-habis',
+                            'Expired' => 'det-status-expired',
+                            default   => 'det-status-habis',
                         };
+                        $stokBerkurang = $b['stok_saat_ini'] < $b['jumlah_awal'];
                     ?>
                     <tr>
-                        <td class="text-center"><?= $i + 1 ?></td>
-                        <td class="text-nowrap"><span class="badge-soft"><?= esc($b['nomor_batch']) ?></span></td>
-                        <td class="text-nowrap fw-medium"><?= esc($b['nama_barang']) ?></td>
-                        <td class="text-nowrap"><?= esc($b['kategori'] ?? '-') ?></td>
-                        <td class="text-nowrap fw-bold"><?= $jumlahDisplay ?> <?= $satuanJumlah ?></td>
-                        <td class="text-nowrap"><?= $beratTotal > 0 ? format_berat($beratTotal, 'Kg') : '-' ?></td>
-                        <td class="text-nowrap">
-                            <?php if ($b['stok_saat_ini'] < $b['jumlah_awal']) : ?>
-                                <span class="text-warning fw-bold"><?= $stokDisplay ?></span> / <?= $jumlahDisplay ?>
+                        <td class="text-center"><span class="det-no"><?= $i + 1 ?></span></td>
+                        <td><span class="det-batch-no"><?= esc($b['nomor_batch']) ?></span></td>
+                        <td><span class="det-nama"><?= esc($b['nama_barang']) ?></span></td>
+                        <td style="color:#64748B;font-size:12px"><?= esc($b['kategori'] ?? '-') ?></td>
+                        <td class="text-end">
+                            <span class="det-stok-val"><?= $jumlahDisplay ?></span>
+                            <span class="det-stok-unit"><?= $satuanJumlah ?></span>
+                        </td>
+                        <td class="text-end" style="color:#64748B;font-size:12px">
+                            <?= $beratTotal > 0 ? format_berat($beratTotal, 'Kg') : '-' ?>
+                        </td>
+                        <td class="text-end">
+                            <?php if ($stokBerkurang) : ?>
+                                <span class="det-stok-warn"><?= $stokDisplay ?></span>
+                                <span class="det-stok-unit">/ <?= $jumlahDisplay ?> <?= $satuanJumlah ?></span>
                             <?php else : ?>
-                                <?= $stokDisplay ?>
+                                <span class="det-stok-val"><?= $stokDisplay ?></span>
+                                <span class="det-stok-unit"><?= $satuanJumlah ?></span>
                             <?php endif; ?>
                         </td>
-                        <td class="text-center text-nowrap"><?= date('d M Y', strtotime($b['tanggal_kedaluwarsa'])) ?></td>
-                        <td class="text-center"><span class="badge <?= $statusClass ?> rounded-pill"><?= esc($b['status']) ?></span></td>
+                        <td class="text-center" style="font-size:12px;font-weight:500;color:#DC2626">
+                            <?= date('d M Y', strtotime($b['tanggal_kedaluwarsa'])) ?>
+                        </td>
+                        <td class="text-center">
+                            <span class="det-status <?= $statusClass ?>"><?= esc($b['status']) ?></span>
+                        </td>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
+
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+$(document).ready(function() {
+    $('#tabelBatch').DataTable({
+        language: {
+            emptyTable:   "Tidak ada data",
+            info:         "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty:    "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered: "(disaring dari _MAX_ total data)",
+            lengthMenu:   "Tampilkan _MENU_ data",
+            search:       "Cari:",
+            zeroRecords:  "Tidak ditemukan data yang sesuai",
+            paginate:{ first:"Pertama", last:"Terakhir", next:"Selanjutnya", previous:"Sebelumnya" }
+        },
+        order: [[7, "asc"]],
+        paging: false,
+        info: false,
+        searching: false,
+        scrollX: false
+    });
+});
+</script>
 <?= $this->endSection() ?>

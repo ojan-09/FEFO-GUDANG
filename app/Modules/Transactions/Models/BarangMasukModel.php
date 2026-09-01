@@ -47,9 +47,11 @@ class BarangMasukModel extends Model
                 } else {
                     $builder->orLike($item, $postData['search']['value']);
                 }
+
                 if (count($this->column_search) - 1 == $i) {
                     $builder->groupEnd();
                 }
+
                 $i++;
             }
         }
@@ -97,5 +99,45 @@ class BarangMasukModel extends Model
         $builder = $this->db->table($this->table);
         return $builder->countAllResults();
     }
-}
 
+    /**
+     * Generate nomor transaksi untuk PREVIEW form saja (tidak atomic).
+     * JANGAN gunakan hasil ini untuk disimpan ke database.
+     */
+    public function previewNomorTransaksi(): string
+    {
+        $today  = date('Ymd');
+        $prefix = "DM-{$today}-";
+        $last   = $this->like('nomor_transaksi', $prefix, 'after')
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        $newNumber = $last ? ((int) substr($last['nomor_transaksi'], -4) + 1) : 1;
+        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Generate nomor transaksi secara ATOMIC dengan SELECT ... FOR UPDATE.
+     *
+     * WAJIB dipanggil di dalam blok transStart() yang sudah aktif.
+     * Mencegah duplikasi nomor pada concurrent request (multi-user).
+     *
+     * @param  string $today  Format: Ymd, misal '20260831'
+     * @return string         Contoh: 'DM-20260831-0042'
+     */
+    public function generateNomorTransaksiAtomic(string $today): string
+    {
+        $prefix = "DM-{$today}-";
+
+        // FOR UPDATE: lock baris terakhir hari ini agar request lain menunggu
+        $last = $this->db->query(
+            "SELECT nomor_transaksi FROM barang_masuk
+             WHERE nomor_transaksi LIKE ?
+             ORDER BY id DESC LIMIT 1 FOR UPDATE",
+            [$prefix . '%']
+        )->getRowArray();
+
+        $newNumber = $last ? ((int) substr($last['nomor_transaksi'], -4) + 1) : 1;
+        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+}

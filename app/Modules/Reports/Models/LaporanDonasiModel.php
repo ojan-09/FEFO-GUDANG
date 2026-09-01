@@ -60,12 +60,12 @@ class LaporanDonasiModel extends Model
             users.username as petugas
         ');
         $builder->join('barang_masuk', 'barang_masuk.id = batch.id_barang_masuk');
-        $builder->join('barang', 'barang.id = batch.id_barang');
+        $builder->join('barang', 'barang.id = batch.id_barang', 'left');
         $builder->join('donatur', 'donatur.id = barang_masuk.id_donatur', 'left');
         $builder->join('users', 'users.id = barang_masuk.id_user', 'left');
 
-        // Apply filters passed via POST
-        $bulanFilter     = $postData['bulan'] ?? null;
+        // Apply filters
+        $bulanFilter     = $postData['bulan'] ?? '';
         $tahunFilter     = $postData['tahun'] ?? null;
         $startDateFilter = $postData['start_date'] ?? null;
         $endDateFilter   = $postData['end_date'] ?? null;
@@ -78,10 +78,12 @@ class LaporanDonasiModel extends Model
             $builder->where('barang_masuk.tanggal_masuk >=', $startDateFilter);
             $builder->where('barang_masuk.tanggal_masuk <=', $endDateFilter);
         } else {
-            if (!empty($bulanFilter) && $bulanFilter !== 'Semua') {
+            // Filter bulan hanya kalau bukan "Semua Bulan"
+            if (!empty($bulanFilter)) {
                 $builder->where('MONTH(barang_masuk.tanggal_masuk)', $bulanFilter);
             }
-            if (!empty($tahunFilter) && $tahunFilter !== 'Semua') {
+            // Selalu filter tahun
+            if (!empty($tahunFilter)) {
                 $builder->where('YEAR(barang_masuk.tanggal_masuk)', $tahunFilter);
             }
         }
@@ -103,7 +105,7 @@ class LaporanDonasiModel extends Model
             $builder->like('barang_masuk.nomor_transaksi', $nomorFilter);
         }
 
-        // Global Search from DataTables input
+        // Global Search dari DataTables search box
         if (isset($postData['search']['value']) && $postData['search']['value'] != '') {
             $searchValue = $postData['search']['value'];
             $builder->groupStart();
@@ -124,7 +126,7 @@ class LaporanDonasiModel extends Model
             if (isset($this->column_order[$colIndex]) && $this->column_order[$colIndex] !== null) {
                 $builder->orderBy($this->column_order[$colIndex], $colDir);
             }
-        } else if (isset($this->order)) {
+        } else {
             foreach ($this->order as $key => $val) {
                 $builder->orderBy($key, $val);
             }
@@ -150,20 +152,21 @@ class LaporanDonasiModel extends Model
 
     public function countAllData($postData = [])
     {
-        $builder = $this->db->table('batch');
-        $builder->join('barang_masuk', 'barang_masuk.id = batch.id_barang_masuk');
+        // Gunakan query yang sama supaya recordsTotal konsisten dengan filter
+        $builder = $this->_getDatatablesQuery($postData);
         return $builder->countAllResults();
     }
 
     public function getSummaryData($postData)
     {
         $builder = $this->_getDatatablesQuery($postData);
-        $data = $builder->get()->getResultArray();
-        $totalTransaksi = 0;
-        $totalBarang = 0;
-        $totalBerat = 0;
+        $data    = $builder->get()->getResultArray();
+
+        $totalTransaksi   = 0;
+        $totalBarang      = 0;
+        $totalBerat       = 0;
         $totalNilaiDonasi = 0;
-        $transaksiUnik = [];
+        $transaksiUnik    = [];
 
         foreach ($data as $row) {
             if (!in_array($row['nomor_transaksi'], $transaksiUnik)) {
@@ -187,14 +190,14 @@ class LaporanDonasiModel extends Model
             }
             $totalBerat += $totalBeratRow;
 
-            $nilaiSatuan = (float)($row['nilai_satuan'] ?? 0);
+            $nilaiSatuan       = (float)($row['nilai_satuan'] ?? 0);
             $totalNilaiDonasi += ((float)$row['jumlah'] * $nilaiSatuan);
         }
 
         return [
-            'total_transaksi' => $totalTransaksi,
-            'total_barang' => $totalBarang,
-            'total_berat' => $totalBerat,
+            'total_transaksi'    => $totalTransaksi,
+            'total_barang'       => $totalBarang,
+            'total_berat'        => $totalBerat,
             'total_nilai_donasi' => $totalNilaiDonasi
         ];
     }

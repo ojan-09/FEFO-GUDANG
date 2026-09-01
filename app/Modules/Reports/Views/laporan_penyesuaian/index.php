@@ -107,6 +107,15 @@
     .wh-btn-success:hover { background: #15803D; color: #fff; }
     .wh-btn-success:active { transform: scale(0.98); }
 
+    .wh-btn-danger {
+        background: #DC2626; border: 1px solid #DC2626; color: #fff;
+        height: 44px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+        padding: 0 18px; display: inline-flex; align-items: center; gap: 6px;
+        transition: transform 120ms ease, background 120ms ease; text-decoration: none;
+    }
+    .wh-btn-danger:hover { background: #B91C1C; color: #fff; }
+    .wh-btn-danger:active { transform: scale(0.98); }
+
     .wh-tb-btn {
         height: 40px; border-radius: 10px; border: 1px solid var(--wh-border);
         background: #fff; color: var(--wh-text); font-size: 0.82rem; font-weight: 600;
@@ -173,6 +182,39 @@
     .badge-jenis.negatif     { background: #FEF9C3;                color: #A16207; }
     .badge-jenis.opname      { background: var(--wh-primary-soft); color: var(--wh-primary); }
 
+    /* ── Summary Cards ── */
+    .wh-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .wh-summary-card {
+        background: var(--wh-card);
+        border: 1px solid var(--wh-border);
+        border-radius: 14px;
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .wh-summary-card .sc-icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; flex-shrink: 0;
+    }
+    .wh-summary-card .sc-body .sc-val {
+        font-size: 1.15rem; font-weight: 700; color: var(--wh-text); line-height: 1.2;
+    }
+    .wh-summary-card .sc-body .sc-lbl {
+        font-size: 0.72rem; color: var(--wh-text-soft); font-weight: 500; margin-top: 2px;
+    }
+    .sc-total   .sc-icon { background: var(--wh-primary-soft); color: var(--wh-primary); }
+    .sc-rusak   .sc-icon { background: var(--wh-danger-soft);  color: #DC2626; }
+    .sc-hilang  .sc-icon { background: var(--wh-warning-soft); color: #B45309; }
+    .sc-expired .sc-icon { background: var(--wh-dark-soft);    color: var(--wh-dark); }
+    .sc-positif .sc-icon { background: var(--wh-success-soft); color: #15803D; }
+
     /* ── DataTables overrides ── */
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter,
@@ -215,6 +257,7 @@
             width: 100%; justify-content: center;
         }
         .wh-toolbar { flex-direction: column; align-items: flex-start; }
+        .wh-summary-grid { grid-template-columns: repeat(2, 1fr); }
     }
 </style>
 
@@ -233,33 +276,33 @@
     </div>
 
     <!-- Filter Panel -->
-    <div class="wh-filter-card">
-        <form action="" method="GET" class="row g-3 align-items-end">
-            <div class="col-6 col-md-3">
+<div class="wh-filter-card">
+    <form action="" method="GET">
+        <div class="d-flex align-items-end gap-3 flex-wrap">
+            <div>
                 <label class="form-label">Tanggal Mulai</label>
                 <input type="date" name="start_date" class="form-control" value="<?= esc($start_date) ?>">
             </div>
-            <div class="col-6 col-md-3">
+            <div>
                 <label class="form-label">Tanggal Akhir</label>
                 <input type="date" name="end_date" class="form-control" value="<?= esc($end_date) ?>">
             </div>
-            <div class="col-12 col-md-6">
-                <div class="d-flex gap-2 flex-wrap filter-actions">
-                    <button type="submit" class="wh-btn-primary">
-                        <i class="fa-solid fa-magnifying-glass"></i> Terapkan Filter
-                    </button>
-                    <a href="<?= site_url('laporan/penyesuaian/export_pdf') ?>?start_date=<?= esc($start_date) ?>&end_date=<?= esc($end_date) ?>"
-                       target="_blank" class="wh-tb-btn btn-export-loading" data-loading-text="Membuat PDF...">
-                        <i class="fa-solid fa-file-pdf"></i> Export PDF
-                    </a>
-                    <a href="<?= site_url('laporan/penyesuaian/export_excel') ?>?start_date=<?= esc($start_date) ?>&end_date=<?= esc($end_date) ?>"
-                       class="wh-btn-success btn-export-loading" data-loading-text="Membuat Excel...">
-                        <i class="fa-solid fa-file-excel"></i> Export Excel
-                    </a>
-                </div>
+            <div class="ms-auto d-flex gap-2 flex-wrap filter-actions">
+                <button type="submit" class="wh-btn-primary">
+                    <i class="fa-solid fa-magnifying-glass"></i> Terapkan Filter
+                </button>
+                <a href="<?= site_url('laporan/penyesuaian/export_pdf') ?>?start_date=<?= esc($start_date) ?>&end_date=<?= esc($end_date) ?>"
+                   target="_blank" class="wh-btn-danger btn-export-loading" data-loading-text="Membuat PDF...">
+                    <i class="fa-solid fa-file-pdf"></i> Export PDF
+                </a>
+                <a href="<?= site_url('laporan/penyesuaian/export_excel') ?>?start_date=<?= esc($start_date) ?>&end_date=<?= esc($end_date) ?>"
+                   class="wh-btn-success btn-export-loading" data-loading-text="Membuat Excel...">
+                    <i class="fa-solid fa-file-excel"></i> Export Excel
+                </a>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
+</div>
 
     <!-- Toolbar -->
     <div class="wh-toolbar">
@@ -289,9 +332,7 @@
                     <th style="min-width:160px;">Keterangan</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- DataTables akan mengisi data ini secara otomatis via AJAX -->
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
@@ -318,10 +359,12 @@ $(document).ready(function () {
                 d.end_date = $('input[name="end_date"]').val();
             },
             dataSrc: function (json) {
-                if (json.csrf_hash) {
-                    csrfHash = json.csrf_hash;
-                }
+                if (json.csrf_hash) csrfHash = json.csrf_hash;
+
+                // Update toolbar count
                 $('.wh-toolbar-count .num').text(new Intl.NumberFormat('id-ID').format(json.recordsFiltered || 0));
+
+
                 return json.data || [];
             },
             error: function(xhr, error, thrown) {
@@ -344,8 +387,7 @@ $(document).ready(function () {
         e.preventDefault();
         $('#tableLaporan').closest('.wh-table-card').removeClass('loaded');
         table.ajax.reload();
-        
-        // Update export links
+
         var start_date = $('input[name="start_date"]').val();
         var end_date = $('input[name="end_date"]').val();
         $('a[href*="export_pdf"]').attr('href', "<?= site_url('laporan/penyesuaian/export_pdf') ?>?start_date=" + start_date + "&end_date=" + end_date);

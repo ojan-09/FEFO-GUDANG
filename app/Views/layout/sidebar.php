@@ -37,7 +37,7 @@
 }
 
 /* ─── Flash prevention ──────────────────────────────────── */
-html.sb-pre-collapsed body            { margin-left: var(--sb-w-collapsed) !important; transition: none !important; }
+html.sb-pre-collapsed body            { padding-left: var(--sb-w-collapsed) !important; transition: none !important; }
 html.sb-pre-collapsed .sidebar        { width: var(--sb-w-collapsed); transition: none !important; }
 html.sb-pre-collapsed .sidebar .sb-label,
 html.sb-pre-collapsed .sidebar .sb-section-title { opacity: 0; width: 0; overflow: hidden; display: none; }
@@ -90,11 +90,11 @@ html {
 }
 
 body {
-    margin-left: var(--sb-w-expanded);
-    transition: margin-left 200ms ease;
+    padding-left: var(--sb-w-expanded);
+    transition: padding-left 200ms ease;
     min-height: 100%;
 }
-body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
+body.sb-collapsed { padding-left: var(--sb-w-collapsed); }
 
 /* ─── Sidebar shell ─────────────────────────────────────── */
 /* FIX: gunakan height: 100vh + min-height: 100% + fallback 100dvh */
@@ -569,8 +569,8 @@ body.sb-collapsed { margin-left: var(--sb-w-collapsed); }
     .sb-bottombar { display: flex; }
 
     body,
-    body.sb-collapsed { margin-left: 0 !important; padding-bottom: 60px; }
-    html.sb-pre-collapsed body { margin-left: 0 !important; }
+    body.sb-collapsed { padding-left: 0 !important; padding-bottom: 60px; }
+    html.sb-pre-collapsed body { padding-left: 0 !important; }
 
     .sidebar {
         width: 280px !important;
@@ -672,6 +672,12 @@ body.sb-drawer-open {
         <?php if (in_groups('Administrator')): ?>
         <div class="sb-section-title">Master Data</div>
         <div class="sb-group">
+            <a href="<?= site_url('masterdata/barang') ?>"
+               class="sb-link <?= url_is('masterdata/barang*') ? 'active' : '' ?>"
+               data-tooltip="Barang">
+                <span class="sb-icon"><i data-lucide="package"></i></span>
+                <span class="sb-label">Barang</span>
+            </a>
             <a href="<?= site_url('masterdata/donatur') ?>"
                class="sb-link <?= url_is('masterdata/donatur*') ? 'active' : '' ?>"
                data-tooltip="Donatur">

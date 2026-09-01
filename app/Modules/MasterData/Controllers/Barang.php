@@ -17,238 +17,65 @@ class Barang extends BaseController
         $this->kategoriModel = new KategoriModel();
     }
 
+    // =============================================
+    // INDEX — Daftar Barang (Administrator + Petugas Gudang)
+    // =============================================
     public function index()
     {
         $data = [
-            'title'         => 'Data Barang',
-            'active_barang' => $this->barangModel->where('status', 'active')->orderBy('nama_barang', 'ASC')->findAll(),
+            'title'         => 'Informasi Master Barang',
+            'active_barang' => $this->barangModel
+                ->where('status', 'active')
+                ->orderBy('nama_barang', 'ASC')
+                ->findAll(),
         ];
         return view('App\Modules\MasterData\Views\barang\index', $data);
     }
 
-    public function create()
+    // =============================================
+    // DETAIL — Detail Barang + Daftar Batch
+    // =============================================
+    public function detail($id)
     {
-        $data = [
-            'title'       => 'Tambah Barang',
-            'kode_barang' => $this->generateKodeBarang(),
-            'kategori'    => $this->kategoriModel->orderBy('nama_kategori', 'ASC')->findAll(),
-        ];
-        return view('App\Modules\MasterData\Views\barang\form', $data);
-    }
+        $barang = $this->barangModel
+            ->select('barang.*, kategori.nama_kategori')
+            ->join('kategori', 'kategori.id = barang.id_kategori', 'left')
+            ->find($id);
 
-    public function store()
-    {
-        $rules = [
-            'id_kategori'      => 'required|integer',
-            'nama_barang'      => 'required|min_length[3]|max_length[100]|is_unique[barang.nama_barang]',
-            'satuan'           => 'required|in_list[Karung,Dus,Box,Kotak,Pack,Pcs,Botol,Kaleng,Tray,Pouch,Sachet,Renceng,Kantong,Repack,Kg,PCS,KOTAK,pcs,kotak]',
-            'berat_per_satuan' => 'required|decimal|greater_than[0]',
-            'satuan_berat'     => 'required|in_list[Gram,Kg,ml,Liter]',
-            'minimum_stok'     => 'required|integer|greater_than_equal_to[0]',
-            'bisa_dipecah'     => 'required|in_list[0,1]',
-        ];
-
-        $errors = [
-            'nama_barang' => [
-                'required'   => 'Nama Barang wajib diisi.',
-                'min_length' => 'Nama Barang minimal 3 karakter.',
-                'max_length' => 'Nama Barang maksimal 100 karakter.',
-                'is_unique'  => 'Nama Barang sudah digunakan.',
-            ],
-            'id_kategori' => [
-                'required' => 'Kategori wajib dipilih.',
-            ],
-            'satuan' => [
-                'required' => 'Satuan wajib dipilih.',
-                'in_list'  => 'Satuan tidak valid.',
-            ],
-            'berat_per_satuan' => [
-                'required'     => 'Berat per satuan wajib diisi.',
-                'decimal'      => 'Berat harus berupa angka desimal.',
-                'greater_than' => 'Berat harus lebih besar dari 0.',
-            ],
-            'satuan_berat' => [
-                'required' => 'Satuan berat wajib dipilih.',
-                'in_list'  => 'Satuan berat tidak valid.',
-            ],
-            'minimum_stok' => [
-                'required'               => 'Minimum stok wajib diisi.',
-                'integer'                => 'Minimum stok harus berupa bilangan bulat.',
-                'greater_than_equal_to' => 'Minimum stok tidak boleh negatif.',
-            ],
-            'bisa_dipecah' => [
-                'required' => 'Status Bisa Dipecah wajib dipilih.',
-                'in_list'  => 'Status Bisa Dipecah tidak valid.',
-            ],
-        ];
-
-        // Trim nama_barang
-        $namaBarang = trim($this->request->getPost('nama_barang') ?? '');
-        $_POST['nama_barang'] = $namaBarang;
-
-        if (!$this->validate($rules, $errors)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
-        }
-
-        // Repack (Bisa Dipecah -> konversi ke Kg) hanya boleh untuk kemasan Karung.
-        $satuan = $this->request->getPost('satuan');
-        $bisaDipecah = (int) $this->request->getPost('bisa_dipecah');
-        if ($bisaDipecah === 1 && strtolower($satuan) !== 'karung') {
-            return redirect()->back()->withInput()->with('errors', [
-                'bisa_dipecah' => 'Status "Bisa Dipecah" (Repack) hanya berlaku untuk barang berkemasan Karung.',
-            ]);
-        }
-
-        $kodeBarang = $this->generateKodeBarang();
-
-        $this->barangModel->insert([
-            'kode_barang'      => $kodeBarang,
-            'id_kategori'      => $this->request->getPost('id_kategori'),
-            'nama_barang'      => $namaBarang,
-            'satuan'           => $satuan,
-            'berat_per_satuan' => $this->request->getPost('berat_per_satuan'),
-            'satuan_berat'     => $this->request->getPost('satuan_berat'),
-            'minimum_stok'     => $this->request->getPost('minimum_stok'),
-            'bisa_dipecah'     => $bisaDipecah,
-        ]);
-
-        helper('format');
-        clear_dashboard_cache();
-
-        return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil ditambahkan.');
-    }
-
-    public function edit($id)
-    {
-        $barang = $this->barangModel->find($id);
         if (!$barang) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Barang tidak ditemukan.');
-        }
-
-        $data = [
-            'title'    => 'Edit Barang',
-            'barang'   => $barang,
-            'kategori' => $this->kategoriModel->orderBy('nama_kategori', 'ASC')->findAll(),
-        ];
-        return view('App\Modules\MasterData\Views\barang\form', $data);
-    }
-
-    public function update($id)
-    {
-        $rules = [
-            'id_kategori'      => 'required|integer',
-            'nama_barang'      => "required|min_length[3]|max_length[100]|is_unique[barang.nama_barang,id,{$id}]",
-            'satuan'           => 'required|in_list[Karung,Dus,Box,Kotak,Pack,Pcs,Botol,Kaleng,Tray,Pouch,Sachet,Renceng,Kantong,Repack,Kg,PCS,KOTAK,pcs,kotak]',
-            'berat_per_satuan' => 'required|decimal|greater_than[0]',
-            'satuan_berat'     => 'required|in_list[Gram,Kg,ml,Liter]',
-            'minimum_stok'     => 'required|integer|greater_than_equal_to[0]',
-            'bisa_dipecah'     => 'required|in_list[0,1]',
-        ];
-
-        $errors = [
-            'nama_barang' => [
-                'required'   => 'Nama Barang wajib diisi.',
-                'min_length' => 'Nama Barang minimal 3 karakter.',
-                'max_length' => 'Nama Barang maksimal 100 karakter.',
-                'is_unique'  => 'Nama Barang sudah digunakan.',
-            ],
-            'id_kategori' => [
-                'required' => 'Kategori wajib dipilih.',
-            ],
-            'satuan' => [
-                'required' => 'Satuan wajib dipilih.',
-                'in_list'  => 'Satuan tidak valid.',
-            ],
-            'berat_per_satuan' => [
-                'required'     => 'Berat per satuan wajib diisi.',
-                'decimal'      => 'Berat harus berupa angka desimal.',
-                'greater_than' => 'Berat harus lebih besar dari 0.',
-            ],
-            'satuan_berat' => [
-                'required' => 'Satuan berat wajib dipilih.',
-                'in_list'  => 'Satuan berat tidak valid.',
-            ],
-            'minimum_stok' => [
-                'required'               => 'Minimum stok wajib diisi.',
-                'integer'                => 'Minimum stok harus berupa bilangan bulat.',
-                'greater_than_equal_to' => 'Minimum stok tidak boleh negatif.',
-            ],
-            'bisa_dipecah' => [
-                'required' => 'Status Bisa Dipecah wajib dipilih.',
-                'in_list'  => 'Status Bisa Dipecah tidak valid.',
-            ],
-        ];
-
-        $namaBarang = trim($this->request->getPost('nama_barang') ?? '');
-        $_POST['nama_barang'] = $namaBarang;
-
-        if (!$this->validate($rules, $errors)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
-        }
-
-        $barang = $this->barangModel->find($id);
-        if (!$barang) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Barang tidak ditemukan.');
-        }
-
-        // Repack (Bisa Dipecah -> konversi ke Kg) hanya boleh untuk kemasan Karung.
-        $satuan = $this->request->getPost('satuan');
-        $bisaDipecah = (int) $this->request->getPost('bisa_dipecah');
-        if ($bisaDipecah === 1 && strtolower($satuan) !== 'karung') {
-            return redirect()->back()->withInput()->with('errors', [
-                'bisa_dipecah' => 'Status "Bisa Dipecah" (Repack) hanya berlaku untuk barang berkemasan Karung.',
-            ]);
-        }
-
-        $this->barangModel->update($id, [
-            'id_kategori'      => $this->request->getPost('id_kategori'),
-            'nama_barang'      => $namaBarang,
-            'satuan'           => $satuan,
-            'berat_per_satuan' => $this->request->getPost('berat_per_satuan'),
-            'satuan_berat'     => $this->request->getPost('satuan_berat'),
-            'minimum_stok'     => $this->request->getPost('minimum_stok'),
-            'bisa_dipecah'     => $bisaDipecah,
-        ]);
-
-        helper('format');
-        clear_dashboard_cache();
-
-        return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil diperbarui.');
-    }
-
-    public function delete($id)
-    {
-        $barang = $this->barangModel->find($id);
-        if (!$barang) {
-            if ($this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => false, 'message' => 'Barang tidak ditemukan.']);
-            }
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Barang tidak ditemukan.');
         }
 
         $db = \Config\Database::connect();
-        $isUsedBatch = $db->table('batch')->where('id_barang', $id)->countAllResults();
-        if ($isUsedBatch > 0) {
-            $msg = "Barang '" . esc($barang['nama_barang']) . "' tidak dapat dihapus karena sudah memiliki data Batch Stok.";
-            if ($this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => false, 'message' => $msg]);
+
+        // Batch urut FEFO: expired terdekat duluan
+        $batches = $db->table('batch')
+            ->where('id_barang', $id)
+            ->orderBy('tanggal_kedaluwarsa', 'ASC')
+            ->get()->getResultArray();
+
+        $totalStok   = 0;
+        $activeBatch = 0;
+        foreach ($batches as $b) {
+            $totalStok += $b['stok_saat_ini'];
+            if ($b['status'] === 'Aktif' && $b['stok_saat_ini'] > 0) {
+                $activeBatch++;
             }
-            return redirect()->to(site_url('masterdata/barang'))->with('error', $msg);
         }
 
-        $this->barangModel->delete($id);
-        helper('format'); clear_dashboard_cache();
-
-        if ($this->request->isAJAX()) {
-            return $this->response->setJSON(['status' => true, 'message' => 'Barang berhasil dihapus.']);
-        }
-
-        return redirect()->to(site_url('masterdata/barang'))->with('success', 'Barang berhasil dihapus.');
+        $data = [
+            'title'       => 'Detail Barang — ' . $barang['nama_barang'],
+            'barang'      => $barang,
+            'batches'     => $batches,
+            'totalStok'   => $totalStok,
+            'activeBatch' => $activeBatch,
+        ];
+        return view('App\Modules\MasterData\Views\barang\detail', $data);
     }
 
-    /**
-     * AJAX endpoint untuk DataTables server-side
-     */
+    // =============================================
+    // AJAX DataTables
+    // =============================================
     public function ajaxData()
     {
         if (!$this->request->isAJAX()) {
@@ -262,65 +89,65 @@ class Barang extends BaseController
 
         foreach ($list as $row) {
             $no++;
-            $rowData = [];
-
-            $bisaDipecah = $row['bisa_dipecah'] == 1 ? '<span class="badge" style="background:#dcfce7; color:#16a34a;"><i class="fa-solid fa-check me-1"></i>Ya</span>' : '<span class="badge" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-xmark me-1"></i>Tidak</span>';
-            $beratPerSatuan = $row['berat_per_satuan'] > 0 ? rtrim(rtrim(number_format($row['berat_per_satuan'], 2, ',', '.'), '0'), ',') . ' ' . esc($row['satuan_berat']) : '-';
 
             $nama_barang_html = esc($row['nama_barang']);
             if (isset($row['status']) && $row['status'] === 'merged') {
                 $targetName = !empty($row['target_nama_barang']) ? esc($row['target_nama_barang']) : 'Unknown';
-                $nama_barang_html .= ' <span class="badge bg-secondary ms-1" style="font-size: 0.75em;"><i class="fa-solid fa-code-merge me-1"></i>Merged &rarr; ' . $targetName . '</span>';
+                $nama_barang_html .= ' <span class="badge bg-secondary ms-1" style="font-size:0.75em;"><i class="fa-solid fa-code-merge me-1"></i>Merged &rarr; ' . $targetName . '</span>';
             }
 
-            $rowData[] = '<div class="text-center text-secondary">' . $no . '</div>';
-            $rowData[] = '<span class="fw-bold" style="color:#2563eb;">' . esc($row['kode_barang']) . '</span>';
-            $rowData[] = '<span class="fw-semibold" style="color:#0f172a;">' . $nama_barang_html . '</span>';
-            $rowData[] = '<span class="badge bg-light text-dark border">' . esc($row['nama_kategori']) . '</span>';
-            $rowData[] = '<span style="color:#475569;">' . esc($row['satuan']) . '</span>';
-            $rowData[] = '<span style="color:#475569;">' . $beratPerSatuan . '</span>';
-            $rowData[] = '<span class="badge" style="background:#fef3c7; color:#d97706;">' . esc($row['minimum_stok']) . ' ' . esc($row['satuan']) . '</span>';
-            $rowData[] = '<div class="text-center">' . $bisaDipecah . '</div>';
-            
-            $aksi = '<div class="d-flex justify-content-center align-items-center gap-1">
-                        <a href="' . site_url('masterdata/barang/edit/' . $row['id_barang']) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
-                        <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" onclick="confirmDeleteBarang(' . $row['id_barang'] . ')"><i class="fa-solid fa-trash"></i></button>
+            $statusHtml = $row['status'] === 'active'
+                ? '<span class="badge bg-success">Aktif</span>'
+                : '<span class="badge bg-secondary">Merged</span>';
+
+            $stokFormatted = number_format($row['total_stok'] ?? 0, 0, ',', '.') . ' ' . esc($row['satuan']);
+            $batchBadge    = '<span class="badge bg-info text-dark">' . ($row['jumlah_batch'] ?? 0) . ' Batch</span>';
+
+            $aksi = '<div class="d-flex justify-content-center">
+                        <a href="' . site_url('masterdata/barang/detail/' . $row['id']) . '"
+                           class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            <i class="fa-solid fa-eye me-1"></i>Detail
+                        </a>
                      </div>';
-            $rowData[] = $aksi;
-            $data[] = $rowData;
+
+            $data[] = [
+                '<div class="text-center text-secondary">' . $no . '</div>',
+                '<span class="fw-bold" style="color:#2563eb;">' . esc($row['kode_barang']) . '</span>',
+                '<span class="fw-semibold">' . $nama_barang_html . '</span>',
+                '<span class="badge bg-light text-dark border">' . esc($row['nama_kategori']) . '</span>',
+                esc($row['satuan']),
+                '<span class="fw-bold">' . $stokFormatted . '</span>',
+                $batchBadge,
+                '<div class="text-center">' . $statusHtml . '</div>',
+                $aksi,
+            ];
         }
 
         $output = [
-            "draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
-            "recordsTotal"    => $this->barangModel->countAllData(),
-            "recordsFiltered" => $this->barangModel->countFiltered($postData),
-            "data"            => $data,
-            csrf_token()      => csrf_hash()
+            'draw'            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            'recordsTotal'    => $this->barangModel->countAllData(),
+            'recordsFiltered' => $this->barangModel->countFiltered($postData),
+            'data'            => $data,
+            csrf_token()      => csrf_hash(),
         ];
 
+        file_put_contents(WRITEPATH . 'debug_ajax.json', json_encode($output));
         return $this->response->setJSON($output);
     }
 
-    private function generateKodeBarang(): string
+    // =============================================
+    // MERGE PREVIEW — tampilkan info kedua barang sebelum konfirmasi
+    // Hanya Administrator (route sudah difilter RBAC)
+    // =============================================
+    public function mergePreview()
     {
-        $db = \Config\Database::connect();
-        $row = $db->table('barang')
-            ->select('MAX(CAST(SUBSTRING(kode_barang, 5) AS UNSIGNED)) as max_num')
-            ->where('kode_barang LIKE', 'BRG-%')
-            ->get()->getRowArray();
-        $lastNumber = $row ? (int)$row['max_num'] : 0;
-        $newNumber = $lastNumber + 1;
-        return 'BRG-' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
-    }
-
-    public function merge()
-    {
+        // Double-check RBAC backend
         if (!in_groups('Administrator')) {
-            return redirect()->to('/masterdata/barang')->with('error', 'Akses ditolak. Hanya Administrator yang dapat menggabungkan barang.');
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Akses ditolak.']);
         }
 
         $id_target = $this->request->getPost('id_target');
-        $id_sumber = $this->request->getPost('id_sumber'); 
+        $id_sumber = $this->request->getPost('id_sumber');
 
         if (empty($id_target) || empty($id_sumber)) {
             return redirect()->to('/masterdata/barang')->with('error', 'Barang target dan sumber harus dipilih.');
@@ -335,67 +162,186 @@ class Barang extends BaseController
         }
 
         $db = \Config\Database::connect();
-        
+
+        $target = $this->barangModel
+            ->select('barang.*, kategori.nama_kategori,
+                      COALESCE(SUM(batch.stok_saat_ini), 0) as total_stok,
+                      COUNT(batch.id) as jumlah_batch')
+            ->join('kategori', 'kategori.id = barang.id_kategori', 'left')
+            ->join('batch', 'batch.id_barang = barang.id AND batch.stok_saat_ini > 0', 'left')
+            ->where('barang.id', $id_target)
+            ->groupBy('barang.id')
+            ->first();
+
+        if (!$target || $target['status'] !== 'active') {
+            return redirect()->to('/masterdata/barang')->with('error', 'Barang target tidak valid atau sudah digabungkan.');
+        }
+
+        $sumberList = [];
+        foreach ($id_sumber as $sid) {
+            $s = $this->barangModel
+                ->select('barang.*, kategori.nama_kategori,
+                          COALESCE(SUM(batch.stok_saat_ini), 0) as total_stok,
+                          COUNT(batch.id) as jumlah_batch')
+                ->join('kategori', 'kategori.id = barang.id_kategori', 'left')
+                ->join('batch', 'batch.id_barang = barang.id AND batch.stok_saat_ini > 0', 'left')
+                ->where('barang.id', $sid)
+                ->groupBy('barang.id')
+                ->first();
+
+            if (!$s) {
+                return redirect()->to('/masterdata/barang')->with('error', 'Barang sumber tidak ditemukan (ID: ' . $sid . ').');
+            }
+            if ($s['status'] !== 'active') {
+                return redirect()->to('/masterdata/barang')->with('error', "Barang {$s['nama_barang']} sudah berstatus merged.");
+            }
+            $sumberList[] = $s;
+        }
+
+        $data = [
+            'title'      => 'Konfirmasi Merge Barang',
+            'target'     => $target,
+            'sumberList' => $sumberList,
+            'id_target'  => $id_target,
+            'id_sumber'  => $id_sumber,
+            'active_barang' => $this->barangModel->where('status', 'active')->orderBy('nama_barang', 'ASC')->findAll(),
+        ];
+        return view('App\Modules\MasterData\Views\barang\merge_confirm', $data);
+    }
+
+    // =============================================
+    // MERGE — proses merge (Administrator only)
+    // =============================================
+    public function merge()
+    {
+        // Double-check RBAC backend
+        if (!in_groups('Administrator')) {
+            return redirect()->to('/masterdata/barang')->with('error', 'Akses ditolak. Hanya Administrator yang dapat menggabungkan barang.');
+        }
+
+        $id_target = $this->request->getPost('id_target');
+        $id_sumber = $this->request->getPost('id_sumber');
+
+        if (empty($id_target) || empty($id_sumber)) {
+            return redirect()->to('/masterdata/barang')->with('error', 'Barang target dan sumber harus dipilih.');
+        }
+
+        if (!is_array($id_sumber)) {
+            $id_sumber = [$id_sumber];
+        }
+
+        if (in_array($id_target, $id_sumber)) {
+            return redirect()->to('/masterdata/barang')->with('error', 'Barang target tidak boleh sama dengan barang sumber.');
+        }
+
+        $db = \Config\Database::connect();
+
+        // Validasi target
         $target = $this->barangModel->find($id_target);
         if (!$target || $target['status'] !== 'active') {
             return redirect()->to('/masterdata/barang')->with('error', 'Barang target tidak valid atau sudah digabungkan.');
         }
 
+        // Validasi semua sumber
         $sumberList = $this->barangModel->whereIn('id', $id_sumber)->findAll();
         if (count($sumberList) !== count($id_sumber)) {
             return redirect()->to('/masterdata/barang')->with('error', 'Beberapa barang sumber tidak ditemukan.');
         }
 
-        $namaSumber = [];
+        $namaSumber    = [];
+        $totalBatchSumber = 0;
+        $totalStokSumber  = 0;
+
         foreach ($sumberList as $s) {
             if ($s['status'] !== 'active') {
                 return redirect()->to('/masterdata/barang')->with('error', "Barang {$s['nama_barang']} sudah berstatus merged.");
             }
-            $namaSumber[] = $s['nama_barang'];
+            $namaSumber[] = $s['nama_barang'] . ' (ID: ' . $s['id'] . ')';
+
+            // Hitung stok + batch untuk log
+            $stokData = $db->table('batch')
+                ->selectSum('stok_saat_ini', 'total_stok')
+                ->selectCount('id', 'jumlah_batch')
+                ->where('id_barang', $s['id'])
+                ->get()->getRowArray();
+            $totalBatchSumber += (int)($stokData['jumlah_batch'] ?? 0);
+            $totalStokSumber  += (float)($stokData['total_stok'] ?? 0);
         }
 
+        // Stok target sebelum merge (untuk log)
+        $stokTargetBefore = $db->table('batch')
+            ->selectSum('stok_saat_ini', 'total_stok')
+            ->selectCount('id', 'jumlah_batch')
+            ->where('id_barang', $id_target)
+            ->get()->getRowArray();
+
+        // ---- TRANSACTION ----
         $db->transStart();
 
-        // Update each source item
-        foreach ($id_sumber as $id) {
-            $this->barangModel->update($id, [
-                'status' => 'merged',
-                'merged_to' => $id_target
+        foreach ($id_sumber as $sid) {
+            $this->barangModel->update($sid, [
+                'status'    => 'merged',
+                'merged_to' => $id_target,
             ]);
         }
 
-        // Reassign batch id_barang
+        // Pindahkan semua batch dari sumber ke target
         $db->table('batch')
-           ->whereIn('id_barang', $id_sumber)
-           ->update(['id_barang' => $id_target]);
+            ->whereIn('id_barang', $id_sumber)
+            ->update(['id_barang' => $id_target]);
 
-        // Insert into activity logs
-        $user_id = user_id();
-        $namaSumberStr = implode(', ', $namaSumber);
-        $deskripsi = "Menggabungkan Master Barang\nBarang Target:\n{$target['nama_barang']} (ID: {$id_target})\nBarang Sumber:\n{$namaSumberStr}";
-        
+        // ---- LOG AUDIT ----
+        $user_id      = user_id();
+        $namaSumberStr = implode('; ', $namaSumber);
+
+        $stokTargetAfter = $db->table('batch')
+            ->selectSum('stok_saat_ini', 'total_stok')
+            ->selectCount('id', 'jumlah_batch')
+            ->where('id_barang', $id_target)
+            ->get()->getRowArray();
+
+        $deskripsi = "Merge Master Barang\n"
+            . "---\n"
+            . "Target: {$target['nama_barang']} (ID: {$id_target})\n"
+            . "Sumber: {$namaSumberStr}\n"
+            . "---\n"
+            . "Sebelum merge:\n"
+            . "  Target - Batch: " . ($stokTargetBefore['jumlah_batch'] ?? 0) . ", Stok: " . number_format($stokTargetBefore['total_stok'] ?? 0, 2) . "\n"
+            . "  Sumber - Batch: {$totalBatchSumber}, Stok: " . number_format($totalStokSumber, 2) . "\n"
+            . "Sesudah merge:\n"
+            . "  Target - Batch: " . ($stokTargetAfter['jumlah_batch'] ?? 0) . ", Stok: " . number_format($stokTargetAfter['total_stok'] ?? 0, 2) . "\n"
+            . "Status: Berhasil";
+
         $db->table('activity_logs')->insert([
             'id_user'    => $user_id,
             'aksi'       => 'Merge Barang',
             'modul'      => 'Master Data Barang',
             'deskripsi'  => $deskripsi,
-            'created_at' => date('Y-m-d H:i:s')
+            'created_at' => date('Y-m-d H:i:s'),
         ]);
 
         $db->transComplete();
 
         if ($db->transStatus() === false) {
-            return redirect()->to('/masterdata/barang')->with('error', 'Terjadi kesalahan saat menggabungkan barang.');
+            return redirect()->to('/masterdata/barang')->with('error', 'Terjadi kesalahan saat menggabungkan barang. Proses dibatalkan (rollback).');
         }
 
-        // Clear dashboard caches to immediately reflect changes
+        // Clear relevant caches
         cache()->delete('dashboard_total_jenis_barang');
         cache()->delete('dashboard_total_batch');
         cache()->delete('dashboard_total_berat');
         cache()->delete('dashboard_top_barang');
         cache()->delete('dashboard_kategori');
 
-        helper('format'); clear_dashboard_cache();
         return redirect()->to('/masterdata/barang')->with('success', 'Barang berhasil digabungkan. Batch, stok, dan histori transaksi telah dialihkan ke barang target.');
     }
+
+    // =============================================
+    // Endpoint lama — dinonaktifkan
+    // =============================================
+    public function create()  { throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(); }
+    public function store()   { throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(); }
+    public function edit($id) { throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(); }
+    public function update($id) { throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(); }
+    public function delete($id) { throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(); }
 }

@@ -19,8 +19,6 @@ $routes->group('manajemen-user', ['namespace' => 'App\Modules\Settings\Controlle
     $routes->post('toggle-status/(:num)', 'ManajemenUser::toggleStatus/$1');
 });
 
-$routes->get('system-health', '\App\Modules\Settings\Controllers\SystemHealth::index', ['filter' => 'rbac:Administrator']);
-
 // Route for Log Aktivitas
 $routes->group('log-aktivitas', ['namespace' => 'App\Modules\Settings\Controllers', 'filter' => 'rbac:Administrator'], function($routes) {
     $routes->get('/', 'LogAktivitas::index');
@@ -51,8 +49,7 @@ $routes->group('pengaturan/dokumen', ['namespace' => 'App\Modules\Settings\Contr
     $routes->post('(:segment)/update-numbering', 'DocumentWorkspace::updateNumbering/$1');
     $routes->post('(:segment)/provision/add', 'DocumentWorkspace::addProvision/$1');
     $routes->post('(:segment)/provision/update/(:num)', 'DocumentWorkspace::updateProvision/$1/$2');
-    $routes->get('(:segment)/provision/delete/(:num)', 'DocumentWorkspace::deleteProvision/$1/$2');
+    $routes->post('(:segment)/provision/delete/(:num)', 'DocumentWorkspace::deleteProvision/$1/$2'); // Fix 1: GET → POST
     $routes->post('(:segment)/new-version', 'DocumentWorkspace::newVersion/$1');
     $routes->get('(:segment)/preview', 'DocumentWorkspace::previewPdf/$1');
 });
-

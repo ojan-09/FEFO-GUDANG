@@ -29,9 +29,6 @@ class BarangKeluar extends BaseController
         $this->fefo              = new FEFO();
     }
 
-    /**
-     * Daftar transaksi Barang Keluar
-     */
     public function index()
     {
         $data = [
@@ -40,9 +37,6 @@ class BarangKeluar extends BaseController
         return view('App\Modules\Transactions\Views\barang_keluar\index', $data);
     }
 
-    /**
-     * AJAX endpoint untuk DataTables server-side
-     */
     public function ajaxData()
     {
         if (!$this->request->isAJAX()) {
@@ -69,7 +63,7 @@ class BarangKeluar extends BaseController
             $row[] = '<span style="color:#475569;">' . date('d M Y', strtotime($bk['tanggal_keluar'])) . '</span>';
             $row[] = '<div class="text-center"><span class="badge-item">' . esc($bk['jumlah_item']) . ' Item</span></div>';
             $row[] = '<span style="color:#475569;">' . esc($bk['petugas']) . '</span>';
-            
+
             $aksi = '<div class="dm-action-group">
                         <a href="' . site_url('transaksi/barang-keluar/berita-acara/' . $bk['id']) . '" class="dm-btn-action pdf" title="Cetak Berita Acara (PDF)" target="_blank"><i class="fa-solid fa-file-pdf"></i></a>
                         <a href="' . site_url('transaksi/barang-keluar/berita-acara-word/' . $bk['id']) . '" class="dm-btn-action word" title="Download Berita Acara (Word)"><i class="fa-solid fa-file-word"></i></a>
@@ -95,13 +89,10 @@ class BarangKeluar extends BaseController
         return $this->response->setJSON($output);
     }
 
-    /**
-     * Form tambah Barang Keluar
-     */
     public function create()
     {
         $db = \Config\Database::connect();
-        
+
         $sql = "
             SELECT 
                 barang.id,
@@ -149,7 +140,7 @@ class BarangKeluar extends BaseController
             WHERE barang.status = 'active'
             ORDER BY barang.nama_barang ASC
         ";
-        
+
         $semuaBarang = $db->query($sql)->getResultArray();
 
         $data = [
@@ -161,9 +152,6 @@ class BarangKeluar extends BaseController
         return view('App\Modules\Transactions\Views\barang_keluar\form', $data);
     }
 
-    /**
-     * AJAX Endpoint untuk memvalidasi apakah ada batch expired yang akan digunakan.
-     */
     public function validateExpired()
     {
         $items = $this->request->getPost('items');
@@ -186,7 +174,7 @@ class BarangKeluar extends BaseController
         $items = array_values($consolidated);
 
         $expiredBatches = $this->fefo->hasExpiredBatch($items);
-        
+
         return $this->response->setJSON([
             'expired' => !empty($expiredBatches),
             'data'    => $expiredBatches,
@@ -194,9 +182,6 @@ class BarangKeluar extends BaseController
         ]);
     }
 
-    /**
-     * Simpan transaksi + panggil Library FEFO
-     */
     public function store()
     {
         $rules = [
@@ -233,9 +218,9 @@ class BarangKeluar extends BaseController
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Jumlah keluar harus lebih besar dari 0."]);
             }
 
-            $idBrg = $item['id_barang'];
+            $idBrg       = $item['id_barang'];
             $bisaDipecah = $barangBisaDipecahMap[$idBrg] ?? 0;
-            $qty = (float)$item['jumlah_keluar'];
+            $qty         = (float)$item['jumlah_keluar'];
 
             if ($bisaDipecah === 0 && floor($qty) != $qty) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Jumlah keluar untuk barang utuh tidak boleh desimal."]);
@@ -258,16 +243,17 @@ class BarangKeluar extends BaseController
 
         $kebutuhan = [];
         foreach ($items as $item) {
-            $kebutuhan[$item['id_barang']] = (float) $item['jumlah_keluar'];
+            $kebutuhan[$item['id_barang']] = (float)$item['jumlah_keluar'];
         }
 
+        // ✅ Cek stok & expired SEBELUM buka transaksi (read-only)
         $kurangStok = $this->fefo->cekKetersediaanBulk($kebutuhan);
         if (!empty($kurangStok)) {
             $errorMsgs = [];
             foreach ($kurangStok as $idBarang) {
-                $brg = $this->barangModel->find($idBarang);
+                $brg        = $this->barangModel->find($idBarang);
                 $namaBarang = $brg ? $brg['nama_barang'] : 'Barang';
-                $stokAda = $this->fefo->getStokBarang($idBarang);
+                $stokAda    = $this->fefo->getStokBarang($idBarang);
                 $errorMsgs[] = "Stok {$namaBarang} tidak mencukupi. Tersedia: {$stokAda}, diminta: {$kebutuhan[$idBarang]}.";
             }
             return redirect()->back()->withInput()->with('errors', ['stok' => implode('<br>', $errorMsgs)]);
@@ -278,69 +264,69 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['expired' => 'Terdapat barang yang sudah melewati tanggal kedaluwarsa. Mohon gunakan tombol yang benar pada peringatan.']);
         }
 
+        // ✅ Semua write operation dalam satu transaksi
         $db = \Config\Database::connect();
-        $docService = new \App\Libraries\DocumentNumberService();
+        $db->transBegin();
 
-        // Get single global atomic counter number
-        $nomorTransaksi = $docService->getNextDocumentNumber(
-            'barang_keluar',
-            null,
-            user()->username ?? 'Petugas'
-        );
+        try {
+            $docService     = new \App\Libraries\DocumentNumberService();
+            $nomorTransaksi = $docService->getNextDocumentNumber(
+                'barang_keluar',
+                null,
+                user()->username ?? 'Petugas'
+            );
 
-        $jenisPenyaluran  = $this->request->getPost('jenis_penyaluran') ?? 'Penyaluran Relawan';
-        $penerimaRelawan = $this->request->getPost('penerima_relawan');
-        $unitInternal    = $this->request->getPost('unit_internal');
+            $jenisPenyaluran = $this->request->getPost('jenis_penyaluran') ?? 'Penyaluran Relawan';
 
-        $this->barangKeluarModel->insert([
-            'nomor_transaksi'   => $nomorTransaksi,
-            'jenis_penyaluran'  => $jenisPenyaluran,
-            'penerima_relawan'  => $penerimaRelawan,
-            'unit_internal'     => $unitInternal,
-            'id_user'           => user()->id,
-            'divisi_petugas'    => user()->divisi ?? null,
-            'id_wilayah'        => $this->request->getPost('id_wilayah'),
-            'tanggal_keluar'    => $this->request->getPost('tanggal_keluar'),
-            'tujuan_penyaluran' => $this->request->getPost('tujuan_penyaluran'),
-            'keterangan'        => $this->request->getPost('keterangan'),
-        ]);
+            $this->barangKeluarModel->insert([
+                'nomor_transaksi'   => $nomorTransaksi,
+                'jenis_penyaluran'  => $jenisPenyaluran,
+                'penerima_relawan'  => $this->request->getPost('penerima_relawan'),
+                'unit_internal'     => $this->request->getPost('unit_internal'),
+                'id_user'           => user()->id,
+                'divisi_petugas'    => user()->divisi ?? null,
+                'id_wilayah'        => $this->request->getPost('id_wilayah'),
+                'tanggal_keluar'    => $this->request->getPost('tanggal_keluar'),
+                'tujuan_penyaluran' => $this->request->getPost('tujuan_penyaluran'),
+                'keterangan'        => $this->request->getPost('keterangan'),
+            ]);
 
-        $idBarangKeluar = $this->barangKeluarModel->getInsertID();
+            $idBarangKeluar = $this->barangKeluarModel->getInsertID();
 
-        $hasilFEFO = $this->fefo->prosesBarangKeluarBulk($idBarangKeluar, $items);
-        if ($hasilFEFO === false) {
+            $hasilFEFO = $this->fefo->prosesBarangKeluarBulk($idBarangKeluar, $items);
+            if ($hasilFEFO === false) {
+                $db->transRollback();
+                return redirect()->back()->withInput()->with('errors', ['fefo' => 'Proses FEFO gagal. Stok tidak mencukupi atau terjadi kesalahan saat pemotongan batch.']);
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal menyimpan transaksi. Silakan coba lagi.']);
+            }
+
+            $db->transCommit();
+
+        } catch (\Throwable $e) {
             $db->transRollback();
-            return redirect()->back()->withInput()->with('errors', ['fefo' => 'Proses FEFO gagal. Stok tidak mencukupi atau terjadi kesalahan saat pemotongan batch.']);
+            log_message('error', '[BarangKeluar::store] Exception: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('errors', ['db' => 'Terjadi kesalahan tidak terduga. Transaksi dibatalkan.']);
         }
 
-        if ($db->transStatus() === false) {
-            $db->transRollback();
-            return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal menyimpan transaksi. Silakan coba lagi.']);
-        }
-        $db->transCommit();
-
-        $tujuan = $this->request->getPost('tujuan_penyaluran') ?: '-';
+        $tujuan    = $this->request->getPost('tujuan_penyaluran') ?: '-';
         $totalItem = array_sum(array_column($items, 'jumlah_keluar'));
 
         $logMsg = "Menambahkan Penyaluran\nNo. {$nomorTransaksi}\nTujuan : {$tujuan}\nTotal Item : {$totalItem}";
-        
         if (!empty($expiredBatches)) {
             $logMsg = "Penyaluran menggunakan batch expired\nNo. {$nomorTransaksi}\nTujuan : {$tujuan}\nJumlah Batch Expired : " . count($expiredBatches);
         }
 
-        \App\Libraries\ActivityLogger::log(
-            'Tambah Penyaluran',
-            'Penyaluran Barang',
-            $logMsg
-        );
+        \App\Libraries\ActivityLogger::log('Tambah Penyaluran', 'Penyaluran Barang', $logMsg);
 
-        helper('format'); clear_dashboard_cache();
+        helper('format');
+        clear_dashboard_cache();
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi Barang Keluar berhasil disimpan. Stok batch telah dipotong menggunakan metode FEFO.');
     }
 
-    /**
-     * Form edit Barang Keluar
-     */
     public function edit($id)
     {
         $barangKeluar = $this->barangKeluarModel->find($id);
@@ -349,7 +335,7 @@ class BarangKeluar extends BaseController
         }
 
         $db = \Config\Database::connect();
-        
+
         $sql = "
             SELECT 
                 barang.id,
@@ -397,7 +383,7 @@ class BarangKeluar extends BaseController
             WHERE barang.status = 'active'
             ORDER BY barang.nama_barang ASC
         ";
-        
+
         $semuaBarang = $db->query($sql, [$id, $id, $id])->getResultArray();
 
         $details = $this->detailModel->where('id_barang_keluar', $id)->findAll();
@@ -428,7 +414,7 @@ class BarangKeluar extends BaseController
                         'bisa_dipecah'     => (int)($batchInfo['bisa_dipecah'] ?? 0),
                     ];
                 }
-                
+
                 if (!isset($addedStok[$idBrg])) {
                     $addedStok[$idBrg] = 0;
                 }
@@ -446,7 +432,7 @@ class BarangKeluar extends BaseController
 
         foreach ($consolidatedDetails as $idBrg => $det) {
             if (!in_array($idBrg, $existingBarangIds)) {
-                $brgInfo = $this->barangModel->find($idBrg);
+                $brgInfo     = $this->barangModel->find($idBrg);
                 $bisaDipecah = $brgInfo ? (int)$brgInfo['bisa_dipecah'] : 0;
                 $semuaBarang[] = [
                     'id'                  => $idBrg,
@@ -473,9 +459,6 @@ class BarangKeluar extends BaseController
         return view('App\Modules\Transactions\Views\barang_keluar\form', $data);
     }
 
-    /**
-     * Proses update transaksi + panggil ulang Library FEFO
-     */
     public function update($id)
     {
         $barangKeluar = $this->barangKeluarModel->find($id);
@@ -517,9 +500,9 @@ class BarangKeluar extends BaseController
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Jumlah keluar harus lebih besar dari 0."]);
             }
 
-            $idBrg = $item['id_barang'];
+            $idBrg       = $item['id_barang'];
             $bisaDipecah = $barangBisaDipecahMap[$idBrg] ?? 0;
-            $qty = (float)$item['jumlah_keluar'];
+            $qty         = (float)$item['jumlah_keluar'];
 
             if ($bisaDipecah === 0 && floor($qty) != $qty) {
                 return redirect()->back()->withInput()->with('errors', ['items' => "Item baris ke-{$key}: Jumlah keluar untuk barang utuh tidak boleh desimal."]);
@@ -540,17 +523,20 @@ class BarangKeluar extends BaseController
         }
         $items = array_values($consolidated);
 
-        $db = \Config\Database::connect();
-        $db->transBegin();
-
-        $this->fefo->rollbackBarangKeluar($id);
-
+        // ✅ Validasi expired SEBELUM buka transaksi (read-only, konsisten dengan store())
         $expiredBatches = $this->fefo->hasExpiredBatch($items);
         if (!empty($expiredBatches) && $this->request->getPost('force_expired') !== 'true') {
-            $db->transRollback();
             return redirect()->back()->withInput()->with('errors', ['expired' => 'Terdapat barang yang sudah melewati tanggal kedaluwarsa. Mohon gunakan tombol yang benar pada peringatan.']);
         }
 
+        // ✅ Buka transaksi — semua write operation di bawah ini atomic
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        // Rollback stok lama — ikut dalam transaksi, aman di-rollback jika gagal
+        $this->fefo->rollbackBarangKeluar($id);
+
+        // Cek stok SETELAH rollback (stok sudah dikembalikan, angka akurat)
         $kebutuhan = [];
         foreach ($items as $item) {
             $kebutuhan[$item['id_barang']] = (float) $item['jumlah_keluar'];
@@ -560,9 +546,9 @@ class BarangKeluar extends BaseController
         if (!empty($kurangStok)) {
             $errorMsgs = [];
             foreach ($kurangStok as $idBarang) {
-                $brg = $this->barangModel->find($idBarang);
+                $brg        = $this->barangModel->find($idBarang);
                 $namaBarang = $brg ? $brg['nama_barang'] : 'Barang';
-                $stokAda = $this->fefo->getStokBarang($idBarang);
+                $stokAda    = $this->fefo->getStokBarang($idBarang);
                 $errorMsgs[] = "Stok {$namaBarang} tidak mencukupi (Tersedia: {$stokAda}, diminta: {$kebutuhan[$idBarang]}). Stok telah berubah, silakan muat ulang transaksi.";
             }
             $db->transRollback();
@@ -586,9 +572,10 @@ class BarangKeluar extends BaseController
             $db->transRollback();
             return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
         }
+
         $db->transCommit();
 
-        $tujuan = $this->request->getPost('tujuan_penyaluran') ?: '-';
+        $tujuan    = $this->request->getPost('tujuan_penyaluran') ?: '-';
         $totalItem = array_sum(array_column($items, 'jumlah_keluar'));
 
         $logMsg = "Mengubah Penyaluran\nNo. {$barangKeluar['nomor_transaksi']}\nTujuan : {$tujuan}\nTotal Item : {$totalItem}";
@@ -596,19 +583,13 @@ class BarangKeluar extends BaseController
             $logMsg = "Edit Penyaluran menggunakan batch expired\nNo. {$barangKeluar['nomor_transaksi']}\nTujuan : {$tujuan}\nJumlah Batch Expired : " . count($expiredBatches);
         }
 
-        \App\Libraries\ActivityLogger::log(
-            'Edit Penyaluran',
-            'Penyaluran Barang',
-            $logMsg
-        );
+        \App\Libraries\ActivityLogger::log('Edit Penyaluran', 'Penyaluran Barang', $logMsg);
 
-        helper('format'); clear_dashboard_cache();
+        helper('format');
+        clear_dashboard_cache();
         return redirect()->to('/transaksi/barang-keluar')->with('success', 'Transaksi Barang Keluar berhasil diperbarui. Stok batch telah dihitung ulang menggunakan metode FEFO.');
     }
 
-    /**
-     * Detail transaksi + batch yang dipotong
-     */
     public function detail($id)
     {
         $barangKeluar = $this->barangKeluarModel
@@ -621,9 +602,6 @@ class BarangKeluar extends BaseController
             return redirect()->to('/transaksi/barang-keluar')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
 
-        // FIX: tambahkan batch.bisa_dipecah agar view bisa membedakan
-        // barang repack (jumlah sudah dalam Kg, jangan dikalikan lagi)
-        // vs barang utuh (perlu dikalikan berat_per_satuan untuk dapat berat total).
         $details = $this->detailModel
             ->select('detail_barang_keluar.*, batch.nomor_batch, batch.tanggal_kedaluwarsa, batch.jumlah_awal, batch.stok_saat_ini, COALESCE(barang.nama_barang, batch.nama_barang) as nama_barang, batch.satuan, batch.berat_per_satuan, batch.satuan_berat, batch.bisa_dipecah')
             ->join('batch', 'batch.id = detail_barang_keluar.id_batch')
@@ -639,9 +617,6 @@ class BarangKeluar extends BaseController
         return view('App\Modules\Transactions\Views\barang_keluar\detail', $data);
     }
 
-    /**
-     * Hapus transaksi + kembalikan stok batch
-     */
     public function delete($id)
     {
         if (!in_groups(['Administrator', 'Petugas Gudang'])) {
@@ -671,22 +646,21 @@ class BarangKeluar extends BaseController
             "Menghapus Penyaluran\nNo. {$barangKeluar['nomor_transaksi']}"
         );
 
-        helper('format'); clear_dashboard_cache();
+        helper('format');
+        clear_dashboard_cache();
         return redirect()->to(site_url('transaksi/barang-keluar'))->with('success', 'Transaksi berhasil dihapus. Stok batch telah dikembalikan.');
     }
 
-    /**
-     * API: Ambil stok barang (untuk JavaScript)
-     */
     public function getStok($idBarang)
     {
+        if (!$this->request->isAJAX()) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
         $stok = $this->fefo->getStokBarang((int) $idBarang);
         return $this->response->setJSON(['stok' => $stok]);
     }
 
-    /**
-     * Generate nomor transaksi dari Single Global Counter (Hanya Tampilan Form)
-     */
     private function generateNomorTransaksi(): string
     {
         $docService = new \App\Libraries\DocumentNumberService();
@@ -705,8 +679,6 @@ class BarangKeluar extends BaseController
             return redirect()->to('/transaksi/barang-keluar')->with('error', 'Transaksi tidak ditemukan atau sudah dihapus.');
         }
 
-        // FIX: sama seperti detail(), tambahkan batch.bisa_dipecah
-        // agar template PDF Berita Acara juga bisa hitung berat dengan benar.
         $details = $this->detailModel
             ->select('detail_barang_keluar.*, batch.nomor_batch, batch.tanggal_kedaluwarsa, batch.jumlah_awal, batch.stok_saat_ini, COALESCE(barang.nama_barang, batch.nama_barang) as nama_barang, batch.satuan, batch.berat_per_satuan, batch.satuan_berat, batch.bisa_dipecah')
             ->join('batch', 'batch.id = detail_barang_keluar.id_batch')
@@ -725,13 +697,13 @@ class BarangKeluar extends BaseController
             'provisions'      => array_column($provisions, 'content'),
         ];
 
-        $dompdf = new \Dompdf\Dompdf();
+        $dompdf  = new \Dompdf\Dompdf();
         $options = $dompdf->getOptions();
         $options->set('isRemoteEnabled', true);
         $options->set('isHtml5ParserEnabled', true);
         $dompdf->setOptions($options);
 
-        $isInternal = ($barangKeluar['jenis_penyaluran'] === 'Penyaluran Internal');
+        $isInternal   = ($barangKeluar['jenis_penyaluran'] === 'Penyaluran Internal');
         $viewTemplate = $isInternal ? 'laporan/permintaan_barang_keluar_internal' : 'laporan/berita_acara_penyaluran';
 
         $html = view($viewTemplate, $data);
@@ -741,7 +713,7 @@ class BarangKeluar extends BaseController
         $dompdf->render();
 
         $prefixName = $isInternal ? 'PBK_Internal_' : 'BAST_Donasi_';
-        $filename = $prefixName . str_replace('/', '_', $barangKeluar['nomor_transaksi']) . '.pdf';
+        $filename   = $prefixName . str_replace('/', '_', $barangKeluar['nomor_transaksi']) . '.pdf';
         $dompdf->stream($filename, ['Attachment' => 0]);
         exit;
     }
@@ -773,7 +745,7 @@ class BarangKeluar extends BaseController
             'isWord'          => true,
         ];
 
-        $html = view('laporan/berita_acara_penyaluran', $data);
+        $html     = view('laporan/berita_acara_penyaluran', $data);
         $filename = 'BAST_Donasi_' . str_replace('/', '_', $barangKeluar['nomor_transaksi']) . '.doc';
 
         return $this->response

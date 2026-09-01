@@ -364,11 +364,13 @@ div.dataTables_wrapper div.dataTables_processing {
 
 <?= $this->section('scripts') ?>
 <script>
+    // CSRF token — diperbarui setiap kali DataTables menerima response
     var csrfName = '<?= csrf_token() ?>';
     var csrfHash = '<?= csrf_hash() ?>';
 
     $(document).ready(function () {
-        $('#tabelBarangMasuk').DataTable({
+
+        var table = $('#tabelBarangMasuk').DataTable({
             processing: true,
             serverSide: true,
             ajax: {
@@ -379,6 +381,7 @@ div.dataTables_wrapper div.dataTables_processing {
                 }
             },
             drawCallback: function (settings) {
+                // Perbarui csrfHash dari setiap response — token selalu fresh
                 var response = settings.json;
                 if (response && response[csrfName]) {
                     csrfHash = response[csrfName];
@@ -406,16 +409,74 @@ div.dataTables_wrapper div.dataTables_processing {
             order: [],
             columnDefs: [
                 { orderable: false, targets: [0, 6] },
-                { className: "col-no text-center", targets: [0] },
-                { className: "col-notrx",          targets: [1] },
-                { className: "col-donatur",         targets: [2] },
-                { className: "col-item text-center", targets: [3] },
-                { className: "col-tgl",             targets: [4] },
-                { className: "col-petugas",         targets: [5] },
-                { className: "col-aksi text-center", targets: [6] }
+                { className: "col-no text-center",   targets: [0] },
+                { className: "col-notrx",             targets: [1] },
+                { className: "col-donatur",           targets: [2] },
+                { className: "col-item text-center",  targets: [3] },
+                { className: "col-tgl",               targets: [4] },
+                { className: "col-petugas",           targets: [5] },
+                { className: "col-aksi text-center",  targets: [6] }
             ],
             dom: '<"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"lf><"table-responsive"rt><"d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"ip>',
         });
+
+        // ─────────────────────────────────────────────────────────
+        // DELETE via fetch() — token selalu diambil dari csrfHash
+        // yang sudah diperbarui di drawCallback, bukan dari
+        // form HTML yang bisa stale.
+        // ─────────────────────────────────────────────────────────
+        $('#tabelBarangMasuk').on('click', '.btn-delete-dm', function () {
+            var url = $(this).data('url');
+
+            Swal.fire({
+                title: 'Hapus Transaksi?',
+                text: 'Yakin ingin menghapus transaksi ini beserta semua batch-nya?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                // Kirim token terbaru dari csrfHash (bukan dari form embed)
+                var body = new URLSearchParams();
+                body.append(csrfName, csrfHash);
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: body,
+                })
+                .then(function (res) {
+                    // Controller redirect → fetch tidak ikut redirect,
+                    // tapi response.ok tetap true (status 200/302).
+                    // Reload table & perbarui token dari header jika ada.
+                    var newToken = res.headers.get('X-CSRF-TOKEN');
+                    if (newToken) csrfHash = newToken;
+
+                    if (res.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Transaksi berhasil dihapus.',
+                            timer: 1800,
+                            showConfirmButton: false,
+                        }).then(function () {
+                            table.ajax.reload(null, false);
+                        });
+                    } else {
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus.', 'error');
+                    }
+                })
+                .catch(function () {
+                    Swal.fire('Gagal', 'Tidak dapat terhubung ke server.', 'error');
+                });
+            });
+        });
+
     });
 </script>
 <?= $this->endSection() ?>

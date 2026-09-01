@@ -12,7 +12,7 @@ class ActivityLogModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    
+
     protected $allowedFields    = [
         'id_user',
         'modul',
@@ -33,6 +33,9 @@ class ActivityLogModel extends Model
     protected $column_search = ['users.username', 'activity_logs.deskripsi'];
     protected $order         = ['activity_logs.created_at' => 'DESC'];
 
+    /**
+     * Builder dasar dengan join + filter — dipakai semua method query
+     */
     public function _getDatatablesQuery($postData)
     {
         $builder = $this->db->table($this->table);
@@ -41,7 +44,7 @@ class ActivityLogModel extends Model
         $builder->join('auth_groups_users', 'auth_groups_users.user_id = users.id', 'left');
         $builder->join('auth_groups', 'auth_groups.id = auth_groups_users.group_id', 'left');
 
-        // Apply custom filters
+        // Custom filters
         if (!empty($postData['tanggal_mulai'])) {
             $builder->where('DATE(activity_logs.created_at) >=', $postData['tanggal_mulai']);
         }
@@ -57,7 +60,7 @@ class ActivityLogModel extends Model
         if (!empty($postData['role'])) {
             $builder->where('auth_groups.name', $postData['role']);
         }
-        
+
         // DataTables Search
         $i = 0;
         if (isset($postData['search']['value']) && $postData['search']['value']) {
@@ -77,11 +80,11 @@ class ActivityLogModel extends Model
 
         // DataTables Ordering
         if (isset($postData['order'])) {
-            $orderCol = $this->column_order[$postData['order']['0']['column']];
+            $orderCol = $this->column_order[$postData['order']['0']['column']] ?? null;
             if ($orderCol) {
                 $builder->orderBy($orderCol, $postData['order']['0']['dir']);
             }
-        } elseif (isset($this->order)) {
+        } else {
             $order = $this->order;
             $builder->orderBy(key($order), $order[key($order)]);
         }
@@ -89,6 +92,9 @@ class ActivityLogModel extends Model
         return $builder;
     }
 
+    /**
+     * Ambil list rows untuk DataTables (dengan limit/offset)
+     */
     public function getDatatables($postData)
     {
         $builder = $this->_getDatatablesQuery($postData);
@@ -98,16 +104,54 @@ class ActivityLogModel extends Model
         return $builder->get()->getResultArray();
     }
 
+    /**
+     * [OPTIMASI] Gabungan getDatatables + countAll + countFiltered dalam 2 query.
+     * Dipakai oleh ajaxData() di controller — menggantikan 3 query terpisah.
+     *
+     * @return array ['list' => array, 'total' => int, 'filtered' => int]
+     */
+    public function getDatatablesWithCount(array $postData): array
+    {
+        // Query 1: total semua baris tanpa filter
+        $total = $this->db->table($this->table)->countAllResults(false);
+
+        // Query 2: builder dengan filter — hitung filtered, lalu ambil data
+        $builder = $this->_getDatatablesQuery($postData);
+
+        // countAllResults() dengan false = tidak reset builder
+        $filtered = $builder->countAllResults(false);
+
+        // Terapkan limit + offset setelah count
+        $length = isset($postData['length']) ? (int)$postData['length'] : 25;
+        $start  = isset($postData['start'])  ? (int)$postData['start']  : 0;
+        if ($length != -1) {
+            $builder->limit($length, $start);
+        }
+
+        $list = $builder->get()->getResultArray();
+
+        return [
+            'list'     => $list,
+            'total'    => $total,
+            'filtered' => $filtered,
+        ];
+    }
+
+    /**
+     * @deprecated Gunakan getDatatablesWithCount() untuk efisiensi.
+     * Dipertahankan agar tidak breaking jika dipakai di tempat lain.
+     */
     public function countFiltered($postData)
     {
         $builder = $this->_getDatatablesQuery($postData);
         return $builder->countAllResults();
     }
 
+    /**
+     * @deprecated Gunakan getDatatablesWithCount() untuk efisiensi.
+     */
     public function countAllData()
     {
-        $builder = $this->db->table($this->table);
-        return $builder->countAllResults();
+        return $this->db->table($this->table)->countAllResults();
     }
 }
-

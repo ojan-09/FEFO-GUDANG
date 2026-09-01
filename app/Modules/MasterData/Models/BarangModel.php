@@ -30,9 +30,13 @@ class BarangModel extends Model
     private function _getDatatablesQuery($postData)
     {
         $builder = $this->db->table($this->table)
-            ->select('barang.*, kategori.nama_kategori, target_barang.nama_barang as target_nama_barang')
-            ->join('kategori', 'kategori.id = barang.id_kategori')
-            ->join('barang as target_barang', 'target_barang.id = barang.merged_to', 'left');
+            ->select('barang.*, kategori.nama_kategori, target_barang.nama_barang as target_nama_barang,
+                      COALESCE(SUM(batch.stok_saat_ini), 0) as total_stok,
+                      COUNT(batch.id) as jumlah_batch')
+            ->join('kategori', 'kategori.id = barang.id_kategori', 'left')
+            ->join('barang as target_barang', 'target_barang.id = barang.merged_to', 'left')
+            ->join('batch', 'batch.id_barang = barang.id AND batch.stok_saat_ini > 0', 'left')
+            ->groupBy('barang.id, kategori.nama_kategori, target_barang.nama_barang');
 
         if (isset($postData['status_filter']) && in_array($postData['status_filter'], ['active', 'merged'])) {
             $builder->where('barang.status', $postData['status_filter']);

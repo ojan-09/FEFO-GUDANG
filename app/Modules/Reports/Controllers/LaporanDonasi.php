@@ -37,21 +37,19 @@ class LaporanDonasi extends BaseController
             users.username as petugas
         ');
         $builder->join('barang_masuk', 'barang_masuk.id = batch.id_barang_masuk');
-        $builder->join('barang', 'barang.id = batch.id_barang');
+        $builder->join('barang', 'barang.id = batch.id_barang', 'left');
         $builder->join('donatur', 'donatur.id = barang_masuk.id_donatur', 'left');
         $builder->join('users', 'users.id = barang_masuk.id_user', 'left');
         
         // Filters
-        $bulanFilter = $this->request->getGet('bulan') ?: date('m');
-        $tahunFilter = $this->request->getGet('tahun') ?: date('Y');
-        
+        $bulanFilter     = $this->request->getGet('bulan') ?? '';
+        $tahunFilter     = $this->request->getGet('tahun') ?: date('Y');
         $startDateFilter = $this->request->getGet('start_date');
-        $endDateFilter = $this->request->getGet('end_date');
-        
-        $donaturFilter = $this->request->getGet('donatur');
-        $searchFilter = $this->request->getGet('search');
-        $kategoriFilter = $this->request->getGet('kategori');
-        $nomorFilter = $this->request->getGet('nomor_donasi'); // Tetap di-support jika diakses, tapi sesuai prompt utamanya
+        $endDateFilter   = $this->request->getGet('end_date');
+        $donaturFilter   = $this->request->getGet('donatur');
+        $searchFilter    = $this->request->getGet('search');
+        $kategoriFilter  = $this->request->getGet('kategori');
+        $nomorFilter     = $this->request->getGet('nomor_donasi');
         
         // Cek mode custom
         $useCustomDate = false;
@@ -60,8 +58,9 @@ class LaporanDonasi extends BaseController
             $builder->where('barang_masuk.tanggal_masuk >=', $startDateFilter);
             $builder->where('barang_masuk.tanggal_masuk <=', $endDateFilter);
         } else {
-            // Gunakan periode bulan & tahun
-            $builder->where('MONTH(barang_masuk.tanggal_masuk)', $bulanFilter);
+            if (!empty($bulanFilter)) {
+                $builder->where('MONTH(barang_masuk.tanggal_masuk)', $bulanFilter);
+            }
             $builder->where('YEAR(barang_masuk.tanggal_masuk)', $tahunFilter);
         }
         
@@ -86,11 +85,11 @@ class LaporanDonasi extends BaseController
         $data = $builder->get()->getResultArray();
 
         // Calculate Totals
-        $totalTransaksi = 0;
-        $totalBarang = 0;
-        $totalBerat = 0;
+        $totalTransaksi   = 0;
+        $totalBarang      = 0;
+        $totalBerat       = 0;
         $totalNilaiDonasi = 0;
-        $transaksiUnik = [];
+        $transaksiUnik    = [];
 
         foreach ($data as $key => $row) {
             if (!in_array($row['nomor_transaksi'], $transaksiUnik)) {
@@ -98,7 +97,7 @@ class LaporanDonasi extends BaseController
                 $totalTransaksi++;
             }
             $totalBarang += $row['jumlah'];
-            $bisaDipecah = (int) ($row['bisa_dipecah'] ?? 0);
+            $bisaDipecah    = (int) ($row['bisa_dipecah'] ?? 0);
             $beratPerSatuan = (float) $row['berat_per_satuan'];
             if ($bisaDipecah === 1) {
                 $weightInKg = (float) $row['jumlah'];
@@ -108,30 +107,29 @@ class LaporanDonasi extends BaseController
             }
             $totalBerat += $weightInKg;
             
-            // Perhitungan nilai donasi
-            $nilaiSatuan = (float)($row['nilai_satuan'] ?? 0);
+            $nilaiSatuan    = (float)($row['nilai_satuan'] ?? 0);
             $totalNilaiBaris = (float)$row['jumlah'] * $nilaiSatuan;
-            $data[$key]['total_nilai'] = $totalNilaiBaris; // save for view
+            $data[$key]['total_nilai'] = $totalNilaiBaris;
             $totalNilaiDonasi += $totalNilaiBaris;
         }
 
         return [
-            'data' => $data,
+            'data'    => $data,
             'summary' => [
-                'total_transaksi' => $totalTransaksi,
-                'total_barang' => $totalBarang,
-                'total_berat' => $totalBerat,
+                'total_transaksi'    => $totalTransaksi,
+                'total_barang'       => $totalBarang,
+                'total_berat'        => $totalBerat,
                 'total_nilai_donasi' => $totalNilaiDonasi
             ],
             'filters' => [
-                'bulan' => $bulanFilter,
-                'tahun' => $tahunFilter,
-                'start_date' => $startDateFilter,
-                'end_date' => $endDateFilter,
-                'donatur' => $donaturFilter,
-                'search' => $searchFilter,
-                'kategori' => $kategoriFilter,
-                'nomor_donasi' => $nomorFilter,
+                'bulan'           => $bulanFilter,
+                'tahun'           => $tahunFilter,
+                'start_date'      => $startDateFilter,
+                'end_date'        => $endDateFilter,
+                'donatur'         => $donaturFilter,
+                'search'          => $searchFilter,
+                'kategori'        => $kategoriFilter,
+                'nomor_donasi'    => $nomorFilter,
                 'use_custom_date' => $useCustomDate
             ]
         ];
@@ -144,35 +142,37 @@ class LaporanDonasi extends BaseController
         $kategoriList = $db->table('kategori')->select('nama_kategori')->orderBy('nama_kategori', 'ASC')->get()->getResultArray();
 
         $bulanList = [
-            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
-            '04' => 'April', '05' => 'Mei', '06' => 'Juni',
-            '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
-            '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+            ''   => 'Semua Bulan',
+            '01' => 'Januari',  '02' => 'Februari', '03' => 'Maret',
+            '04' => 'April',    '05' => 'Mei',       '06' => 'Juni',
+            '07' => 'Juli',     '08' => 'Agustus',   '09' => 'September',
+            '10' => 'Oktober',  '11' => 'November',  '12' => 'Desember'
         ];
-        $tahunList = [];
+
+        $tahunList   = [];
         $currentYear = date('Y');
         for ($i = $currentYear; $i >= $currentYear - 5; $i--) {
             $tahunList[] = $i;
         }
 
         $filters = [
-            'bulan' => $this->request->getGet('bulan') ?: date('m'),
-            'tahun' => $this->request->getGet('tahun') ?: date('Y'),
-            'start_date' => $this->request->getGet('start_date'),
-            'end_date' => $this->request->getGet('end_date'),
-            'donatur' => $this->request->getGet('donatur'),
-            'search' => $this->request->getGet('search'),
-            'kategori' => $this->request->getGet('kategori'),
-            'nomor_donasi' => $this->request->getGet('nomor_donasi'),
+            'bulan'           => $this->request->getGet('bulan') ?? '',
+            'tahun'           => $this->request->getGet('tahun') ?: date('Y'),
+            'start_date'      => $this->request->getGet('start_date'),
+            'end_date'        => $this->request->getGet('end_date'),
+            'donatur'         => $this->request->getGet('donatur'),
+            'search'          => $this->request->getGet('search'),
+            'kategori'        => $this->request->getGet('kategori'),
+            'nomor_donasi'    => $this->request->getGet('nomor_donasi'),
             'use_custom_date' => (!empty($this->request->getGet('start_date')) && !empty($this->request->getGet('end_date')))
         ];
 
         $data = [
-            'title'      => 'Laporan Donasi Masuk',
-            'filters'    => $filters,
-            'kategori'   => $kategoriList,
-            'bulanList'  => $bulanList,
-            'tahunList'  => $tahunList
+            'title'     => 'Laporan Donasi Masuk',
+            'filters'   => $filters,
+            'kategori'  => $kategoriList,
+            'bulanList' => $bulanList,
+            'tahunList' => $tahunList
         ];
         
         return view('App\Modules\Reports\Views\laporan_donasi\index', $data);
@@ -182,11 +182,11 @@ class LaporanDonasi extends BaseController
     {
         try {
             $postData = $this->request->getPost();
-            $model = new \App\Modules\Reports\Models\LaporanDonasiModel();
+            $model    = new \App\Modules\Reports\Models\LaporanDonasiModel();
 
             $list = $model->getDatatables($postData);
             $data = [];
-            $no = (int)($postData['start'] ?? 0);
+            $no   = (int)($postData['start'] ?? 0);
 
             helper('format');
             foreach ($list as $item) {
@@ -205,10 +205,10 @@ class LaporanDonasi extends BaseController
                     }
                 }
 
-                $tglMasuk = $item['tanggal_masuk'] ? date('d/m/Y', strtotime($item['tanggal_masuk'])) : '-';
-                $tglExp   = $item['tanggal_kedaluwarsa'] ? date('d/m/Y', strtotime($item['tanggal_kedaluwarsa'])) : '-';
+                $tglMasuk        = $item['tanggal_masuk']        ? date('d/m/Y', strtotime($item['tanggal_masuk']))        : '-';
+                $tglExp          = $item['tanggal_kedaluwarsa']   ? date('d/m/Y', strtotime($item['tanggal_kedaluwarsa'])) : '-';
                 $beratBersihText = $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-';
-                $totalBeratText  = $totalBeratRow > 0 ? format_berat($totalBeratRow, 'Kg') : '-';
+                $totalBeratText  = $totalBeratRow  > 0 ? format_berat($totalBeratRow, 'Kg')                  : '-';
 
                 $data[] = [
                     'no'                  => $no,
@@ -261,8 +261,8 @@ class LaporanDonasi extends BaseController
         }
 
         $result = $this->_getFilteredData();
-        $data = [
-            'title' => 'LAPORAN DONASI MASUK',
+        $data   = [
+            'title'   => 'LAPORAN DONASI MASUK',
             'laporan' => $result['data'],
             'summary' => $result['summary'],
             'filters' => $result['filters']
@@ -287,13 +287,13 @@ class LaporanDonasi extends BaseController
         }
 
         helper('format');
-        $result = $this->_getFilteredData();
+        $result  = $this->_getFilteredData();
         $laporan = $result['data'];
         $summary = $result['summary'];
         $filters = $result['filters'];
         
         $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+        $sheet       = $spreadsheet->getActiveSheet();
         
         $spreadsheet->getDefaultStyle()->getFont()->setName('Times New Roman')->setSize(10);
         $spreadsheet->getDefaultStyle()->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
@@ -304,10 +304,8 @@ class LaporanDonasi extends BaseController
         $pageSetup->setFitToWidth(1);
         $pageSetup->setFitToHeight(0);
         $sheet->getPageMargins()->setTop(0.75)->setRight(0.7)->setLeft(0.7)->setBottom(0.75);
-        
         $pageSetup->setRowsToRepeatAtTopByStartAndEnd(3, 3);
         
-        // Baris 1: Header
         $sheet->setCellValue('A1', 'FOODBANK OF INDONESIA');
         $sheet->mergeCells('A1:P1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
@@ -318,47 +316,35 @@ class LaporanDonasi extends BaseController
         $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         
-        // Baris 3: Table Headers
         $headers = [
-            'A3' => 'No',
-            'B3' => 'Tanggal Masuk',
-            'C3' => 'Nomor Donasi',
-            'D3' => 'Donatur',
-            'E3' => 'Nama Barang',
-            'F3' => 'Kategori',
-            'G3' => 'Jumlah',
-            'H3' => 'Satuan',
-            'I3' => 'CTN',
-            'J3' => 'Berat Bersih',
-            'K3' => 'Total Berat',
-            'L3' => 'Tanggal Kedaluwarsa',
-            'M3' => 'Keterangan',
-            'N3' => 'Nilai Satuan',
-            'O3' => 'Total Nilai',
-            'P3' => 'Petugas'
+            'A3' => 'No',                  'B3' => 'Tanggal Masuk',
+            'C3' => 'Nomor Donasi',        'D3' => 'Donatur',
+            'E3' => 'Nama Barang',         'F3' => 'Kategori',
+            'G3' => 'Jumlah',              'H3' => 'Satuan',
+            'I3' => 'CTN',                 'J3' => 'Berat Bersih',
+            'K3' => 'Total Berat',         'L3' => 'Tanggal Kedaluwarsa',
+            'M3' => 'Keterangan',          'N3' => 'Nilai Satuan',
+            'O3' => 'Total Nilai',         'P3' => 'Petugas'
         ];
         
         foreach ($headers as $cell => $text) {
             $sheet->setCellValue($cell, $text);
             $sheet->getStyle($cell)->getFont()->setBold(true);
-            $sheet->getStyle($cell)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)
-                                                   ->setVertical(Alignment::VERTICAL_CENTER)
-                                                   ->setWrapText(true);
+            $sheet->getStyle($cell)->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                ->setVertical(Alignment::VERTICAL_CENTER)
+                ->setWrapText(true);
         }
         
         $sheet->getStyle('A3:P3')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        
-        // Freeze panes
         $sheet->freezePane('A4');
-        
-        // Auto filter
         $sheet->setAutoFilter('A3:P3');
 
         $row = 4;
-        $no = 1;
+        $no  = 1;
         
         foreach ($laporan as $item) {
-            $bisaDipecah = (int) ($item['bisa_dipecah'] ?? 0);
+            $bisaDipecah    = (int) ($item['bisa_dipecah'] ?? 0);
             $beratPerSatuan = (float) $item['berat_per_satuan'];
             if ($bisaDipecah === 1) {
                 $totalBeratRow = (float) $item['jumlah'];
@@ -380,18 +366,15 @@ class LaporanDonasi extends BaseController
             $sheet->setCellValue('H' . $row, $item['satuan']);
             $sheet->setCellValue('I' . $row, $item['jumlah_ctn'] ?? '-');
             $sheet->setCellValue('J' . $row, $beratPerSatuan > 0 ? format_berat($beratPerSatuan, $item['satuan_berat']) : '-');
-            $sheet->setCellValue('K' . $row, $totalBeratRow > 0 ? format_berat($totalBeratRow, $item['satuan_berat']) : '-');
+            $sheet->setCellValue('K' . $row, $totalBeratRow  > 0 ? format_berat($totalBeratRow, $item['satuan_berat'])  : '-');
             $sheet->setCellValue('L' . $row, $item['tanggal_kedaluwarsa'] ? date('d-M-Y', strtotime($item['tanggal_kedaluwarsa'])) : '-');
             $sheet->setCellValue('M' . $row, $item['keterangan'] ?? '-');
-            
             $sheet->setCellValue('N' . $row, $item['nilai_satuan'] ?? 0);
             $sheet->getStyle('N' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0');
             $sheet->setCellValue('O' . $row, $item['total_nilai'] ?? 0);
             $sheet->getStyle('O' . $row)->getNumberFormat()->setFormatCode('"Rp "#,##0');
-            
             $sheet->setCellValue('P' . $row, $item['petugas'] ?? '-');
 
-            // Alignment
             $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("B{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("C{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -404,21 +387,17 @@ class LaporanDonasi extends BaseController
             $sheet->getStyle("N{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet->getStyle("O{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet->getStyle("P{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
             $sheet->getStyle("A{$row}:P{$row}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
             
             $row++;
         }
 
-        // Auto Width for all columns
         foreach (range('A', 'P') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
         
-        // Blank row before summary
         $row++;
         
-        // Summary
         $sheet->setCellValue("B{$row}", "Total Transaksi");
         $sheet->setCellValue("C{$row}", $summary['total_transaksi']);
         $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
@@ -439,7 +418,7 @@ class LaporanDonasi extends BaseController
         $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('"Rp "#,##0');
         $sheet->getStyle("B{$row}:C{$row}")->getFont()->setBold(true);
 
-        $writer = new Xlsx($spreadsheet);
+        $writer   = new Xlsx($spreadsheet);
         $filename = 'Laporan_Donasi_Masuk_' . date('Ymd_His') . '.xlsx';
         
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -450,4 +429,3 @@ class LaporanDonasi extends BaseController
         exit;
     }
 }
-
