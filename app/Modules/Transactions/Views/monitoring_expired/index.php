@@ -27,7 +27,6 @@
         padding: 20px 24px 40px 24px;
     }
 
-    /* ── Header ── */
     .wh-header {
         background: var(--wh-card);
         border: 1px solid var(--wh-border);
@@ -47,7 +46,6 @@
     .wh-header h1 i { color: var(--wh-primary); }
     .wh-header p { margin: 0; font-size: 0.85rem; color: var(--wh-text-soft); }
 
-    /* ── Filter ── */
     .wh-filter-card {
         background: var(--wh-card); border: 1px solid var(--wh-border);
         border-radius: 16px; padding: 20px; margin-bottom: 16px;
@@ -64,7 +62,6 @@
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
-    /* ── Buttons ── */
     .wh-btn-primary {
         background: var(--wh-primary); border: 1px solid var(--wh-primary); color: #fff;
         height: 44px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
@@ -102,13 +99,11 @@
     .wh-btn-danger:hover { background: #B91C1C; color: #fff; }
     .wh-btn-danger:active { transform: scale(0.98); }
 
-    /* ── Table Card ── */
     .wh-table-card {
         background: var(--wh-card); border: 1px solid var(--wh-border);
         border-radius: 16px; padding: 8px 8px 4px 8px; overflow: hidden;
     }
 
-    /* ── Table Loading Spinner ── */
     .dm-table-wrap {
         position: relative;
         min-height: 260px;
@@ -142,7 +137,6 @@
         opacity: 0;
     }
 
-    /* ── Table ── */
     #tableExpired { border-collapse: separate; border-spacing: 0; }
     #tableExpired thead th {
         background: var(--wh-bg); color: var(--wh-text-soft);
@@ -161,7 +155,6 @@
     #tableExpired tbody tr { transition: background 120ms ease; }
     #tableExpired tbody tr:hover { background: #F3F4F6; }
 
-    /* ── Badge Priority ── */
     .wh-badge {
         display: inline-flex; align-items: center; gap: 5px;
         border-radius: 999px; padding: 4px 10px 4px 8px;
@@ -173,7 +166,6 @@
     .wh-badge.success { background: var(--wh-success-soft); color: #15803D; }
     .wh-badge.info    { background: var(--wh-primary-soft); color: #1D4ED8; }
 
-    /* ── Action Buttons ── */
     .wh-action-btn {
         height: 28px; width: 28px; border-radius: 6px; border: 1px solid var(--wh-border);
         background: #fff; display: inline-flex; align-items: center; justify-content: center;
@@ -184,7 +176,6 @@
     .wh-action-btn.btn-use   { color: #16A34A; }
     .wh-action-btn.btn-use:hover   { background: var(--wh-success-soft); border-color: #16A34A; }
 
-    /* ── DataTables overrides ── */
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter,
     .dataTables_wrapper .dataTables_info,
@@ -212,7 +203,6 @@
         background: var(--wh-dark-soft) !important; color: var(--wh-text) !important;
     }
 
-    /* ── Processing Overlay ── */
     div.dataTables_wrapper { position: relative; }
     div.dataTables_wrapper div.dataTables_processing {
         position: absolute;
@@ -227,7 +217,6 @@
         margin: 0;
     }
 
-    /* ── Mobile ── */
     @media (max-width: 768px) {
         .wh-page { padding: 12px 12px 40px 12px; }
         .wh-header { flex-direction: column; align-items: flex-start; padding: 20px; }
@@ -265,7 +254,7 @@
                 <select class="form-select" id="filterPriority">
                     <option value="">Semua Prioritas</option>
                     <option value="CRITICAL">CRITICAL (&gt;30 hari lewat)</option>
-                    <option value="HIGH">HIGH (1–30 hari lewat)</option>
+                    <option value="HIGH">HIGH (1-30 hari lewat)</option>
                     <option value="WARNING">WARNING (&lt;30 hari lagi)</option>
                     <option value="INFO">INFO (&lt;90 hari lagi)</option>
                 </select>
@@ -315,6 +304,7 @@
 <?= $this->section('scripts') ?>
 <script>
 $(document).ready(function () {
+
     var table = $('#tableExpired').DataTable({
         processing: true,
         serverSide: true,
@@ -328,7 +318,6 @@ $(document).ready(function () {
             }
         },
         drawCallback: function () {
-            // Spinner hilang setelah data selesai dimuat
             $('#tableExpired').closest('.dm-table-wrap').addClass('loaded');
         },
         columns: [
@@ -349,7 +338,6 @@ $(document).ready(function () {
         }
     });
 
-    // Spinner muncul lagi saat filter berubah
     $('#filterPriority, #filterKategori').on('change', function () {
         $('#tableExpired').closest('.dm-table-wrap').removeClass('loaded');
         table.draw();
@@ -379,12 +367,55 @@ $(document).ready(function () {
         e.preventDefault();
         var id = $(this).data('id');
         var sisa = parseInt($(this).data('sisa'));
+
         if (sisa < 0) {
-            Swal.fire('Ditolak', 'Batch ini sudah Expired total (CRITICAL/HIGH) dan tidak boleh disalurkan!', 'error');
-            return;
+            var label = (sisa < -30) ? 'CRITICAL' : 'HIGH';
+            var sisaText = Math.abs(sisa) + ' hari yang lalu';
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Barang Sudah Expired!',
+                html: '<div style="text-align:left; font-size:0.9rem; line-height:1.7">'
+                    + '<p>Batch ini memiliki status <b style="color:#DC2626">' + label + '</b>'
+                    + ' dan telah melewati tanggal kedaluwarsa <b>' + sisaText + '</b>.</p>'
+                    + '<p>Mendistribusikan barang expired dapat berisiko. Pastikan Anda sudah mendapat persetujuan yang diperlukan.</p>'
+                    + '<p><b>Apakah Anda tetap ingin mendistribusikan batch ini?</b></p>'
+                    + '</div>',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Tetap Distribusikan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#D97706',
+                cancelButtonColor: '#6B7280',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    window.location.href = "<?= site_url('transaksi/barang-keluar/create') ?>?id_batch=" + id;
+                }
+            });
+
+        } else if (sisa <= 30) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Barang Hampir Expired',
+                html: 'Batch ini akan kedaluwarsa dalam <b>' + sisa + ' hari</b>.<br>Lanjutkan distribusi?',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Distribusikan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#2563EB',
+                cancelButtonColor: '#6B7280',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    window.location.href = "<?= site_url('transaksi/barang-keluar/create') ?>?id_batch=" + id;
+                }
+            });
+
+        } else {
+            window.location.href = "<?= site_url('transaksi/barang-keluar/create') ?>?id_batch=" + id;
         }
-        window.location.href = "<?= site_url('transaksi/barang-keluar/create') ?>?id_batch=" + id;
     });
+
 });
 
 function exportData(type) {

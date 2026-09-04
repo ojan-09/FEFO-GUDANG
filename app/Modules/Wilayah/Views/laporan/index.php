@@ -119,10 +119,10 @@
     .wh-btn-danger:active { transform: scale(0.98); }
 
     .wh-btn-danger,
-.wh-btn-success {
-    min-width: 140px;
-    justify-content: center;
-}
+    .wh-btn-success {
+        min-width: 140px;
+        justify-content: center;
+    }
     /* ── Table ── */
     .wh-table-card {
         background: var(--wh-card); border: 1px solid var(--wh-border);

@@ -130,7 +130,7 @@ class MonitoringExpired extends BaseController
             $btnAction .= $btnSeen;
             $btnAction .= '<a href="'.site_url('transaksi/monitoring-expired/detail/'.$row['id']).'" class="btn btn-sm btn-outline-primary" title="Detail Batch"><i class="fa-solid fa-eye"></i></a>';
             if (in_groups('Administrator')) {
-                $btnAction .= '<button class="btn btn-sm btn-outline-warning btn-use-batch" data-id="'.$row['id'].'" data-sisa="'.$row['sisa_hari'].'" title="Gunakan Batch Ini"><i class="fa-solid fa-share-from-square"></i></button>';
+                $btnAction .= '<button class="btn btn-sm btn-outline-warning btn-use-batch" data-id="'.$row['id'].'" data-sisa="'.$row['sisa_hari'].'" data-priority="'.$priority.'" title="Gunakan Batch Ini"><i class="fa-solid fa-share-from-square"></i></button>';
             }
             $btnAction .= '</div>';
 
