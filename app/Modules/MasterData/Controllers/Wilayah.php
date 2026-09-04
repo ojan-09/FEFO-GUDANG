@@ -171,19 +171,19 @@ class Wilayah extends BaseController
             $no++;
             $rowData = [];
 
-            $rowData[] = '<div class="text-center text-muted" style="font-size:13px;">' . $no . '</div>';
-            $rowData[] = '<span class="fw-semibold text-dark">' . esc($row['nama_wilayah']) . '</span>';
-            
-            $statusBadge = $row['status'] == 'Aktif' 
-                ? '<span class="badge" style="background:#dcfce7; color:#16a34a;"><i class="fa-solid fa-check me-1"></i>Aktif</span>' 
-                : '<span class="badge" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-xmark me-1"></i>Nonaktif</span>';
-            
+            $rowData[] = '<div class="text-center wil-cell-no">' . $no . '</div>';
+            $rowData[] = '<span class="wil-cell-name">' . esc($row['nama_wilayah']) . '</span>';
+
+            $statusBadge = $row['status'] == 'Aktif'
+                ? '<span class="wil-badge wil-badge-aktif"><i class="fa-solid fa-check me-1"></i>Aktif</span>'
+                : '<span class="wil-badge wil-badge-nonaktif"><i class="fa-solid fa-xmark me-1"></i>Nonaktif</span>';
+
             $rowData[] = $statusBadge;
-            
+
             $aksi = '<div class="wil-actions">
                         <a href="' . site_url('masterdata/wilayah/edit/' . $row['id']) . '" class="wil-action-btn wil-action-edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
                         <a href="' . site_url('masterdata/wilayah/delete/' . $row['id']) . '" class="wil-action-btn wil-action-delete btn-delete-swal" title="Hapus" data-confirm-text="Yakin ingin menghapus wilayah ini?"><i class="fa-solid fa-trash"></i></a>
-                     </div>';
+                    </div>';
             $rowData[] = $aksi;
             $data[] = $rowData;
         }

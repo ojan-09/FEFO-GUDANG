@@ -22,19 +22,19 @@ class LaporanWilayah extends BaseController
 
     public function index()
     {
-        $isAdmin = function_exists('in_groups') ? in_groups('Administrator') : true;
+        $isAdmin      = function_exists('in_groups') ? in_groups('Administrator') : true;
         $userGudangId = (function_exists('user') && user()) ? user()->id_gudang_wilayah : null;
-        
-        $cacheKey = 'gudang_wilayah_list_all';
+
+        $cacheKey  = 'gudang_wilayah_list_all';
         $allGudang = cache()->get($cacheKey);
-        
+
         if ($allGudang === null) {
             $allGudang = $this->gudangModel->findAll();
             cache()->save($cacheKey, $allGudang, 3600);
         }
 
         if (!$isAdmin && $userGudangId) {
-            $gudang = array_filter($allGudang, function($g) use ($userGudangId) {
+            $gudang = array_filter($allGudang, function ($g) use ($userGudangId) {
                 return $g['id'] == $userGudangId;
             });
         } else {
@@ -50,7 +50,21 @@ class LaporanWilayah extends BaseController
         return view('App\Modules\Wilayah\Views\laporan\index', $data);
     }
 
-    private function buildQuery()
+    /**
+     * Cek apakah perlu include data internal:
+     * Hanya kalau filter id_gudang kosong (Seluruh Gudang) dan user adalah Admin
+     */
+    private function includeInternal()
+    {
+        $idGudang = $this->request->getVar('id_gudang');
+        $isAdmin  = function_exists('in_groups') ? in_groups('Administrator') : false;
+        return $isAdmin && empty($idGudang);
+    }
+
+    /**
+     * Selalu return int
+     */
+    private function getTotalCount(): int
     {
         $idGudang  = $this->request->getVar('id_gudang');
         $provinsi  = $this->request->getVar('provinsi');
@@ -66,93 +80,7 @@ class LaporanWilayah extends BaseController
 
         if ($jenis == 'stok') {
             $builder = $db->table("stok_gudang_wilayah s");
-            $builder->select('s.*, m.nama as nama_gudang, m.kota, m.provinsi, brg.nama_barang, brg.kode_barang, kat.nama_kategori as kategori, brg.satuan, brg.berat_per_satuan as berat');
-            $builder->join('master_gudang_wilayah m', 'm.id = s.id_gudang');
-            $builder->join('master_barang_wilayah brg', 'brg.id = s.id_barang');
-            $builder->join('kategori kat', 'kat.id = brg.id_kategori', 'left');
-
-            if (!empty($idGudang)) {
-                $builder->where('s.id_gudang', $idGudang);
-            }
-            if (!empty($provinsi)) {
-                $builder->like('m.provinsi', $provinsi);
-            }
-            $builder->orderBy('m.nama', 'ASC');
-            $builder->orderBy('brg.nama_barang', 'ASC');
-            return $builder;
-        }
-
-        $table       = ($jenis == 'keluar') ? 'barang_keluar_wilayah'        : 'barang_masuk_wilayah';
-        $detailTable = ($jenis == 'keluar') ? 'detail_barang_keluar_wilayah' : 'detail_barang_masuk_wilayah';
-        $foreignKey  = ($jenis == 'keluar') ? 'id_keluar'                    : 'id_masuk';
-
-        $builder = $db->table("$table t");
-
-        if ($jenis == 'keluar') {
-            $builder->select('t.*, d.jumlah, d.satuan,
-                COALESCE(d.berat_per_satuan, s.berat_per_satuan, 0) as berat_referensi,
-                COALESCE(d.satuan_berat, s.satuan_berat, "Kg") as satuan_berat,
-                m.nama as nama_gudang, m.kota, m.provinsi,
-                brg.nama_barang, brg.kode_barang,
-                kat.nama_kategori as kategori,
-                u.username as nama_user');
-            $builder->join('users u', 'u.id = t.created_by', 'left');
-        } else {
-            $builder->select('t.*, dn.nama_donatur as donatur,
-                d.jumlah, d.satuan, d.berat_per_satuan,
-                COALESCE(d.satuan_berat, "Kg") as satuan_berat,
-                d.harga_satuan, d.subtotal_nilai,
-                m.nama as nama_gudang, m.kota, m.provinsi,
-                brg.nama_barang, brg.kode_barang,
-                kat.nama_kategori as kategori,
-                u.username as nama_user');
-            $builder->join('donatur dn', 'dn.id = t.id_donatur', 'left');
-            $builder->join('users u', 'u.id = t.created_by', 'left');
-        }
-
-        // JOIN utama — d harus didefinisikan sebelum stok
-        $builder->join('master_gudang_wilayah m', 'm.id = t.id_gudang');
-        $builder->join("$detailTable d", "d.$foreignKey = t.id");
-        $builder->join('master_barang_wilayah brg', 'brg.id = d.id_barang');
-        $builder->join('kategori kat', 'kat.id = brg.id_kategori', 'left');
-
-        // JOIN stok SETELAH d didefinisikan — fix bug "Unknown column d.id_barang in on clause"
-        if ($jenis == 'keluar') {
-            $builder->join('stok_gudang_wilayah s', 's.id_gudang = t.id_gudang AND s.id_barang = d.id_barang', 'left');
-        }
-
-        $builder->where('t.deleted_at', null);
-
-        if (!empty($idGudang)) {
-            $builder->where('t.id_gudang', $idGudang);
-        }
-        if (!empty($provinsi)) {
-            $builder->like('m.provinsi', $provinsi);
-        }
-        if (!empty($startDate) && !empty($endDate)) {
-            $builder->where('t.tanggal >=', $startDate);
-            $builder->where('t.tanggal <=', $endDate);
-        }
-
-        $builder->orderBy('t.tanggal', 'DESC');
-
-        return $builder;
-    }
-
-    private function buildCountQuery()
-    {
-        $idGudang  = $this->request->getVar('id_gudang');
-        $provinsi  = $this->request->getVar('provinsi');
-        $jenis     = $this->request->getVar('jenis');
-
-        if (!in_groups('Administrator')) {
-            $idGudang = user()->id_gudang_wilayah;
-        }
-
-        $db = \Config\Database::connect();
-
-        if ($jenis == 'stok') {
-            $builder = $db->table("stok_gudang_wilayah s");
+            $builder->where('s.jumlah >', 0);
             if (!empty($provinsi)) {
                 $builder->join('master_gudang_wilayah m', 'm.id = s.id_gudang');
                 $builder->like('m.provinsi', $provinsi);
@@ -160,7 +88,7 @@ class LaporanWilayah extends BaseController
             if (!empty($idGudang)) {
                 $builder->where('s.id_gudang', $idGudang);
             }
-            return $builder;
+            return $builder->countAllResults();
         }
 
         $table       = ($jenis == 'keluar') ? 'barang_keluar_wilayah'        : 'barang_masuk_wilayah';
@@ -169,84 +97,227 @@ class LaporanWilayah extends BaseController
 
         $builder = $db->table("$table t");
         $builder->join("$detailTable d", "d.$foreignKey = t.id");
-
         if (!empty($provinsi)) {
             $builder->join('master_gudang_wilayah m', 'm.id = t.id_gudang');
             $builder->like('m.provinsi', $provinsi);
         }
         $builder->where('t.deleted_at', null);
-
         if (!empty($idGudang)) {
             $builder->where('t.id_gudang', $idGudang);
         }
-
-        $startDate = $this->request->getVar('start_date');
-        $endDate   = $this->request->getVar('end_date');
         if (!empty($startDate) && !empty($endDate)) {
             $builder->where('t.tanggal >=', $startDate);
             $builder->where('t.tanggal <=', $endDate);
         }
+        $count = $builder->countAllResults();
 
-        return $builder;
+        if ($this->includeInternal()) {
+            if ($jenis == 'keluar') {
+                $internalBuilder = $db->table('barang_keluar bk')
+                    ->join('detail_barang_keluar dk', 'dk.id_barang_keluar = bk.id');
+                if (!empty($startDate) && !empty($endDate)) {
+                    $internalBuilder->where('bk.tanggal_keluar >=', $startDate);
+                    $internalBuilder->where('bk.tanggal_keluar <=', $endDate);
+                }
+            } else {
+                $internalBuilder = $db->table('barang_masuk bm')
+                    ->join('batch b', 'b.id_barang_masuk = bm.id');
+                if (!empty($startDate) && !empty($endDate)) {
+                    $internalBuilder->where('bm.tanggal_masuk >=', $startDate);
+                    $internalBuilder->where('bm.tanggal_masuk <=', $endDate);
+                }
+            }
+            $count += (int) $internalBuilder->countAllResults();
+        }
+
+        return $count;
+    }
+
+    /**
+     * Selalu return array of rows (sudah handle UNION)
+     */
+    private function getRows(int $start, int $length): array
+    {
+        $idGudang  = $this->request->getVar('id_gudang');
+        $provinsi  = $this->request->getVar('provinsi');
+        $jenis     = $this->request->getVar('jenis');
+        $startDate = $this->request->getVar('start_date');
+        $endDate   = $this->request->getVar('end_date');
+
+        if (!in_groups('Administrator')) {
+            $idGudang = user()->id_gudang_wilayah;
+        }
+
+        $db = \Config\Database::connect();
+
+        // ── STOK ─────────────────────────────────────────────────────────────
+        if ($jenis == 'stok') {
+            $builder = $db->table("stok_gudang_wilayah s");
+            $builder->select('s.*, m.nama as nama_gudang, m.kota, m.provinsi, brg.nama_barang, brg.kode_barang, kat.nama_kategori as kategori, brg.satuan, brg.berat_per_satuan as berat');
+            $builder->join('master_gudang_wilayah m', 'm.id = s.id_gudang');
+            $builder->join('master_barang_wilayah brg', 'brg.id = s.id_barang');
+            $builder->join('kategori kat', 'kat.id = brg.id_kategori', 'left');
+            $builder->where('s.jumlah >', 0);
+            if (!empty($idGudang)) $builder->where('s.id_gudang', $idGudang);
+            if (!empty($provinsi)) $builder->like('m.provinsi', $provinsi);
+            $builder->orderBy('m.nama', 'ASC')->orderBy('brg.nama_barang', 'ASC');
+
+            $builder->limit($length, $start);
+            return $builder->get()->getResultArray();
+        }
+
+        // ── MASUK / KELUAR ───────────────────────────────────────────────────
+        $table       = ($jenis == 'keluar') ? 'barang_keluar_wilayah'        : 'barang_masuk_wilayah';
+        $detailTable = ($jenis == 'keluar') ? 'detail_barang_keluar_wilayah' : 'detail_barang_masuk_wilayah';
+        $foreignKey  = ($jenis == 'keluar') ? 'id_keluar'                    : 'id_masuk';
+
+        $builder = $db->table("$table t");
+
+        if ($jenis == 'keluar') {
+            $builder->select('t.id, t.nomor_dokumen, t.tanggal, t.keterangan, t.created_at, t.updated_at,
+                d.jumlah, d.satuan,
+                COALESCE(d.berat_per_satuan, s.berat_per_satuan, 0) as berat_referensi,
+                COALESCE(d.satuan_berat, s.satuan_berat, "Kg") as satuan_berat,
+                m.nama as nama_gudang, m.kota, m.provinsi,
+                brg.nama_barang, brg.kode_barang,
+                kat.nama_kategori as kategori,
+                u.username as nama_user,
+                t.tujuan as tujuan,
+                NULL as donatur,
+                NULL as harga_satuan,
+                NULL as subtotal_nilai');
+            $builder->join('users u', 'u.id = t.created_by', 'left');
+        } else {
+            $builder->select('t.id, t.nomor_dokumen, t.tanggal, t.keterangan, t.created_at, t.updated_at,
+                d.jumlah, d.satuan, d.berat_per_satuan,
+                COALESCE(d.satuan_berat, "Kg") as satuan_berat,
+                d.harga_satuan, d.subtotal_nilai,
+                m.nama as nama_gudang, m.kota, m.provinsi,
+                brg.nama_barang, brg.kode_barang,
+                kat.nama_kategori as kategori,
+                u.username as nama_user,
+                NULL as tujuan,
+                dn.nama_donatur as donatur,
+                NULL as berat_referensi');
+            $builder->join('donatur dn', 'dn.id = t.id_donatur', 'left');
+            $builder->join('users u', 'u.id = t.created_by', 'left');
+        }
+
+        $builder->join('master_gudang_wilayah m', 'm.id = t.id_gudang');
+        $builder->join("$detailTable d", "d.$foreignKey = t.id");
+        $builder->join('master_barang_wilayah brg', 'brg.id = d.id_barang');
+        $builder->join('kategori kat', 'kat.id = brg.id_kategori', 'left');
+
+        if ($jenis == 'keluar') {
+            $builder->join('stok_gudang_wilayah s', 's.id_gudang = t.id_gudang AND s.id_barang = d.id_barang', 'left');
+        }
+
+        $builder->where('t.deleted_at', null);
+        if (!empty($idGudang)) $builder->where('t.id_gudang', $idGudang);
+        if (!empty($provinsi)) $builder->like('m.provinsi', $provinsi);
+        if (!empty($startDate) && !empty($endDate)) {
+            $builder->where('t.tanggal >=', $startDate);
+            $builder->where('t.tanggal <=', $endDate);
+        }
+        $builder->orderBy('t.tanggal', 'DESC');
+
+        if ($this->includeInternal()) {
+            $sqlWilayah = $builder->getCompiledSelect();
+
+            $dateFilter = '';
+            if (!empty($startDate) && !empty($endDate)) {
+                $dateFilter = "AND tanggal >= '{$startDate}' AND tanggal <= '{$endDate}'";
+            }
+
+            if ($jenis == 'keluar') {
+                $sqlInternal = "
+                    SELECT
+                        bk.id,
+                        bk.nomor_transaksi                                     as nomor_dokumen,
+                        bk.tanggal_keluar                                      as tanggal,
+                        bk.keterangan, bk.created_at, bk.updated_at,
+                        dk.jumlah_keluar                                       as jumlah,
+                        COALESCE(b.satuan, brg.satuan)                         as satuan,
+                        COALESCE(b.berat_per_satuan, brg.berat_per_satuan, 0)  as berat_referensi,
+                        COALESCE(b.satuan_berat, brg.satuan_berat, 'Kg')       as satuan_berat,
+                        'Gudang Pusat'                                         as nama_gudang,
+                        'Jakarta'                                              as kota,
+                        'DKI Jakarta'                                          as provinsi,
+                        COALESCE(b.nama_barang, brg.nama_barang)               as nama_barang,
+                        brg.kode_barang,
+                        kat.nama_kategori                                      as kategori,
+                        u.username                                             as nama_user,
+                        bk.tujuan_penyaluran                                   as tujuan,
+                        NULL                                                   as donatur,
+                        NULL                                                   as harga_satuan,
+                        NULL                                                   as subtotal_nilai
+                    FROM barang_keluar bk
+                    JOIN detail_barang_keluar dk ON dk.id_barang_keluar = bk.id
+                    JOIN batch b ON b.id = dk.id_batch
+                    LEFT JOIN barang brg ON brg.id = b.id_barang
+                    LEFT JOIN kategori kat ON kat.id = brg.id_kategori
+                    LEFT JOIN users u ON u.id = bk.id_user
+                    WHERE 1=1
+                    " . (!empty($startDate) && !empty($endDate) ? "AND bk.tanggal_keluar >= '{$startDate}' AND bk.tanggal_keluar <= '{$endDate}'" : "");
+            } else {
+                $sqlInternal = "
+                    SELECT
+                        bm.id,
+                        bm.nomor_transaksi                                      as nomor_dokumen,
+                        bm.tanggal_masuk                                        as tanggal,
+                        bm.keterangan,
+                        bm.created_at,
+                        bm.updated_at,
+                        b.jumlah_awal                                           as jumlah,
+                        COALESCE(b.satuan, brg.satuan)                          as satuan,
+                        COALESCE(b.berat_per_satuan, brg.berat_per_satuan)      as berat_per_satuan,
+                        COALESCE(b.satuan_berat, brg.satuan_berat, 'Kg')        as satuan_berat,
+                        b.nilai_satuan                                          as harga_satuan,
+                        (b.jumlah_awal * b.nilai_satuan)                        as subtotal_nilai,
+                        'Gudang Pusat'                                          as nama_gudang,
+                        'Jakarta'                                               as kota,
+                        'DKI Jakarta'                                           as provinsi,
+                        COALESCE(b.nama_barang, brg.nama_barang)                as nama_barang,
+                        brg.kode_barang,
+                        kat.nama_kategori                                       as kategori,
+                        u.username                                              as nama_user,
+                        NULL                                                    as tujuan,
+                        dn.nama_donatur                                         as donatur,
+                        NULL                                                    as berat_referensi
+                    FROM barang_masuk bm
+                    JOIN batch b ON b.id_barang_masuk = bm.id
+                    LEFT JOIN barang brg ON brg.id = b.id_barang
+                    LEFT JOIN kategori kat ON kat.id = brg.id_kategori
+                    LEFT JOIN donatur dn ON dn.id = bm.id_donatur
+                    LEFT JOIN users u ON u.id = bm.id_user
+                    WHERE 1=1
+                    " . (!empty($startDate) && !empty($endDate) ? "AND bm.tanggal_masuk >= '{$startDate}' AND bm.tanggal_masuk <= '{$endDate}'" : "");
+            }
+
+            $sql = "SELECT * FROM (({$sqlWilayah}) UNION ALL ({$sqlInternal})) AS combined
+                    ORDER BY tanggal DESC
+                    LIMIT {$length} OFFSET {$start}";
+            return $db->query($sql)->getResultArray();
+        }
+
+        $builder->limit($length, $start);
+        return $builder->get()->getResultArray();
     }
 
     public function ajaxData()
     {
         try {
-            $countBuilder = $this->buildCountQuery();
-            $totalRecords = $countBuilder->countAllResults(false);
-
-            $length = $this->request->getPost('length') ?? 10;
-            $start  = $this->request->getPost('start')  ?? 0;
-            $search = $this->request->getPost('search')['value'] ?? '';
             $jenis  = $this->request->getVar('jenis');
+            $length = (int)($this->request->getPost('length') ?? 10);
+            $start  = (int)($this->request->getPost('start')  ?? 0);
 
-            if (!empty($search)) {
-                $builder = $this->buildQuery();
-                $builder->groupStart();
-                if ($jenis == 'stok') {
-                    $builder->like('brg.nama_barang', $search);
-                    $builder->orLike('brg.kode_barang', $search);
-                    $builder->orLike('m.nama', $search);
-                } else {
-                    $builder->like('t.nomor_dokumen', $search);
-                    $builder->orLike('brg.nama_barang', $search);
-                    $builder->orLike('m.nama', $search);
-                }
-                $builder->groupEnd();
-                $filteredBuilder = clone $builder;
-                $filteredRecords = $filteredBuilder->countAllResults(false);
-            } else {
-                $filteredRecords = $totalRecords;
-                $builder = $this->buildQuery();
-            }
+            $totalRecords    = $this->getTotalCount();
+            $filteredRecords = $totalRecords; // search belum di-implement untuk UNION, sama dengan total
 
-            // Dynamic Sorting
-            $orderParam = $this->request->getPost('order');
-            if (!empty($orderParam) && isset($orderParam[0]['column'])) {
-                $colIdx = (int)$orderParam[0]['column'];
-                $dir    = strtoupper($orderParam[0]['dir']) === 'DESC' ? 'DESC' : 'ASC';
-                if ($jenis == 'stok') {
-                    $stokMap = [
-                        1 => 'm.nama', 2 => 'brg.nama_barang',
-                        3 => 'kat.nama_kategori', 4 => 's.jumlah',
-                        5 => 'brg.satuan', 6 => 'brg.berat_per_satuan'
-                    ];
-                    if (isset($stokMap[$colIdx])) $builder->orderBy($stokMap[$colIdx], $dir);
-                } else {
-                    $txMap = [
-                        1 => 't.tanggal', 2 => 't.nomor_dokumen',
-                        3 => 'm.nama',    5 => 'brg.nama_barang', 7 => 'd.jumlah'
-                    ];
-                    if (isset($txMap[$colIdx])) $builder->orderBy($txMap[$colIdx], $dir);
-                }
-            }
-
-            $builder->limit($length, $start);
-            $data = $builder->get()->getResultArray();
-
+            $data       = $this->getRows($start, $length);
             $resultData = [];
-            $no = $start + 1;
+            $no         = $start + 1;
+
             foreach ($data as $row) {
                 if ($jenis == 'stok') {
                     $statusHtml = $row['jumlah'] > 0
@@ -268,7 +339,6 @@ class LaporanWilayah extends BaseController
                     $satuanBerat = $row['satuan_berat'] ?? 'Kg';
                     $beratInKg   = strtolower($satuanBerat) === 'gram' ? ($beratPerSat / 1000) : $beratPerSat;
                     $totalBerat  = (float)$row['jumlah'] * $beratInKg;
-
                     $hargaSatuan = (float)($row['harga_satuan'] ?? 0);
                     $subtotalVal = (float)($row['subtotal_nilai'] ?? ($row['jumlah'] * $hargaSatuan));
 
@@ -277,7 +347,7 @@ class LaporanWilayah extends BaseController
                         date('d/m/Y', strtotime($row['tanggal'])),
                         esc($row['nomor_dokumen']),
                         esc($row['nama_gudang']),
-                        esc($row['donatur']),
+                        esc($row['donatur'] ?? '-'),
                         esc($row['kode_barang']) . '<br>' . esc($row['nama_barang']),
                         esc($row['kategori']),
                         number_format($row['jumlah'], 0, ',', '.'),
@@ -297,7 +367,7 @@ class LaporanWilayah extends BaseController
                         date('d/m/Y', strtotime($row['tanggal'])),
                         esc($row['nomor_dokumen']),
                         esc($row['nama_gudang']),
-                        esc($row['tujuan']),
+                        esc($row['tujuan'] ?? '-'),
                         esc($row['kode_barang']) . '<br>' . esc($row['nama_barang']),
                         esc($row['kategori']),
                         number_format($row['jumlah'], 0, ',', '.'),
@@ -335,7 +405,7 @@ class LaporanWilayah extends BaseController
         }
 
         if (empty($idGudang)) {
-            return "LAPORAN BARANG $jenisStr - SELURUH GUDANG WILAYAH";
+            return "LAPORAN BARANG $jenisStr - SELURUH GUDANG (PUSAT + WILAYAH)";
         } else {
             $gudang     = $this->gudangModel->find($idGudang);
             $namaGudang = strtoupper($gudang['nama'] ?? 'GUDANG');
@@ -343,10 +413,141 @@ class LaporanWilayah extends BaseController
         }
     }
 
+    private function getAllRows(): array
+    {
+        // Ambil semua data tanpa limit untuk PDF/Excel
+        $idGudang  = $this->request->getVar('id_gudang');
+        $provinsi  = $this->request->getVar('provinsi');
+        $jenis     = $this->request->getVar('jenis');
+        $startDate = $this->request->getVar('start_date');
+        $endDate   = $this->request->getVar('end_date');
+
+        if (!in_groups('Administrator')) {
+            $idGudang = user()->id_gudang_wilayah;
+        }
+
+        $db = \Config\Database::connect();
+
+        if ($jenis == 'stok') {
+            $builder = $db->table("stok_gudang_wilayah s");
+            $builder->select('s.*, m.nama as nama_gudang, m.kota, m.provinsi, brg.nama_barang, brg.kode_barang, kat.nama_kategori as kategori, brg.satuan, brg.berat_per_satuan as berat');
+            $builder->join('master_gudang_wilayah m', 'm.id = s.id_gudang');
+            $builder->join('master_barang_wilayah brg', 'brg.id = s.id_barang');
+            $builder->join('kategori kat', 'kat.id = brg.id_kategori', 'left');
+            $builder->where('s.jumlah >', 0);
+            if (!empty($idGudang)) $builder->where('s.id_gudang', $idGudang);
+            if (!empty($provinsi)) $builder->like('m.provinsi', $provinsi);
+            $builder->orderBy('m.nama', 'ASC')->orderBy('brg.nama_barang', 'ASC');
+
+            return $builder->get()->getResultArray();
+        }
+
+        $table       = ($jenis == 'keluar') ? 'barang_keluar_wilayah'        : 'barang_masuk_wilayah';
+        $detailTable = ($jenis == 'keluar') ? 'detail_barang_keluar_wilayah' : 'detail_barang_masuk_wilayah';
+        $foreignKey  = ($jenis == 'keluar') ? 'id_keluar'                    : 'id_masuk';
+
+        $builder = $db->table("$table t");
+        if ($jenis == 'keluar') {
+            $builder->select('t.id, t.nomor_dokumen, t.tanggal, t.keterangan, t.created_at, t.updated_at,
+                d.jumlah, d.satuan,
+                COALESCE(d.berat_per_satuan, s.berat_per_satuan, 0) as berat_referensi,
+                COALESCE(d.satuan_berat, s.satuan_berat, "Kg") as satuan_berat,
+                m.nama as nama_gudang, m.kota, m.provinsi,
+                brg.nama_barang, brg.kode_barang, kat.nama_kategori as kategori,
+                u.username as nama_user, t.tujuan as tujuan,
+                NULL as donatur, NULL as harga_satuan, NULL as subtotal_nilai');
+            $builder->join('users u', 'u.id = t.created_by', 'left');
+        } else {
+            $builder->select('t.id, t.nomor_dokumen, t.tanggal, t.keterangan, t.created_at, t.updated_at,
+                d.jumlah, d.satuan, d.berat_per_satuan,
+                COALESCE(d.satuan_berat, "Kg") as satuan_berat,
+                d.harga_satuan, d.subtotal_nilai,
+                m.nama as nama_gudang, m.kota, m.provinsi,
+                brg.nama_barang, brg.kode_barang, kat.nama_kategori as kategori,
+                u.username as nama_user, NULL as tujuan, dn.nama_donatur as donatur, NULL as berat_referensi');
+            $builder->join('donatur dn', 'dn.id = t.id_donatur', 'left');
+            $builder->join('users u', 'u.id = t.created_by', 'left');
+        }
+        $builder->join('master_gudang_wilayah m', 'm.id = t.id_gudang');
+        $builder->join("$detailTable d", "d.$foreignKey = t.id");
+        $builder->join('master_barang_wilayah brg', 'brg.id = d.id_barang');
+        $builder->join('kategori kat', 'kat.id = brg.id_kategori', 'left');
+        if ($jenis == 'keluar') {
+            $builder->join('stok_gudang_wilayah s', 's.id_gudang = t.id_gudang AND s.id_barang = d.id_barang', 'left');
+        }
+        $builder->where('t.deleted_at', null);
+        if (!empty($idGudang)) $builder->where('t.id_gudang', $idGudang);
+        if (!empty($provinsi)) $builder->like('m.provinsi', $provinsi);
+        if (!empty($startDate) && !empty($endDate)) {
+            $builder->where('t.tanggal >=', $startDate);
+            $builder->where('t.tanggal <=', $endDate);
+        }
+        $builder->orderBy('t.tanggal', 'DESC');
+
+        if ($this->includeInternal()) {
+            $sqlWilayah = $builder->getCompiledSelect();
+            if ($jenis == 'keluar') {
+                $sqlInternal = "
+                    SELECT bk.id, bk.nomor_transaksi as nomor_dokumen, bk.tanggal_keluar as tanggal,
+                        bk.keterangan, bk.created_at, bk.updated_at,
+                        dk.jumlah_keluar as jumlah,
+                        COALESCE(b.satuan, brg.satuan) as satuan,
+                        COALESCE(b.berat_per_satuan, brg.berat_per_satuan, 0) as berat_referensi,
+                        COALESCE(b.satuan_berat, brg.satuan_berat, 'Kg') as satuan_berat,
+                        'Gudang Pusat' as nama_gudang, 'Jakarta' as kota, 'DKI Jakarta' as provinsi,
+                        COALESCE(b.nama_barang, brg.nama_barang) as nama_barang, brg.kode_barang,
+                        kat.nama_kategori as kategori, u.username as nama_user,
+                        bk.tujuan_penyaluran as tujuan, NULL as donatur,
+                        NULL as harga_satuan, NULL as subtotal_nilai
+                    FROM barang_keluar bk
+                    JOIN detail_barang_keluar dk ON dk.id_barang_keluar = bk.id
+                    JOIN batch b ON b.id = dk.id_batch
+                    LEFT JOIN barang brg ON brg.id = b.id_barang
+                    LEFT JOIN kategori kat ON kat.id = brg.id_kategori
+                    LEFT JOIN users u ON u.id = bk.id_user
+                    " . (!empty($startDate) && !empty($endDate) ? "WHERE bk.tanggal_keluar >= '{$startDate}' AND bk.tanggal_keluar <= '{$endDate}'" : "");
+            } else {
+                $sqlInternal = "
+                    SELECT
+                        bm.id,
+                        bm.nomor_transaksi                                      as nomor_dokumen,
+                        bm.tanggal_masuk                                        as tanggal,
+                        bm.keterangan,
+                        bm.created_at,
+                        bm.updated_at,
+                        b.jumlah_awal                                           as jumlah,
+                        COALESCE(b.satuan, brg.satuan)                          as satuan,
+                        COALESCE(b.berat_per_satuan, brg.berat_per_satuan)      as berat_per_satuan,
+                        COALESCE(b.satuan_berat, brg.satuan_berat, 'Kg')        as satuan_berat,
+                        b.nilai_satuan                                          as harga_satuan,
+                        (b.jumlah_awal * b.nilai_satuan)                        as subtotal_nilai,
+                        'Gudang Pusat'                                          as nama_gudang,
+                        'Jakarta'                                               as kota,
+                        'DKI Jakarta'                                           as provinsi,
+                        COALESCE(b.nama_barang, brg.nama_barang)                as nama_barang,
+                        brg.kode_barang,
+                        kat.nama_kategori                                       as kategori,
+                        u.username                                              as nama_user,
+                        NULL                                                    as tujuan,
+                        dn.nama_donatur                                         as donatur,
+                        NULL                                                    as berat_referensi
+                    FROM barang_masuk bm
+                    JOIN batch b ON b.id_barang_masuk = bm.id
+                    LEFT JOIN barang brg ON brg.id = b.id_barang
+                    LEFT JOIN kategori kat ON kat.id = brg.id_kategori
+                    LEFT JOIN donatur dn ON dn.id = bm.id_donatur
+                    LEFT JOIN users u ON u.id = bm.id_user
+                    " . (!empty($startDate) && !empty($endDate) ? "WHERE bm.tanggal_masuk >= '{$startDate}' AND bm.tanggal_masuk <= '{$endDate}'" : "");
+            }
+            return $db->query("SELECT * FROM (({$sqlWilayah}) UNION ALL ({$sqlInternal})) AS combined ORDER BY tanggal DESC")->getResultArray();
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
     public function pdf()
     {
-        $builder     = $this->buildQuery();
-        $dataLaporan = $builder->get()->getResultArray();
+        $dataLaporan = $this->getAllRows();
         $jenis       = $this->request->getVar('jenis');
         $title       = $this->getLaporanTitle();
 
@@ -373,8 +574,7 @@ class LaporanWilayah extends BaseController
 
     public function excel()
     {
-        $builder     = $this->buildQuery();
-        $dataLaporan = $builder->get()->getResultArray();
+        $dataLaporan = $this->getAllRows();
         $jenis       = $this->request->getVar('jenis');
         $title       = $this->getLaporanTitle();
 
@@ -404,7 +604,6 @@ class LaporanWilayah extends BaseController
         $no  = 1;
         foreach ($dataLaporan as $item) {
             $sheet->setCellValue('A' . $row, $no++);
-
             if ($jenis == 'stok') {
                 $sheet->setCellValue('B' . $row, $item['nama_gudang']);
                 $sheet->setCellValue('C' . $row, $item['kode_barang'] . ' - ' . $item['nama_barang']);
@@ -423,7 +622,7 @@ class LaporanWilayah extends BaseController
                 $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($item['tanggal'])));
                 $sheet->setCellValue('C' . $row, $item['nomor_dokumen']);
                 $sheet->setCellValue('D' . $row, $item['nama_gudang']);
-                $sheet->setCellValue('E' . $row, $item['donatur']);
+                $sheet->setCellValue('E' . $row, $item['donatur'] ?? '-');
                 $sheet->setCellValue('F' . $row, $item['kode_barang'] . ' - ' . $item['nama_barang']);
                 $sheet->setCellValue('G' . $row, $item['kategori']);
                 $sheet->setCellValue('H' . $row, $item['jumlah']);
@@ -445,7 +644,7 @@ class LaporanWilayah extends BaseController
                 $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($item['tanggal'])));
                 $sheet->setCellValue('C' . $row, $item['nomor_dokumen']);
                 $sheet->setCellValue('D' . $row, $item['nama_gudang']);
-                $sheet->setCellValue('E' . $row, $item['tujuan']);
+                $sheet->setCellValue('E' . $row, $item['tujuan'] ?? '-');
                 $sheet->setCellValue('F' . $row, $item['kode_barang'] . ' - ' . $item['nama_barang']);
                 $sheet->setCellValue('G' . $row, $item['kategori']);
                 $sheet->setCellValue('H' . $row, $item['jumlah']);

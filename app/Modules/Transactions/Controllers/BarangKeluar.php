@@ -199,11 +199,24 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['items' => 'Minimal harus ada 1 barang.']);
         }
 
-        $itemIds = array_column($items, 'id_barang');
-        if (count($itemIds) !== count(array_unique($itemIds))) {
-            return redirect()->back()->withInput()->with('errors', ['items' => 'Barang yang sama tidak boleh dipilih lebih dari satu kali dalam satu transaksi.']);
+        // [FIX #7] Konsolidasi DULU sebelum validasi lainnya.
+        // Validasi duplikat redundan dihapus — konsolidasi sudah menggabungkan
+        // item dengan id_barang yang sama, sehingga tidak mungkin ada duplikat setelahnya.
+        $consolidated = [];
+        foreach ($items as $item) {
+            $idBrg = $item['id_barang'];
+            if (isset($consolidated[$idBrg])) {
+                $consolidated[$idBrg]['jumlah_keluar'] += (float)$item['jumlah_keluar'];
+            } else {
+                $consolidated[$idBrg] = [
+                    'id_barang'     => $item['id_barang'],
+                    'jumlah_keluar' => (float)$item['jumlah_keluar'],
+                ];
+            }
         }
+        $items = array_values($consolidated);
 
+        $itemIds = array_column($items, 'id_barang');
         $barangList = $this->barangModel->whereIn('id', $itemIds)->findAll();
         $barangBisaDipecahMap = [];
         foreach ($barangList as $b) {
@@ -227,26 +240,12 @@ class BarangKeluar extends BaseController
             }
         }
 
-        $consolidated = [];
-        foreach ($items as $item) {
-            $idBrg = $item['id_barang'];
-            if (isset($consolidated[$idBrg])) {
-                $consolidated[$idBrg]['jumlah_keluar'] += (float)$item['jumlah_keluar'];
-            } else {
-                $consolidated[$idBrg] = [
-                    'id_barang'     => $item['id_barang'],
-                    'jumlah_keluar' => (float)$item['jumlah_keluar'],
-                ];
-            }
-        }
-        $items = array_values($consolidated);
-
         $kebutuhan = [];
         foreach ($items as $item) {
             $kebutuhan[$item['id_barang']] = (float)$item['jumlah_keluar'];
         }
 
-        // ✅ Cek stok & expired SEBELUM buka transaksi (read-only)
+        // Cek stok & expired SEBELUM buka transaksi (read-only)
         $kurangStok = $this->fefo->cekKetersediaanBulk($kebutuhan);
         if (!empty($kurangStok)) {
             $errorMsgs = [];
@@ -264,7 +263,7 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['expired' => 'Terdapat barang yang sudah melewati tanggal kedaluwarsa. Mohon gunakan tombol yang benar pada peringatan.']);
         }
 
-        // ✅ Semua write operation dalam satu transaksi
+        // Semua write operation dalam satu transaksi
         $db = \Config\Database::connect();
         $db->transBegin();
 
@@ -481,11 +480,23 @@ class BarangKeluar extends BaseController
             return redirect()->back()->withInput()->with('errors', ['items' => 'Minimal harus ada 1 barang.']);
         }
 
-        $itemIds = array_column($items, 'id_barang');
-        if (count($itemIds) !== count(array_unique($itemIds))) {
-            return redirect()->back()->withInput()->with('errors', ['items' => 'Barang yang sama tidak boleh dipilih lebih dari satu kali dalam satu transaksi.']);
+        // [FIX #7] Konsolidasi DULU, validasi per-item setelahnya.
+        // Konsisten dengan store() — duplikat digabung, bukan ditolak.
+        $consolidated = [];
+        foreach ($items as $item) {
+            $idBrg = $item['id_barang'];
+            if (isset($consolidated[$idBrg])) {
+                $consolidated[$idBrg]['jumlah_keluar'] += (float)$item['jumlah_keluar'];
+            } else {
+                $consolidated[$idBrg] = [
+                    'id_barang'     => $item['id_barang'],
+                    'jumlah_keluar' => (float)$item['jumlah_keluar'],
+                ];
+            }
         }
+        $items = array_values($consolidated);
 
+        $itemIds = array_column($items, 'id_barang');
         $barangList = $this->barangModel->whereIn('id', $itemIds)->findAll();
         $barangBisaDipecahMap = [];
         foreach ($barangList as $b) {
@@ -509,71 +520,65 @@ class BarangKeluar extends BaseController
             }
         }
 
-        $consolidated = [];
-        foreach ($items as $item) {
-            $idBrg = $item['id_barang'];
-            if (isset($consolidated[$idBrg])) {
-                $consolidated[$idBrg]['jumlah_keluar'] += (float)$item['jumlah_keluar'];
-            } else {
-                $consolidated[$idBrg] = [
-                    'id_barang'     => $item['id_barang'],
-                    'jumlah_keluar' => (float)$item['jumlah_keluar'],
-                ];
-            }
-        }
-        $items = array_values($consolidated);
-
-        // ✅ Validasi expired SEBELUM buka transaksi (read-only, konsisten dengan store())
+        // Validasi expired SEBELUM buka transaksi (read-only)
         $expiredBatches = $this->fefo->hasExpiredBatch($items);
         if (!empty($expiredBatches) && $this->request->getPost('force_expired') !== 'true') {
             return redirect()->back()->withInput()->with('errors', ['expired' => 'Terdapat barang yang sudah melewati tanggal kedaluwarsa. Mohon gunakan tombol yang benar pada peringatan.']);
         }
 
-        // ✅ Buka transaksi — semua write operation di bawah ini atomic
         $db = \Config\Database::connect();
         $db->transBegin();
 
-        // Rollback stok lama — ikut dalam transaksi, aman di-rollback jika gagal
-        $this->fefo->rollbackBarangKeluar($id);
+        // [FIX #4] rollbackBarangKeluar() dan seluruh write operation masuk try-catch.
+        // Sebelumnya rollback ada di luar try-catch — jika exception di sini,
+        // transaksi tidak di-rollback dan stok bisa inkonsisten.
+        try {
+            $this->fefo->rollbackBarangKeluar($id);
 
-        // Cek stok SETELAH rollback (stok sudah dikembalikan, angka akurat)
-        $kebutuhan = [];
-        foreach ($items as $item) {
-            $kebutuhan[$item['id_barang']] = (float) $item['jumlah_keluar'];
-        }
-
-        $kurangStok = $this->fefo->cekKetersediaanBulk($kebutuhan);
-        if (!empty($kurangStok)) {
-            $errorMsgs = [];
-            foreach ($kurangStok as $idBarang) {
-                $brg        = $this->barangModel->find($idBarang);
-                $namaBarang = $brg ? $brg['nama_barang'] : 'Barang';
-                $stokAda    = $this->fefo->getStokBarang($idBarang);
-                $errorMsgs[] = "Stok {$namaBarang} tidak mencukupi (Tersedia: {$stokAda}, diminta: {$kebutuhan[$idBarang]}). Stok telah berubah, silakan muat ulang transaksi.";
+            // Cek stok SETELAH rollback (stok sudah dikembalikan, angka akurat)
+            $kebutuhan = [];
+            foreach ($items as $item) {
+                $kebutuhan[$item['id_barang']] = (float)$item['jumlah_keluar'];
             }
+
+            $kurangStok = $this->fefo->cekKetersediaanBulk($kebutuhan);
+            if (!empty($kurangStok)) {
+                $errorMsgs = [];
+                foreach ($kurangStok as $idBarang) {
+                    $brg        = $this->barangModel->find($idBarang);
+                    $namaBarang = $brg ? $brg['nama_barang'] : 'Barang';
+                    $stokAda    = $this->fefo->getStokBarang($idBarang);
+                    $errorMsgs[] = "Stok {$namaBarang} tidak mencukupi (Tersedia: {$stokAda}, diminta: {$kebutuhan[$idBarang]}). Stok telah berubah, silakan muat ulang transaksi.";
+                }
+                $db->transRollback();
+                return redirect()->back()->withInput()->with('errors', ['stok' => implode('<br>', $errorMsgs)]);
+            }
+
+            $this->barangKeluarModel->update($id, [
+                'id_wilayah'        => $this->request->getPost('id_wilayah'),
+                'tanggal_keluar'    => $this->request->getPost('tanggal_keluar'),
+                'tujuan_penyaluran' => $this->request->getPost('tujuan_penyaluran'),
+                'keterangan'        => $this->request->getPost('keterangan'),
+            ]);
+
+            $hasilFEFO = $this->fefo->prosesBarangKeluarBulk($id, $items);
+            if ($hasilFEFO === false) {
+                $db->transRollback();
+                return redirect()->back()->withInput()->with('errors', ['fefo' => 'Proses FEFO gagal. Stok tidak mencukupi atau terjadi kesalahan pemotongan batch.']);
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
+            }
+
+            $db->transCommit();
+
+        } catch (\Throwable $e) {
             $db->transRollback();
-            return redirect()->back()->withInput()->with('errors', ['stok' => implode('<br>', $errorMsgs)]);
+            log_message('error', '[BarangKeluar::update] Exception: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('errors', ['db' => 'Terjadi kesalahan tidak terduga. Transaksi dibatalkan.']);
         }
-
-        $this->barangKeluarModel->update($id, [
-            'id_wilayah'        => $this->request->getPost('id_wilayah'),
-            'tanggal_keluar'    => $this->request->getPost('tanggal_keluar'),
-            'tujuan_penyaluran' => $this->request->getPost('tujuan_penyaluran'),
-            'keterangan'        => $this->request->getPost('keterangan'),
-        ]);
-
-        $hasilFEFO = $this->fefo->prosesBarangKeluarBulk($id, $items);
-        if ($hasilFEFO === false) {
-            $db->transRollback();
-            return redirect()->back()->withInput()->with('errors', ['fefo' => 'Proses FEFO gagal. Stok tidak mencukupi atau terjadi kesalahan pemotongan batch.']);
-        }
-
-        if ($db->transStatus() === false) {
-            $db->transRollback();
-            return redirect()->back()->withInput()->with('errors', ['db' => 'Gagal memperbarui transaksi. Silakan coba lagi.']);
-        }
-
-        $db->transCommit();
 
         $tujuan    = $this->request->getPost('tujuan_penyaluran') ?: '-';
         $totalItem = array_sum(array_column($items, 'jumlah_keluar'));

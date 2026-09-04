@@ -38,8 +38,13 @@ class BarangModel extends Model
             ->join('batch', 'batch.id_barang = barang.id AND batch.stok_saat_ini > 0', 'left')
             ->groupBy('barang.id, kategori.nama_kategori, target_barang.nama_barang');
 
-        if (isset($postData['status_filter']) && in_array($postData['status_filter'], ['active', 'merged'])) {
-            $builder->where('barang.status', $postData['status_filter']);
+        if (isset($postData['status_filter'])) {
+            if ($postData['status_filter'] === 'active') {
+                $builder->where('barang.status', 'active')
+                        ->having('total_stok >', 0);
+            } elseif ($postData['status_filter'] === 'merged') {
+                $builder->where('barang.status', 'merged');
+            }
         }
 
         $i = 0;

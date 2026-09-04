@@ -107,14 +107,14 @@
                     <th>Expired</th>
                     <th class="text-end">Jumlah Awal</th>
                     <th class="text-end">Stok Saat Ini</th>
-                    <th>Kemasan</th>
+                    <th>Jumlah CTN</th>
                     <th class="text-center">Status</th>
                 </tr>
             </thead>
             <tbody>
                 <?php $no = 1; foreach ($batches as $b): ?>
                 <?php
-                    $satuan = esc($b['satuan'] ?? $barang['satuan']);
+                    $satuan = esc(!empty($b['satuan']) ? $b['satuan'] : $barang['satuan']);
                     $expired = $b['tanggal_kedaluwarsa'];
                     $today   = date('Y-m-d');
                     $isExpired = ($expired < $today);
@@ -140,7 +140,7 @@
                             . $b['jumlah_ctn'] . ' CTN &times; ' . number_format($b['isi_per_ctn'], 0, ',', '.') . ' ' . $satuan
                             . '</span>';
                     } else {
-                        $kemasanHtml = '<span class="text-secondary" style="font-size:0.85em;">Tidak menggunakan kemasan</span>';
+                        $kemasanHtml = '<span class="text-secondary" style="font-size:0.85em;">Tidak menggunakan ctn</span>';
                     }
                 ?>
                 <tr class="<?= $rowClass ?>">
@@ -164,7 +164,7 @@
                         <span class="fw-bold <?= $b['stok_saat_ini'] <= 0 ? 'text-secondary' : 'text-dark' ?>">
                             <?= number_format($b['stok_saat_ini'], 0, ',', '.') ?>
                         </span>
-                        <small class="text-secondary"> <?= $satuan ?></small>
+                        <small class="text-secondary"> <?= !empty($satuan) ? $satuan : esc($barang['satuan']) ?></small>
                     </td>
                     <td><?= $kemasanHtml ?></td>
                     <td class="text-center"><?= $statusBadge ?></td>

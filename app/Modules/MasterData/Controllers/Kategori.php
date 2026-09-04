@@ -129,13 +129,13 @@ class Kategori extends BaseController
             $rowData = [];
 
             $rowData[] = '<div class="text-center">' . $no . '</div>';
-            $rowData[] = '<span class="fw-semibold text-dark">' . esc($row['nama_kategori']) . '</span>';
-            $rowData[] = '<span class="text-muted"><i class="fa-regular fa-calendar me-1"></i> ' . date('d M Y, H:i', strtotime($row['created_at'])) . '</span>';
-            
+            $rowData[] = '<span class="kat-name">' . esc($row['nama_kategori']) . '</span>';
+            $rowData[] = '<span class="kat-date"><i class="fa-regular fa-calendar me-1"></i> ' . date('d M Y, H:i', strtotime($row['created_at'])) . '</span>';
+
             $aksi = '<div class="kat-actions">
                         <a href="' . site_url('masterdata/kategori/edit/' . $row['id']) . '" class="kat-action-btn kat-action-edit" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
                         <button type="button" class="kat-action-btn kat-action-delete" onclick="confirmDeleteKategori(' . $row['id'] . ')" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                     </div>';
+                    </div>';
             $rowData[] = $aksi;
             $data[] = $rowData;
         }

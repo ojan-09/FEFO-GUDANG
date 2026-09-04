@@ -7,17 +7,6 @@ use App\Modules\Transactions\Models\BatchModel;
 use App\Modules\MasterData\Models\KategoriModel;
 use App\Modules\MasterData\Models\BarangModel;
 
-/**
- * Service Layer — Donasi Masuk
- *
- * Memindahkan seluruh business logic dari BarangMasuk controller ke sini,
- * sehingga controller hanya menangani HTTP request/response.
- *
- * Tanggung jawab:
- *  - validateAndCleanItems()  → validasi + normalisasi array item (FIX #6)
- *  - store()                  → simpan transaksi + batch baru  (FIX #7)
- *  - update()                 → perbarui transaksi + batch     (FIX #7)
- */
 class BarangMasukService
 {
     protected BarangMasukModel $barangMasukModel;
@@ -33,24 +22,6 @@ class BarangMasukService
         $this->barangModel      = new BarangModel();
     }
 
-    // =========================================================
-    // FIX #6 — Ekstrak validasi item ke satu private method
-    //
-    // store() dan update() dulu masing-masing punya ~80 baris
-    // validasi yang hampir identik 100%. Sekarang keduanya
-    // memanggil validateAndCleanItems() yang sama.
-    // =========================================================
-
-    /**
-     * Validasi dan normalisasi array item dari form.
-     *
-     * @param  array  $items        Raw POST items
-     * @param  string $tanggalMasuk Tanggal transaksi (YYYY-MM-DD)
-     * @return array{ok: bool, errors: array<string,string>, items: array<int,array<string,mixed>>}
-     *         'ok'     → true jika semua item valid
-     *         'errors' → ['items' => '...pesan...'] jika ada error
-     *         'items'  → array item yang sudah dibersihkan (hanya terisi jika ok=true)
-     */
     public function validateAndCleanItems(array $items, string $tanggalMasuk): array
     {
         if (empty($items)) {
@@ -60,15 +31,16 @@ class BarangMasukService
         $kategoriValid    = array_column($this->kategoriModel->findAll(), 'nama_kategori');
         $satuanBeratValid = ['Gram', 'Kg', 'ml', 'Liter'];
 
-        // Satuan valid — case-insensitive check dilakukan via strtoupper()
-        $satuanValidUpper = ['PCS', 'KOTAK', 'KARUNG', 'DUS', 'BOX', 'PACK', 'BOTOL',
-                             'KALENG', 'TRAY', 'POUCH', 'SACHET', 'RENCENG', 'KANTONG',
-                             'REPACK', 'KG'];
+        // [FIX #8] Hapus 'KG' dari satuan kemasan — KG hanya valid sebagai satuan BERAT,
+        // bukan satuan kemasan. Sebelumnya ada di kedua list sehingga membingungkan.
+        $satuanValidUpper = [
+            'PCS', 'KOTAK', 'KARUNG', 'DUS', 'BOX', 'PACK', 'BOTOL',
+            'KALENG', 'TRAY', 'POUCH', 'SACHET', 'RENCENG', 'KANTONG', 'REPACK',
+        ];
 
         $cleanItems = [];
 
         foreach ($items as $key => $item) {
-            // ── Baca & trim field dasar ──────────────────────────────────────
             $namaBarang         = trim($item['nama_barang'] ?? '');
             $kategori           = trim($item['kategori'] ?? '');
             $satuan             = trim($item['satuan'] ?? '');
@@ -77,7 +49,6 @@ class BarangMasukService
             $tanggalKedaluwarsa = trim($item['tanggal_kedaluwarsa'] ?? '');
             $bisaDipecah        = (int) ($item['bisa_dipecah'] ?? 0);
 
-            // ── Hitung jumlah (kemasan atau satuan langsung) ─────────────────
             $jumlahCtn    = trim($item['jumlah_ctn'] ?? '');
             $isiPerCtn    = trim($item['isi_per_ctn'] ?? '');
             $jumlahCtnVal = ($jumlahCtn !== '' && (int) $jumlahCtn > 0) ? (int) $jumlahCtn : null;
@@ -88,7 +59,6 @@ class BarangMasukService
                 ? $jumlahCtnVal * $isiPerCtnVal
                 : (int) ($item['jumlah'] ?? 0);
 
-            // ── Validasi field wajib ──────────────────────────────────────────
             $prefix = "Item baris ke-{$key}:";
 
             if ($namaBarang === '') {
@@ -131,7 +101,6 @@ class BarangMasukService
                 return $this->validationError("{$prefix} Repack (Bisa Dipecah) hanya berlaku untuk kemasan Karung.");
             }
 
-            // ── Parse nilai satuan (stripping format Rp) ─────────────────────
             $rawNilai    = $item['nilai_satuan'] ?? '0';
             $rawNilai    = str_replace(['Rp', ' ', '.'], '', $rawNilai);
             $rawNilai    = str_replace(',', '.', $rawNilai);
@@ -140,7 +109,6 @@ class BarangMasukService
                 return $this->validationError("{$prefix} Nilai Satuan tidak boleh negatif.");
             }
 
-            // ── Item valid — simpan ke cleanItems ─────────────────────────────
             $idBatch      = trim($item['id'] ?? '');
             $cleanItems[] = [
                 'id'                  => ($idBatch === '') ? null : (int) $idBatch,
@@ -162,28 +130,11 @@ class BarangMasukService
         return ['ok' => true, 'errors' => [], 'items' => $cleanItems];
     }
 
-    // =========================================================
-    // FIX #7 — Business logic dipindah dari controller
-    //
-    // store() dan update() di controller turun dari ~230 baris
-    // menjadi ~20 baris masing-masing — hanya HTTP glue code.
-    // Semua kalkulasi, lookup/create barang, dan batch numbering
-    // ada di sini.
-    // =========================================================
-
-    /**
-     * Simpan transaksi baru beserta batch-nya.
-     *
-     * @param  array $headerData ['id_donatur', 'id_user', 'tanggal_masuk', 'eta', 'keterangan']
-     * @param  array $cleanItems Output dari validateAndCleanItems()['items']
-     * @return array{ok: bool, errors: array, nomor_transaksi: string, total_item: int}
-     */
     public function store(array $headerData, array $cleanItems): array
     {
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // Nomor transaksi — atomic (SELECT … FOR UPDATE di dalam transaksi)
         $today          = date('Ymd');
         $nomorTransaksi = $this->barangMasukModel->generateNomorTransaksiAtomic($today);
 
@@ -197,10 +148,8 @@ class BarangMasukService
         ]);
         $idBarangMasuk = $this->barangMasukModel->getInsertID();
 
-        // Resolve / buat barang master
         [$kategoriMap, $barangMap, $lastBrgNumber] = $this->loadMasterMaps($cleanItems);
 
-        // Nomor batch — atomic (SELECT … FOR UPDATE)
         $prefixBatch = "BT-{$today}-";
         $lastNumber  = $this->getLastBatchNumber($db, $prefixBatch);
 
@@ -240,14 +189,6 @@ class BarangMasukService
         ];
     }
 
-    /**
-     * Perbarui transaksi yang sudah ada beserta batch-nya.
-     *
-     * @param  int   $id         ID barang_masuk
-     * @param  array $headerData ['id_donatur', 'tanggal_masuk', 'eta', 'keterangan']
-     * @param  array $cleanItems Output dari validateAndCleanItems()['items']
-     * @return array{ok: bool, errors: array, total_item: int}
-     */
     public function update(int $id, array $headerData, array $cleanItems): array
     {
         $db = \Config\Database::connect();
@@ -260,11 +201,9 @@ class BarangMasukService
             'keterangan'    => $headerData['keterangan'],
         ]);
 
-        // Map batch yang sudah ada (id → row)
         $existingBatches  = $this->batchModel->where('id_barang_masuk', $id)->findAll();
         $existingBatchMap = array_column($existingBatches, null, 'id');
 
-        // Hapus batch yang tidak ada di submittedIds
         $submittedIds    = array_filter(array_column($cleanItems, 'id'));
         $deletedBatchIds = array_diff(array_keys($existingBatchMap), $submittedIds);
 
@@ -279,10 +218,8 @@ class BarangMasukService
             $this->batchModel->delete($dbId);
         }
 
-        // Resolve / buat barang master
         [$kategoriMap, $barangMap, $lastBrgNumber] = $this->loadMasterMaps($cleanItems);
 
-        // Nomor batch baru — atomic
         $today       = date('Ymd');
         $prefixBatch = "BT-{$today}-";
         $lastNumber  = $this->getLastBatchNumber($db, $prefixBatch);
@@ -293,7 +230,6 @@ class BarangMasukService
             );
 
             if (!empty($item['id']) && isset($existingBatchMap[$item['id']])) {
-                // ── Update batch yang sudah ada ───────────────────────────────
                 $result = $this->updateExistingBatch(
                     $existingBatchMap[$item['id']], $item,
                     $idBarang, $bisaDipecah, $headerData['tanggal_masuk'], $db
@@ -302,7 +238,6 @@ class BarangMasukService
                     return ['ok' => false, 'errors' => $result['errors'], 'total_item' => 0];
                 }
             } else {
-                // ── Insert batch baru saat edit ───────────────────────────────
                 $lastNumber++;
                 $nomorBatch = $prefixBatch . str_pad($lastNumber, 4, '0', STR_PAD_LEFT);
                 [$jumlahAwal, $stokSaatIni] = $this->hitungStokAwal($item, $bisaDipecah);
@@ -335,40 +270,42 @@ class BarangMasukService
     // Private helpers
     // =========================================================
 
-    /** Buat array hasil error validasi yang seragam. */
     private function validationError(string $message): array
     {
         return ['ok' => false, 'errors' => ['items' => $message], 'items' => []];
     }
 
-    /**
-     * Muat kategori map dan barang map dari DB, plus angka terakhir kode barang.
-     *
-     * @return array [kategoriMap, barangMap, lastBrgNumber]
-     */
     private function loadMasterMaps(array $cleanItems): array
     {
-        // Kategori map: nama_kategori → id
         $kategoriList = $this->kategoriModel->findAll();
         $kategoriMap  = array_column($kategoriList, 'id', 'nama_kategori');
 
-        // Barang map: strtolower(nama)_bisaDipecah → ['id', 'bisa_dipecah']
-        $namaBarangUnikLower = array_map('strtolower', array_unique(array_column($cleanItems, 'nama_barang')));
+        $namaBarangUnik = array_unique(array_column($cleanItems, 'nama_barang'));
+
+        // [FIX #16] Gunakan LOWER() di SQL agar case-insensitive tanpa bergantung
+        // pada collation database. Sebelumnya whereIn() dengan strtolower() di PHP
+        // gagal menemukan barang jika DB menyimpan "Beras" tapi dicari "beras".
         $barangList = [];
-        if (!empty($namaBarangUnikLower)) {
-            $barangList = $this->barangModel
-                ->select('id, nama_barang, bisa_dipecah, satuan')
-                ->whereIn('nama_barang', $namaBarangUnikLower)
-                ->findAll();
+        if (!empty($namaBarangUnik)) {
+            $placeholders = implode(',', array_fill(0, count($namaBarangUnik), '?'));
+            $lowerNames   = array_map('strtolower', $namaBarangUnik);
+            $barangList   = \Config\Database::connect()
+                ->query(
+                    "SELECT id, nama_barang, bisa_dipecah, satuan
+                     FROM barang
+                     WHERE LOWER(nama_barang) IN ({$placeholders})",
+                    $lowerNames
+                )
+                ->getResultArray();
         }
 
         $barangMap = [];
         foreach ($barangList as $b) {
+            // Key pakai lowercase agar match konsisten dari sisi PHP
             $key             = strtolower($b['nama_barang']) . '_' . (int) $b['bisa_dipecah'];
             $barangMap[$key] = ['id' => $b['id'], 'bisa_dipecah' => (int) $b['bisa_dipecah']];
         }
 
-        // Angka terakhir kode barang (BRG-XXXXXX)
         $maxBrgRow = \Config\Database::connect()
             ->table('barang')
             ->select('MAX(CAST(SUBSTRING(kode_barang, 5) AS UNSIGNED)) as max_num')
@@ -379,19 +316,14 @@ class BarangMasukService
         return [$kategoriMap, $barangMap, $lastBrgNumber];
     }
 
-    /**
-     * Cari barang master yang cocok atau buat baru jika belum ada.
-     *
-     * @return array [idBarang, bisaDipecah, lastBrgNumber]
-     */
     private function resolveOrCreateBarang(
         array $item,
         array $kategoriMap,
         array &$barangMap,
         int $lastBrgNumber
     ): array {
-        $key         = strtolower($item['nama_barang']) . '_' . (int) $item['bisa_dipecah'];
-        $idKategori  = $kategoriMap[$item['kategori']] ?? 1;
+        $key        = strtolower($item['nama_barang']) . '_' . (int) $item['bisa_dipecah'];
+        $idKategori = $kategoriMap[$item['kategori']] ?? 1;
 
         if (isset($barangMap[$key])) {
             return [$barangMap[$key]['id'], $barangMap[$key]['bisa_dipecah'], $lastBrgNumber];
@@ -417,13 +349,6 @@ class BarangMasukService
         return [$idBarang, $bisaDipecah, $lastBrgNumber];
     }
 
-    /**
-     * Hitung jumlah_awal dan stok_saat_ini berdasarkan apakah barang bisa dipecah (repack).
-     *
-     * Untuk repack, stok disimpan dalam Kg; untuk barang biasa, dalam satuan aslinya.
-     *
-     * @return array [jumlahAwal, stokSaatIni]  (keduanya float)
-     */
     private function hitungStokAwal(array $item, int $bisaDipecah): array
     {
         if ($bisaDipecah !== 1) {
@@ -431,7 +356,6 @@ class BarangMasukService
             return [$qty, $qty];
         }
 
-        // Konversi ke Kg untuk repack
         $berat   = (float) $item['berat_per_satuan'];
         $satuanB = strtolower($item['satuan_berat']);
         $qty     = (float) $item['jumlah'];
@@ -443,9 +367,6 @@ class BarangMasukService
         return [$totalKg, $totalKg];
     }
 
-    /**
-     * Ambil nomor urut batch terakhir hari ini dengan FOR UPDATE (atomic).
-     */
     private function getLastBatchNumber(\CodeIgniter\Database\BaseConnection $db, string $prefixBatch): int
     {
         $row = $db->query(
@@ -458,17 +379,14 @@ class BarangMasukService
         return $row ? (int) substr($row['nomor_batch'], -4) : 0;
     }
 
-    /**
-     * Bangun array data untuk satu baris batch (insert maupun insertBatch).
-     */
     private function buildBatchRow(
-        array $item,
-        int   $idBarangMasuk,
-        int   $idBarang,
+        array  $item,
+        int    $idBarangMasuk,
+        int    $idBarang,
         string $nomorBatch,
-        float $jumlahAwal,
-        float $stokSaatIni,
-        int   $bisaDipecah,
+        float  $jumlahAwal,
+        float  $stokSaatIni,
+        int    $bisaDipecah,
         string $tanggalMasuk
     ): array {
         return [
@@ -493,23 +411,17 @@ class BarangMasukService
         ];
     }
 
-    /**
-     * Update batch yang sudah ada — menangani dua kasus:
-     *  (a) id_barang berubah  → stok di-reset, barang lama harus belum terpakai
-     *  (b) id_barang sama     → delta stok dihitung dari selisih jumlah
-     */
     private function updateExistingBatch(
-        array $eb,
-        array $item,
-        int   $idBarang,
-        int   $bisaDipecah,
+        array  $eb,
+        array  $item,
+        int    $idBarang,
+        int    $bisaDipecah,
         string $tanggalMasuk,
         \CodeIgniter\Database\BaseConnection $db
     ): array {
         [$submittedQty] = $this->hitungStokAwal($item, $bisaDipecah);
 
         if ((int) $eb['id_barang'] !== $idBarang) {
-            // ── (a) Barang diganti ────────────────────────────────────────────
             if ((float) $eb['stok_saat_ini'] < (float) $eb['jumlah_awal']) {
                 $db->transRollback();
                 return ['ok' => false, 'errors' => ['items' =>
@@ -521,7 +433,6 @@ class BarangMasukService
                 ['id_barang' => $idBarang, 'stok_saat_ini' => $submittedQty]
             ));
         } else {
-            // ── (b) Barang sama — delta stok ─────────────────────────────────
             $delta    = $submittedQty - (float) $eb['jumlah_awal'];
             $stokBaru = (float) $eb['stok_saat_ini'] + $delta;
 
@@ -540,9 +451,6 @@ class BarangMasukService
         return ['ok' => true, 'errors' => []];
     }
 
-    /**
-     * Field batch yang selalu di-update (shared antara kasus barang-sama & barang-ganti).
-     */
     private function buildBatchUpdateFields(
         array  $item,
         string $tanggalMasuk,

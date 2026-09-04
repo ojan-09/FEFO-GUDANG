@@ -438,8 +438,8 @@
                     <i class="fa-solid fa-filter" aria-hidden="true"></i> Filter status
                 </span>
                 <select id="filterStatus" class="mb-filter-select">
-                    <option value="">Semua barang</option>
                     <option value="active">Hanya aktif</option>
+                    <option value="">Semua barang</option>
                     <option value="merged">Hanya merged</option>
                 </select>
             </div>
@@ -543,6 +543,8 @@ var csrfHash = '<?= csrf_hash() ?>';
 
 $(document).ready(function () {
 
+    $('#filterStatus').val('active');
+
     var table = $('#tabelBarang').DataTable({
         processing: true,
         serverSide: true,
@@ -557,8 +559,6 @@ $(document).ready(function () {
         drawCallback: function (settings) {
             var json = settings.json;
             if (json && json[csrfName]) csrfHash = json[csrfName];
-
-            // Spinner hilang setelah data selesai dimuat
             $('#tabelBarang').closest('.dm-table-wrap').addClass('loaded');
         },
         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
@@ -568,7 +568,6 @@ $(document).ready(function () {
         responsive: true
     });
 
-    // Spinner muncul lagi saat filter berubah
     $('#filterStatus').on('change', function () {
         $('#tabelBarang').closest('.dm-table-wrap').removeClass('loaded');
         table.ajax.reload();

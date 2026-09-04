@@ -9,23 +9,12 @@ use App\Modules\MasterData\Models\DonaturModel;
 use App\Modules\MasterData\Models\KategoriModel;
 use App\Modules\Transactions\Services\BarangMasukService;
 
-/**
- * Controller Donasi Masuk — HTTP layer only.
- *
- * Setelah refactor (FIX #6 & #7):
- *  - store()  : turun dari ~230 baris → ~35 baris
- *  - update() : turun dari ~280 baris → ~40 baris
- *  - Tidak ada lagi duplikasi blok validasi item (~80 baris) antara store/update;
- *    keduanya memanggil $this->service->validateAndCleanItems().
- *  - Seluruh business logic (kalkulasi berat, lookup/create barang, batch numbering)
- *    ada di BarangMasukService — controller hanya menangani request/response.
- */
 class BarangMasuk extends BaseController
 {
-    protected BarangMasukModel  $barangMasukModel;
-    protected BatchModel        $batchModel;
-    protected DonaturModel      $donaturModel;
-    protected KategoriModel     $kategoriModel;
+    protected BarangMasukModel   $barangMasukModel;
+    protected BatchModel         $batchModel;
+    protected DonaturModel       $donaturModel;
+    protected KategoriModel      $kategoriModel;
     protected BarangMasukService $service;
 
     public function __construct()
@@ -90,16 +79,8 @@ class BarangMasuk extends BaseController
         ]);
     }
 
-    /**
-     * store() — hanya HTTP glue:
-     *  1. Validasi header (tanggal, donatur)
-     *  2. Validasi & normalisasi item  → service->validateAndCleanItems()
-     *  3. Simpan                       → service->store()
-     *  4. Log aktivitas & redirect
-     */
     public function store()
     {
-        // ── 1. Validasi header ────────────────────────────────────────────────
         if (!$this->validate(['tanggal_masuk' => 'required|valid_date', 'id_donatur' => 'required|integer'])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
@@ -109,21 +90,19 @@ class BarangMasuk extends BaseController
             return redirect()->back()->withInput()->with('errors', ['items' => 'Minimal harus ada 1 barang.']);
         }
 
-        // ── 2. Validasi & normalisasi item (FIX #6 — tidak lagi ~80 baris di sini) ──
         $tanggalMasuk = $this->request->getPost('tanggal_masuk');
         $validated    = $this->service->validateAndCleanItems($items, $tanggalMasuk);
         if (!$validated['ok']) {
             return redirect()->back()->withInput()->with('errors', $validated['errors']);
         }
 
-        // ── 3. Simpan (FIX #7 — tidak lagi ~150 baris business logic di sini) ──
         $result = $this->service->store(
             [
-                'id_donatur'  => $this->request->getPost('id_donatur'),
-                'id_user'     => user()->id,
+                'id_donatur'    => $this->request->getPost('id_donatur'),
+                'id_user'       => user()->id,
                 'tanggal_masuk' => $tanggalMasuk,
-                'eta'         => $this->request->getPost('eta'),
-                'keterangan'  => $this->request->getPost('keterangan'),
+                'eta'           => $this->request->getPost('eta'),
+                'keterangan'    => $this->request->getPost('keterangan'),
             ],
             $validated['items']
         );
@@ -132,7 +111,6 @@ class BarangMasuk extends BaseController
             return redirect()->back()->withInput()->with('errors', $result['errors']);
         }
 
-        // ── 4. Log & redirect ─────────────────────────────────────────────────
         $namaDonatur = $this->donaturName($this->request->getPost('id_donatur'));
         \App\Libraries\ActivityLogger::log(
             'Tambah Donasi', 'Donasi Masuk',
@@ -170,9 +148,6 @@ class BarangMasuk extends BaseController
         ]);
     }
 
-    /**
-     * update() — hanya HTTP glue (struktur sama dengan store()).
-     */
     public function update($id)
     {
         $barangMasuk = $this->barangMasukModel->find($id);
@@ -184,7 +159,6 @@ class BarangMasuk extends BaseController
             return redirect()->to('/transaksi/barang-masuk')->with('error', 'Transaksi tidak dapat diubah karena sebagian atau seluruh stok dari donasi ini sudah digunakan pada proses Penyaluran Barang atau Penyesuaian Stok.');
         }
 
-        // ── 1. Validasi header ────────────────────────────────────────────────
         if (!$this->validate(['tanggal_masuk' => 'required|valid_date', 'id_donatur' => 'required|integer'])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
@@ -194,14 +168,12 @@ class BarangMasuk extends BaseController
             return redirect()->back()->withInput()->with('errors', ['items' => 'Minimal harus ada 1 barang.']);
         }
 
-        // ── 2. Validasi & normalisasi item (FIX #6 — satu method, sama seperti store) ──
         $tanggalMasuk = $this->request->getPost('tanggal_masuk');
         $validated    = $this->service->validateAndCleanItems($items, $tanggalMasuk);
         if (!$validated['ok']) {
             return redirect()->back()->withInput()->with('errors', $validated['errors']);
         }
 
-        // ── 3. Perbarui (FIX #7 — business logic ada di service) ─────────────
         $result = $this->service->update(
             (int) $id,
             [
@@ -217,7 +189,6 @@ class BarangMasuk extends BaseController
             return redirect()->back()->withInput()->with('errors', $result['errors']);
         }
 
-        // ── 4. Log & redirect ─────────────────────────────────────────────────
         $namaDonatur = $this->donaturName($this->request->getPost('id_donatur'));
         \App\Libraries\ActivityLogger::log(
             'Edit Donasi', 'Donasi Masuk',
@@ -235,9 +206,10 @@ class BarangMasuk extends BaseController
 
     public function delete($id)
     {
-        if (!in_groups(['Administrator', 'Petugas Gudang'])) {
-            return view('errors/html/error_403');
-        }
+        // [FIX #10] Hapus cek in_groups() manual di sini — redundan karena route
+        // sudah dilindungi filter 'rbac:Administrator,Petugas Gudang'.
+        // Dua sumber kebenaran untuk aturan yang sama berisiko tidak sinkron
+        // jika route filter diubah tapi controller lupa diupdate.
 
         $barangMasuk = $this->barangMasukModel->find($id);
         if (!$barangMasuk) {
@@ -310,7 +282,6 @@ class BarangMasuk extends BaseController
     // Private helpers
     // =========================================================
 
-    /** Apakah ada batch dari transaksi ini yang sudah terpakai? */
     private function hasPenggunaanStok(int $id): bool
     {
         return $this->batchModel
@@ -319,7 +290,6 @@ class BarangMasuk extends BaseController
             ->countAllResults() > 0;
     }
 
-    /** Fetch batch beserta COALESCE fallback ke tabel barang. */
     private function fetchBatchesForTransaction(int $id): array
     {
         return $this->batchModel
@@ -332,35 +302,36 @@ class BarangMasuk extends BaseController
             ->findAll();
     }
 
-    /** Nama donatur dari id, atau '-' jika tidak ditemukan. */
     private function donaturName(int $idDonatur): string
     {
         $donatur = $this->donaturModel->find($idDonatur);
         return $donatur ? $donatur['nama_donatur'] : '-';
     }
 
-    /** Hapus semua cache dashboard yang berhubungan dengan stok. */
     private function bustDashboardCache(): void
     {
         helper('format');
         clear_dashboard_cache();
     }
 
-    /** Daftar barang master untuk autocomplete di form. */
     private function getBarangMasterList(): array
     {
         $barangModel = new \App\Modules\MasterData\Models\BarangModel();
+
+        // [FIX #15] Ganti groupBy('barang.nama_barang') dengan subquery MIN(id)
+        // agar tidak melanggar only_full_group_by di MySQL strict mode.
+        // Sebelumnya kolom satuan, berat_per_satuan, dll tidak diagregasi
+        // padahal tidak ada di GROUP BY — ini error di MySQL strict mode.
         return $barangModel
             ->select('barang.nama_barang, kategori.nama_kategori as kategori, barang.satuan,
                       barang.berat_per_satuan, barang.satuan_berat, barang.bisa_dipecah')
             ->join('kategori', 'kategori.id = barang.id_kategori')
             ->where('barang.status', 'active')
-            ->groupBy('barang.nama_barang')
+            ->where('barang.id IN (SELECT MIN(id) FROM barang WHERE status = "active" GROUP BY nama_barang)', null, false)
             ->orderBy('barang.nama_barang', 'ASC')
             ->findAll();
     }
 
-    /** Bangun HTML tombol aksi untuk DataTables. */
     private function buildActionButtons(array $bm): string
     {
         $detailUrl = site_url('transaksi/barang-masuk/detail/' . $bm['id']);

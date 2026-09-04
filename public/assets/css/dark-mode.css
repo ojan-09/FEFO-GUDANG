@@ -2216,3 +2216,373 @@ button.wh-btn-danger:active,
     background: #B91C1C !important;
     color: #fff !important;
 }
+/* ════════════════════════════════════
+   Detail Transaksi (.det-wrap)
+   ════════════════════════════════════ */
+[data-theme="dark"] .det-topbar,
+[data-theme="dark"] .det-kpi,
+[data-theme="dark"] .det-card {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] .det-title,
+[data-theme="dark"] .det-kpi-value,
+[data-theme="dark"] .det-meta-value,
+[data-theme="dark"] .det-nama,
+[data-theme="dark"] .det-stok-val {
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .det-subtitle,
+[data-theme="dark"] .det-kpi-label,
+[data-theme="dark"] .det-meta-label,
+[data-theme="dark"] .det-ket-label,
+[data-theme="dark"] .det-stok-unit,
+[data-theme="dark"] .det-no {
+    color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .det-btn-back {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .det-card-header {
+    background: #162032 !important;
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] .det-card-title {
+    color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .det-meta-item {
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] .det-ket-box {
+    background: #162032 !important;
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] .det-ket-text {
+    color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .det-batch-no {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #CBD5E1 !important;
+}
+
+/* KPI icon backgrounds */
+[data-theme="dark"] .det-kpi.blue  .det-kpi-icon { background: #1E3A5F !important; color: #93C5FD !important; }
+[data-theme="dark"] .det-kpi.green .det-kpi-icon { background: #14532D !important; color: #86EFAC !important; }
+[data-theme="dark"] .det-kpi.amber .det-kpi-icon { background: #78350F !important; color: #FCD34D !important; }
+[data-theme="dark"] .det-kpi.purple .det-kpi-icon { background: #3B0764 !important; color: #D8B4FE !important; }
+
+/* KPI values */
+[data-theme="dark"] .det-kpi.blue   .det-kpi-value { color: #93C5FD !important; }
+[data-theme="dark"] .det-kpi.green  .det-kpi-value { color: #86EFAC !important; }
+[data-theme="dark"] .det-kpi.amber  .det-kpi-value { color: #FCD34D !important; }
+[data-theme="dark"] .det-kpi.purple .det-kpi-value { color: #D8B4FE !important; }
+
+/* Card badges */
+[data-theme="dark"] .det-card-badge.blue  { background: #1E3A5F !important; color: #93C5FD !important; border-color: #1D4ED8 !important; }
+[data-theme="dark"] .det-card-badge.slate { background: #243044 !important; color: #CBD5E1 !important; border-color: #475569 !important; }
+
+/* Status badges */
+[data-theme="dark"] .det-status-aman    { background: #14532D !important; color: #86EFAC !important; }
+[data-theme="dark"] .det-status-habis   { background: #243044 !important; color: #94A3B8 !important; }
+[data-theme="dark"] .det-status-expired { background: #7F1D1D !important; color: #FCA5A5 !important; }
+
+/* Inline hardcoded colors di td */
+[data-theme="dark"] #tabelBatch tbody td[style*="color:#64748B"],
+[data-theme="dark"] #tabelBatch tbody td[style*="color:#DC2626"] {
+    color: #94A3B8 !important;
+}
+[data-theme="dark"] #tabelBatch tbody td[style*="color:#DC2626"] {
+    color: #FCA5A5 !important;
+}
+[data-theme="dark"] .det-stok-warn {
+    color: #FCD34D !important;
+}
+
+/* ════════════════════════════════════
+   Detail Batch (.det-wrap) — tambahan
+   ════════════════════════════════════ */
+
+/* Stok boxes */
+[data-theme="dark"] .det-stok-box.blue {
+    background: #1E3A5F !important;
+    border-color: #1D4ED8 !important;
+}
+[data-theme="dark"] .det-stok-box.green {
+    background: #14532D !important;
+    border-color: #166534 !important;
+}
+[data-theme="dark"] .det-stok-box-label {
+    color: #94A3B8 !important;
+}
+[data-theme="dark"] .det-stok-box-unit {
+    color: #94A3B8 !important;
+}
+[data-theme="dark"] .det-stok-box.blue  .det-stok-box-val { color: #93C5FD !important; }
+[data-theme="dark"] .det-stok-box.green .det-stok-box-val { color: #86EFAC !important; }
+
+/* Aksi Cepat box */
+[data-theme="dark"] .det-aksi-box {
+    background: #162032 !important;
+    border-color: #334155 !important;
+}
+[data-theme="dark"] .det-aksi-label {
+    color: #94A3B8 !important;
+}
+[data-theme="dark"] .det-aksi-btn.outline {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #CBD5E1 !important;
+}
+[data-theme="dark"] .det-aksi-btn.outline:hover {
+    background: #334155 !important;
+    color: #F1F5F9 !important;
+}
+[data-theme="dark"] .det-aksi-btn.danger-outline {
+    background: #3B0000 !important;
+    border-color: #7F1D1D !important;
+    color: #FCA5A5 !important;
+}
+
+/* Status badges */
+[data-theme="dark"] .det-status-aman    { background: #14532D !important; color: #86EFAC !important; }
+[data-theme="dark"] .det-status-hampir  { background: #78350F !important; color: #FCD34D !important; }
+[data-theme="dark"] .det-status-expired { background: #7F1D1D !important; color: #FCA5A5 !important; }
+[data-theme="dark"] .det-status-default { background: #243044 !important; color: #94A3B8 !important; }
+
+/* Card badges */
+[data-theme="dark"] .det-card-badge.green { background: #14532D !important; color: #86EFAC !important; border-color: #166534 !important; }
+[data-theme="dark"] .det-card-badge.red   { background: #7F1D1D !important; color: #FCA5A5 !important; border-color: #991B1B !important; }
+[data-theme="dark"] .det-card-badge.amber { background: #78350F !important; color: #FCD34D !important; border-color: #92400E !important; }
+
+/* KPI red variant */
+[data-theme="dark"] .det-kpi.red .det-kpi-icon  { background: #7F1D1D !important; color: #FCA5A5 !important; }
+[data-theme="dark"] .det-kpi.red .det-kpi-value  { color: #FCA5A5 !important; }
+
+/* Inline hardcoded colors di td/div */
+[data-theme="dark"] .det-meta-value[style*="color:#2563EB"] { color: #93C5FD !important; }
+[data-theme="dark"] .det-meta-value[style*="color:#DC2626"] { color: #FCA5A5 !important; }
+
+/* Riwayat table inline colors */
+[data-theme="dark"] #tabelRiwayat tbody td[style*="color:#64748B"] { color: #94A3B8 !important; }
+[data-theme="dark"] #tabelRiwayat tbody td[style*="color:#475569"] { color: #CBD5E1 !important; }
+[data-theme="dark"] .det-keluar-val { color: #FCA5A5 !important; }
+
+/* Empty state */
+[data-theme="dark"] .det-empty { color: #64748B !important; }
+[data-theme="dark"] .det-empty i { color: #475569 !important; }
+
+/* ════════════════════════════════════
+   Master Barang (.mb-wrap)
+   ════════════════════════════════════ */
+[data-theme="dark"] .mb-wrap {
+    --bg: #0F172A;
+    --card: #1E293B;
+    --border: #334155;
+    --border-strong: #475569;
+    --text-1: #F1F5F9;
+    --text-2: #CBD5E1;
+    --text-3: #94A3B8;
+    --blue-bg: #1E3A5F;
+    --blue-text: #93C5FD;
+    --green-bg: #14532D;
+    --green-text: #86EFAC;
+    --amber-bg: #78350F;
+    --amber-text: #FCD34D;
+}
+
+/* DataTables toolbar */
+[data-theme="dark"] .mb-wrap .dataTables_wrapper label {
+    color: #CBD5E1 !important;
+}
+[data-theme="dark"] .mb-wrap .dataTables_wrapper select,
+[data-theme="dark"] .mb-wrap .dataTables_wrapper input[type="search"] {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #F1F5F9 !important;
+}
+
+/* Filter select di toolbar */
+[data-theme="dark"] .mb-filter-select {
+    background-color: #243044 !important;
+    border-color: #475569 !important;
+    color: #F1F5F9 !important;
+}
+
+/* Tombol Detail */
+[data-theme="dark"] .mb-detail-btn {
+    background: #1E3A5F !important;
+    border-color: #1D4ED8 !important;
+    color: #93C5FD !important;
+}
+
+/* Modal */
+[data-theme="dark"] .mb-modal {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+[data-theme="dark"] .mb-modal-header,
+[data-theme="dark"] .mb-modal-footer {
+    border-color: #334155 !important;
+}
+[data-theme="dark"] .mb-modal-title,
+[data-theme="dark"] .mb-label {
+    color: #F1F5F9 !important;
+}
+[data-theme="dark"] .mb-input,
+[data-theme="dark"] .mb-select {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #F1F5F9 !important;
+}
+[data-theme="dark"] .mb-hint {
+    color: #94A3B8 !important;
+}
+[data-theme="dark"] .mb-btn-cancel {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #CBD5E1 !important;
+}
+[data-theme="dark"] .topbar h1.page-title {
+    color: #F1F5F9 !important;
+}
+/* ════════════════════════════════════
+   DataTables global — search & length
+   ════════════════════════════════════ */
+[data-theme="dark"] .dataTables_wrapper .dataTables_filter input[type="search"],
+[data-theme="dark"] .dataTables_wrapper .dataTables_length select {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .dataTables_wrapper .dataTables_filter label,
+[data-theme="dark"] .dataTables_wrapper .dataTables_length label,
+[data-theme="dark"] .dataTables_wrapper .dataTables_info {
+    color: #CBD5E1 !important;
+}
+
+/* ════════════════════════════════════
+   Detail Drawer — Log Aktivitas
+   ════════════════════════════════════ */
+[data-theme="dark"] .detail-drawer {
+    background: #1E293B !important;
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .drawer-header {
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] .drawer-header h3 {
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .drawer-close {
+    background: #243044 !important;
+    color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .drawer-close:hover {
+    background: #334155 !important;
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .drawer-lbl {
+    color: #64748B !important;
+}
+
+[data-theme="dark"] .drawer-val {
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] #drwSummary {
+    background: #162032 !important;
+    border-color: #334155 !important;
+    color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .drawer-body .border-top {
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] #auditJsonBody pre {
+    background: #0F172A !important;
+    color: #86EFAC !important;
+}
+
+/* Toggle JSON button */
+[data-theme="dark"] .drawer-body .btn-light {
+    background: #243044 !important;
+    border-color: #334155 !important;
+    color: #CBD5E1 !important;
+}
+
+/* ════════════════════════════════════
+   Modal — input, select, form controls
+   ════════════════════════════════════ */
+[data-theme="dark"] .modal-content {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] .modal-title {
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .modal-body .form-label {
+    color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .modal-body .form-control,
+[data-theme="dark"] .modal-body .form-select,
+[data-theme="dark"] .modal-body input,
+[data-theme="dark"] .modal-body select,
+[data-theme="dark"] .modal-body textarea {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .modal-body .form-control:disabled,
+[data-theme="dark"] .modal-body input:disabled {
+    background: #1E293B !important;
+    color: #64748B !important;
+}
+
+[data-theme="dark"] .modal-body .form-text {
+    color: #64748B !important;
+}
+
+[data-theme="dark"] .modal-body .alert {
+    background: #78350F !important;
+    border-color: #92400E !important;
+    color: #FCD34D !important;
+}
+
+[data-theme="dark"] .modal-footer .btn-secondary {
+    background: #243044 !important;
+    border-color: #475569 !important;
+    color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .btn-close {
+    filter: invert(1) !important;
+}

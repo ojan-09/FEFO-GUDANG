@@ -104,11 +104,11 @@ class Barang extends BaseController
             $batchBadge    = '<span class="badge bg-info text-dark">' . ($row['jumlah_batch'] ?? 0) . ' Batch</span>';
 
             $aksi = '<div class="d-flex justify-content-center">
-                        <a href="' . site_url('masterdata/barang/detail/' . $row['id']) . '"
-                           class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                            <i class="fa-solid fa-eye me-1"></i>Detail
-                        </a>
-                     </div>';
+                <a href="' . site_url('masterdata/barang/detail/' . $row['id']) . '"
+                class="mb-detail-btn">
+                    <i class="fa-solid fa-eye"></i> Detail
+                </a>
+            </div>';
 
             $data[] = [
                 '<div class="text-center text-secondary">' . $no . '</div>',

@@ -18,6 +18,18 @@ class ManajemenUser extends BaseController
         $this->groupModel = new GroupModel();
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // HELPER: Validasi ID integer positif — cegah ID non-integer
+    // ─────────────────────────────────────────────────────────────
+    private function resolveId(mixed $id): int
+    {
+        $intId = filter_var($id, FILTER_VALIDATE_INT);
+        if ($intId === false || $intId <= 0) {
+            throw new \InvalidArgumentException('ID pengguna tidak valid.');
+        }
+        return $intId;
+    }
+
     public function index()
     {
         $db = \Config\Database::connect();
@@ -92,12 +104,20 @@ class ManajemenUser extends BaseController
             "Menambahkan pengguna baru: {$this->request->getPost('username')} dengan role {$roleName}."
         );
 
-        helper('format'); clear_dashboard_cache();
+        helper('format');
+        clear_dashboard_cache();
+
         return redirect()->to('manajemen-user')->with('success', 'User berhasil ditambahkan.');
     }
 
     public function update($id)
     {
+        try {
+            $id = $this->resolveId($id);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->to('manajemen-user')->with('error', $e->getMessage());
+        }
+
         $rules = [
             'username' => "required|min_length[3]|max_length[30]|is_unique[users.username,id,{$id}]",
             'role'     => 'required',
@@ -142,12 +162,21 @@ class ManajemenUser extends BaseController
             "Mengubah profil atau role pengguna {$user->username} menjadi {$roleName}."
         );
 
-        helper('format'); clear_dashboard_cache();
+        helper('format');
+        clear_dashboard_cache();
+
         return redirect()->to('manajemen-user')->with('success', 'User berhasil diperbarui.');
     }
 
     public function resetPassword($id)
     {
+        // FIX #9a: Validasi ID integer positif
+        try {
+            $id = $this->resolveId($id);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->to('manajemen-user')->with('error', $e->getMessage());
+        }
+
         $rules = ['password' => 'required|min_length[8]'];
 
         if (!$this->validate($rules)) {
@@ -159,6 +188,11 @@ class ManajemenUser extends BaseController
             return redirect()->to('manajemen-user')->with('error', 'User tidak ditemukan.');
         }
 
+        // FIX #9b: Proteksi reset password akun sendiri
+        if ($id === (int)user()->id) {
+            return redirect()->to('manajemen-user')->with('error', 'Gunakan fitur ganti password profil untuk mengubah password Anda sendiri.');
+        }
+
         $user->setPassword($this->request->getPost('password'));
         $this->userModel->save($user);
 
@@ -168,19 +202,28 @@ class ManajemenUser extends BaseController
             "Mereset password pengguna {$user->username}."
         );
 
-        helper('format'); clear_dashboard_cache();
+        helper('format');
+        clear_dashboard_cache();
+
         return redirect()->to('manajemen-user')->with('success', 'Password berhasil direset.');
     }
 
     public function toggleStatus($id)
     {
+        // FIX #9a: Validasi ID integer positif
+        try {
+            $id = $this->resolveId($id);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->to('manajemen-user')->with('error', $e->getMessage());
+        }
+
         $user = $this->userModel->find($id);
         if (!$user) {
             return redirect()->to('manajemen-user')->with('error', 'User tidak ditemukan.');
         }
 
         // ── PROTEKSI: tidak boleh menonaktifkan akun sendiri ─────────────────
-        if ((int)$id === (int)user()->id) {
+        if ($id === (int)user()->id) {
             return redirect()->to('manajemen-user')->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
         }
 
@@ -216,7 +259,9 @@ class ManajemenUser extends BaseController
             ucfirst($statusMsg) . " akun pengguna {$user->username}."
         );
 
-        helper('format'); clear_dashboard_cache();
+        helper('format');
+        clear_dashboard_cache();
+
         return redirect()->to('manajemen-user')->with('success', "Akun berhasil {$statusMsg}.");
     }
 }

@@ -118,6 +118,11 @@
     .wh-btn-danger:hover { background: #DC2626; color: #fff; }
     .wh-btn-danger:active { transform: scale(0.98); }
 
+    .wh-btn-danger,
+.wh-btn-success {
+    min-width: 140px;
+    justify-content: center;
+}
     /* ── Table ── */
     .wh-table-card {
         background: var(--wh-card); border: 1px solid var(--wh-border);
@@ -269,13 +274,13 @@
                     <i class="fa-solid fa-filter"></i> Terapkan Filter
                 </button>
                 <div class="d-flex gap-2 ms-auto filter-export">
-                    <button type="button" class="wh-btn-danger" onclick="exportData('pdf')">
-                        <i class="fa-solid fa-file-pdf"></i> Export PDF
-                    </button>
-                    <button type="button" class="wh-btn-success" onclick="exportData('excel')">
-                        <i class="fa-solid fa-file-excel"></i> Export Excel
-                    </button>
-                </div>
+                <button type="button" class="wh-btn-danger flex-fill justify-content-center" onclick="exportData('pdf')">
+                    <i class="fa-solid fa-file-pdf"></i> Export PDF
+                </button>
+                <button type="button" class="wh-btn-success flex-fill justify-content-center" onclick="exportData('excel')">
+                    <i class="fa-solid fa-file-excel"></i> Export Excel
+                </button>
+            </div> 
             </div>
         </form>
     </div>
